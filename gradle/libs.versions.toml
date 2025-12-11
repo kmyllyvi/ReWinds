@@ -1,0 +1,106 @@
+[versions]
+agp = "8.7.3"
+android-compileSdk = "35"
+android-minSdk = "24"
+android-targetSdk = "35"
+androidx-activityCompose = "1.10.1"
+androidx-appcompat = "1.7.0"
+androidx-constraintlayout = "2.2.1"
+androidx-core-ktx = "1.15.0"
+androidx-espresso-core = "3.6.1"
+androidx-material3 = "1.2.1"
+androidx-test-junit = "1.2.1"
+androidxLifecycle = "2.8.2"
+compose-plugin = "1.6.10"
+junit = "4.13.2"
+kotlin = "2.0.21"
+kotlinxCoroutinesCore = "1.8.1"
+ktorClientCoreBeta = "3.0.0-beta-2"
+ktorClientCore = "2.3.12"
+koin = "4.0.0"
+# koinComposeMultiplatform = "1.2.0-alpha3"
+koinAnnotations = "2.0.0"
+navigationCompose = "2.8.0-alpha10"
+kotlinxSerialization = "1.7.1"
+#roomVersion = "2.7.0-alpha05"
+#sqliteVersion = "2.5.0-SNAPSHOT"
+kspVersion = "2.0.0-1.0.21"
+realmVersion = "3.0.0"
+datetime = "0.6.0"
+napier = "2.7.1"
+
+[libraries]
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-junit" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-espresso-core" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
+compose-material3 = { group = "androidx.compose.material3:material3", name = "material3", version.ref = "androidx-material3" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "androidx-constraintlayout" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+# logging
+logger-napier = { module = "io.github.aakira:napier", version.ref = "napier" }
+
+# ktor for networking
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCoreBeta" }
+ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktorClientCoreBeta" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClientCoreBeta" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientCoreBeta" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientCoreBeta" }
+ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktorClientCoreBeta" }
+# ktor engine
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorClientCoreBeta" }
+
+#ktor android
+ktor-client-android = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClientCoreBeta" }
+
+#ktor for iOS (ios only dependency)
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktorClientCoreBeta" }
+
+# Koin for dependency injection (multiplatform)
+# https://insert-koin.io/docs/reference/koin-compose/multiplatform/#
+# automatic koin lib version handling
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
+koin-multiplatform-compose = { module = "io.insert-koin:koin-compose" }
+koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koinAnnotations" }
+koin-composeVM = { module = "io.insert-koin:koin-compose-viewmodel"}
+
+#navigation
+navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+# ViewModel https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-viewmodel.html
+lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
+
+
+#database / Room - SQLite
+#room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
+# room-runtime-android = { module = "androidx.room:room-runtime-android", version.ref = "roomVersion" }
+#room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+# room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+# sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteVersion" }
+
+#database / Realm
+# https://www.mongodb.com/docs/atlas/device-sdks/sdk/kotlin/install/#std-label-kotlin-install-kotlin-multiplatform
+realm-base = { module = "io.realm.kotlin:library-base", version.ref = "realmVersion" }
+
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+#Room db
+#roomDb = { id = "androidx.room", version.ref = "roomVersion" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
+# Realm db
+realm = { id = "io.realm.kotlin", version.ref = "realmVersion" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -1,0 +1,190 @@
+package place
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel // KMM ViewModel
+import androidx.lifecycle.viewModelScope
+import core.Day
+import core.Hour
+import core.KiteSpotterConfig
+import core.Log // Assuming you have a Log wrapper or use Napier
+import core.WeatherRepository
+import core.WeatherResponse
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+// CalculatedStats data class remains the same
+data class CalculatedStats(
+    val numberOfDaysWithData: Int = 0,
+    val averageMinTemp: Double? = null,
+    val averageMaxTemp: Double? = null,
+    val overallAverageTemp: Double? = null,
+    val absoluteMinTemp: Double? = null,
+    val coldestDate: String? = null,
+    val absoluteMaxTemp: Double? = null,
+    val hottestDate: String? = null,
+    val kiteableDaysCount: Int = 0 // New field for kiteable days
+)
+
+class MonthlyStatisticsViewModel(
+    savedStateHandle: SavedStateHandle, // Inject SavedStateHandle
+    private val weatherRepository: WeatherRepository
+) : ViewModel() { // Extend androidx.lifecycle.ViewModel
+
+    // Retrieve navigation arguments from SavedStateHandle
+    // The keys "placeName", "year", "month" MUST match your navigation argument names
+    val placeName: String = savedStateHandle.get<String>("placeName")
+        ?: throw IllegalArgumentException("placeName argument not found in SavedStateHandle")
+    val year: Int = savedStateHandle.get<Int>("year")
+        ?: throw IllegalArgumentException("year argument not found in SavedStateHandle")
+    val month: Int = savedStateHandle.get<Int>("month")
+        ?: throw IllegalArgumentException("month argument not found in SavedStateHandle")
+
+    private val _statistics = MutableStateFlow<CalculatedStats?>(null)
+    val statistics: StateFlow<CalculatedStats?> = _statistics.asStateFlow()
+
+    init {
+        // Log or print the retrieved arguments to verify
+        Log.d("MonthlyStatisticsVM", "placeName: $placeName, year: $year, month: $month")
+        loadStatistics()
+    }
+
+    private fun loadStatistics() {
+        viewModelScope.launch {
+            // Now use the 'this.placeName', 'this.year', 'this.month' properties
+            val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)
+            val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, year, month)
+
+            if (relevantDaysSummary.isNotEmpty()) {
+                _statistics.value = calculateStatsInternal(relevantDaysSummary)
+            } else {
+                _statistics.value = CalculatedStats() // Or some error/empty state
+            }
+        }
+    }
+    // New data class to represent the UI model for a day's weather summary
+    // This is useful to decouple the UI from the raw data model (Day)
+    data class DayWeatherSummary(
+        val date: String?,
+        val description: String?,
+        val maxTemp: Double?,
+        val minTemp: Double?,
+        val avgTemp: Double?,
+        val avgWindSpeed: Double?,
+        val maxWindSpeed: Double?, // gust
+        val sustainedWindSpeed: Double? // 3h avg
+    )
+
+    private fun Day.toDayWeatherSummary(): DayWeatherSummary {
+        return DayWeatherSummary(
+            date = this.datetime,
+            description = this.description ?: this.conditions,
+            maxTemp = this.tempmax,
+            minTemp = this.tempmin,
+            avgTemp = this.temp,
+            avgWindSpeed = this.windspeed,
+            maxWindSpeed = this.windgust, // map from windgust
+            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours)
+        )
+    }
+
+    // New helper to calculate the highest 3-hour rolling average wind speed
+    private fun calculateMaxSustainedWindSpeed(hours: List<Hour>?): Double? {
+        if (hours == null || hours.size < KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS) {
+            return null
+        }
+
+        return hours
+            .mapNotNull { it.windspeed }
+            .windowed(size = KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS, step = 1) { window ->
+                window.average()
+            }
+            .maxOrNull()
+    }
+
+
+    // Helper to parse date parts (year, month) from a date string "YYYY-MM-DD"
+    // This can be moved to a shared utility file if needed elsewhere
+    private fun parseDateParts(dateString: String?): Pair<Int?, Int?> {
+        if (dateString == null) return Pair(null, null)
+        val parts = dateString.split('-')
+        val year = parts.getOrNull(0)?.toIntOrNull()
+        val month = parts.getOrNull(1)?.toIntOrNull()
+        return Pair(year, month)
+    }
+
+    private fun filterAndMapDaysForMonth(
+        weatherData: WeatherResponse?,
+        targetYear: Int,
+        targetMonth: Int
+    ): List<DayWeatherSummary> {
+        if (weatherData?.days == null) {
+            Log.d("filterAndMap", "Weather data or days list is null.")
+            return emptyList()
+        }
+
+        return weatherData.days
+            .mapNotNull { day ->
+                val (dayYear, dayMonth) = parseDateParts(day.datetime)
+                if (dayYear == targetYear && dayMonth == targetMonth) {
+                    day // Keep the day if it matches the target year and month
+                } else {
+                    null // Discard otherwise
+                }
+            }
+            .map { it.toDayWeatherSummary() } // Map the filtered Days to DayWeatherSummary
+    }
+
+
+    private fun calculateStatsInternal(daysData: List<DayWeatherSummary>): CalculatedStats {
+        if (daysData.isEmpty()) return CalculatedStats()
+
+        val validDays = daysData.filter { it.date != null }
+        if (validDays.isEmpty()) return CalculatedStats(numberOfDaysWithData = daysData.size)
+
+        val kiteableDaysCount = validDays.count { day ->
+            // Use predefined filter values for decision on "kiteable"
+            (day.sustainedWindSpeed ?: 0.0) >= KiteSpotterConfig.MIN_SUSTAINED_WIND_SPEED_KMH &&
+                    (day.avgTemp ?: 0.0) >= KiteSpotterConfig.MIN_TEMP_CELSIUS
+        }
+
+        val minTemps = validDays.mapNotNull { it.minTemp }
+        val maxTemps = validDays.mapNotNull { it.maxTemp }
+        val avgTemps = validDays.mapNotNull { it.avgTemp }
+
+        var absMinTemp: Double? = null
+        var coldestDate: String? = null
+        validDays.forEach { day ->
+            day.minTemp?.let { temp ->
+                if (absMinTemp == null || temp < absMinTemp!!) {
+                    absMinTemp = temp
+                    coldestDate = day.date
+                }
+            }
+        }
+
+        var absMaxTemp: Double? = null
+        var hottestDate: String? = null
+        validDays.forEach { day ->
+            day.maxTemp?.let { temp ->
+                if (absMaxTemp == null || temp > absMaxTemp!!) {
+                    absMaxTemp = temp
+                    hottestDate = day.date
+                }
+            }
+        }
+
+        return CalculatedStats(
+            numberOfDaysWithData = validDays.size,
+            averageMinTemp = if (minTemps.isNotEmpty()) minTemps.average() else null,
+            averageMaxTemp = if (maxTemps.isNotEmpty()) maxTemps.average() else null,
+            overallAverageTemp = if (avgTemps.isNotEmpty()) avgTemps.average() else null,
+            absoluteMinTemp = absMinTemp,
+            coldestDate = coldestDate,
+            absoluteMaxTemp = absMaxTemp,
+            hottestDate = hottestDate,
+            kiteableDaysCount = kiteableDaysCount // Set the new count
+        )
+    }
+}
