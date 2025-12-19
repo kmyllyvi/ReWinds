@@ -14,7 +14,8 @@ struct iOSApp: App {
     init() {
         // call Kotlin (koin init) see https://insert-koin.io/docs/quickstart/kmp/
         // So DI.kt file becomes "DIKt"
-        DIKt.doInitKoin()
+        let driverFactory = CoreDatabaseDriverFactory()
+        DIKt.doInitKoin(databaseDriverFactory: driverFactory)
         // napier logger init https://github.com/AAkira/Napier?tab=readme-ov-file#ios
         IosUtilsKt.doInitLogger()
     }

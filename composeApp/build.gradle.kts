@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,10 +9,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
-    // doesn't work until this issue fixed (ksp)
-    // https://issuetracker.google.com/issues/343408758
-    // alias(libs.plugins.roomDb)
-    alias(libs.plugins.realm)
+    alias(libs.plugins.sqlDelight)
 }
 
 repositories {
@@ -40,10 +38,6 @@ kotlin {
             binaryOption("bundleId", "com.km.rewinds.ReWinds")
         }
     }
-    // Room / ksp
-    sourceSets.commonMain {
-        kotlin.srcDir("build/generated/ksp/metadata")
-    }
 
     sourceSets {
 
@@ -53,11 +47,13 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             // for async/API stuff
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.sqldelight.coroutines.extensions)
             // Networking
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.serialization)
@@ -83,16 +79,6 @@ kotlin {
             // navigation compose
             implementation(libs.navigation.compose)
 
-            // Database - Realm
-            implementation(libs.realm.base)
-
-            // Database - Room
-//            implementation(libs.room.runtime)
-//            implementation(libs.sqlite.bundled)
-            // implementation(libs.room.ktx)
-            // implementation(libs.room.compiler)
-
-
             // other
             implementation(libs.kotlinx.datetime)
         }
@@ -100,9 +86,9 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.koin.androidx.compose)
             implementation(libs.koin.android)
             implementation(libs.ktor.client.android)
+            implementation(libs.sqldelight.android.driver)
         }
 
         if (includeAllTargets) {
@@ -113,6 +99,7 @@ kotlin {
 
                 dependencies {
                     implementation(libs.ktor.client.darwin)
+                    implementation(libs.sqldelight.native.driver)
                 }
             }
 
@@ -127,9 +114,6 @@ kotlin {
                 dependsOn(iosMain)
             }
         }
-        // workaround
-        // https://stackoverflow.com/questions/78133592/kmm-project-build-error-testclasses-not-found-in-project-shared
-        task("testClasses")
     }
 }
 
@@ -184,19 +168,10 @@ tasks.register("buildWithIos") {
     finalizedBy("build")
 }
 
-// Room set up
-// https://issuetracker.google.com/issues/343408758
-//room {
-//   schemaDirectory("$projectDir/schemas")
-//}
-
-//dependencies {
-//    ksp(libs.room.compiler)
-//}
-
-// hack for Room / ksp
-//tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinCompile<*>>().configureEach {
-//    if (name != "kspCommonMainKotlinMetadata") {
-//        dependsOn("kspCommonMainKotlinMetadata")
-//    }
-//}
+sqldelight {
+  databases {
+    create("AppDatabase") {
+      packageName.set("com.km.rewinds.db")
+    }
+  }
+}

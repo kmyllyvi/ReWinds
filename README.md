@@ -11,61 +11,102 @@ This is a Kotlin Multiplatform project targeting Android, iOS.
   you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
 
 
-About the app
+## About ReWinds
 
+**ReWinds** is a weather history tracking application that allows users to search for locations and view detailed historical weather data. The app is designed with wind sports enthusiasts in mind (kitesurfing/windsurfing), featuring advanced wind metrics including sustained wind speed calculations.
 
-== Method
+### Tech Stack
 
-The application architecture is built around Kotlin Multiplatform (KMP), enabling shared business logic across Android and iOS. It leverages Visual Crossing as the external provider for historical weather data, and Realm DB for local persistence of queries and results.
+- **Kotlin Multiplatform (KMP)** - Shared business logic across Android and iOS
+- **Jetpack Compose Multiplatform** - Modern declarative UI framework
+- **SQLDelight** - Type-safe SQL database for local persistence
+- **Ktor** - HTTP client for API networking
+- **Koin** - Dependency injection framework
+- **Visual Crossing API** - Weather data provider
+- **Navigation Compose** - Type-safe navigation
+- **Kotlinx Serialization** - JSON serialization/deserialization
+- **Kotlinx DateTime** - Multiplatform date/time handling
 
-=== Architecture Overview
+### Key Features
 
-[plantuml]
-----
-@startuml
-package "Shared KMP Layer" {
-[WeatherRepository] --> [VisualCrossingService]
-[WeatherRepository] --> [RealmWeatherStorage]
-[SavedPlacesRepository] --> [RealmPlaceStorage]
-}
+1. **Location Search** - Search and add locations via geolocation search
+2. **Saved Places** - Manage multiple saved locations with persistent weather data
+3. **Weather Summaries** - View detailed day-by-day weather summaries for each place
+4. **Monthly Statistics** - Comprehensive monthly weather breakdowns and analytics
+5. **Historical Data Download** - Fetch complete month ranges of historical weather data
+6. **Rich Weather Metrics**:
+   - Temperature (min/max/average)
+   - Wind data (average speed, gusts, sustained wind speed)
+   - Precipitation and precipitation type
+   - Humidity, dew point, pressure
+   - Cloud cover, visibility
+   - UV index, solar radiation
+   - Sunrise/sunset times, moon phase
 
-package "Android/iOS" {
-[SearchViewModel]
-[SavedPlacesViewModel]
-[SearchViewModel] --> [WeatherRepository]
-[SavedPlacesViewModel] --> [SavedPlacesRepository]
-}
+### Architecture Overview
 
-[VisualCrossingService] --> [Visual Crossing API]
-@enduml
-----
+The application follows the MVVM (Model-View-ViewModel) pattern:
 
-- **SearchViewModel / SavedPlacesViewModel**: Platform-specific ViewModels that bind to UI.
-- **WeatherRepository**: Core logic to query, cache, and normalize weather data.
-- **RealmWeatherStorage**: Caches weather responses.
-- **SavedPlacesRepository**: Manages user-defined saved places and time ranges.
+```
+┌─────────────────────────────────────────┐
+│          Compose UI Layer               │
+│  (HomeView, PlaceSummaryView, etc.)     │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│         ViewModel Layer                 │
+│  (HomeViewModel, PlaceSummaryViewModel) │
+└─────────────────┬───────────────────────┘
+                  │
+┌─────────────────▼───────────────────────┐
+│        Repository Layer                 │
+│      (WeatherRepository)                │
+└────────┬──────────────────────┬─────────┘
+         │                      │
+┌────────▼─────────┐   ┌────────▼─────────┐
+│  NetworkService  │   │  SQLDelight DB   │
+│  (Ktor Client)   │   │   (Local Cache)  │
+└────────┬─────────┘   └──────────────────┘
+         │
+┌────────▼─────────┐
+│ Visual Crossing  │
+│      API         │
+└──────────────────┘
+```
 
-=== Database Schema (Realm)
+**Key Components**:
+- **HomeViewModel**: Manages location search and saved places list
+- **PlaceSummaryViewModel**: Displays weather summary for a specific location
+- **MonthlyStatisticsViewModel**: Provides monthly weather analytics
+- **WeatherRepository**: Orchestrates data fetching, caching, and retrieval
+- **NetworkService**: Handles HTTP communication with Visual Crossing API
+- **SQLDelight Database**: Local persistence layer
 
-```kotlin
-class Place : RealmObject {
-    var id: String = UUID.randomUUID().toString()
-    var name: String = ""
-    var lat: Double = 0.0
-    var lon: Double = 0.0
-    var savedQueries: RealmList<SavedQuery> = RealmList()
-}
+### Database Schema (SQLDelight)
 
-class SavedQuery : RealmObject {
-    var startDate: String = "" // ISO 8601 format
-    var endDate: String = ""
-    var weatherSnapshots: RealmList<WeatherSnapshot> = RealmList()
-}
+The app uses three main tables with cascading relationships:
 
-class WeatherSnapshot : RealmObject {
-    var date: String = ""
-    var tempMin: Double = 0.0
-    var tempMax: Double = 0.0
-    var precipitation: Double = 0.0
-    var conditions: String = ""
-}
+**WeatherResponse** - Stores location metadata
+- resolvedAddress (PRIMARY KEY)
+- latitude, longitude
+- address, timezone, tzoffset
+- queryCost
+
+**Day** - Daily weather summaries
+- weatherResponseResolvedAddress (FOREIGN KEY)
+- datetime, datetimeEpoch
+- Temperature data (tempmax, tempmin, temp, feels-like values)
+- Wind data (windspeed, windgust, winddir)
+- Precipitation (precip, precipprob, precipcover, preciptype, snow)
+- Atmospheric data (humidity, pressure, dew, cloudcover, visibility)
+- Solar data (solarradiation, solarenergy, uvindex)
+- Sunrise/sunset times and moon phase
+- conditions, description, icon
+
+**Hour** - Hourly weather data for detailed analysis
+- dayId (FOREIGN KEY)
+- datetime, datetimeEpoch
+- Temperature and feels-like
+- Wind, precipitation, and atmospheric metrics
+- Solar radiation and UV index
+- conditions, icon

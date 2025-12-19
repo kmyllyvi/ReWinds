@@ -7,15 +7,20 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import org.koin.core.annotation.Single
 
+interface Networking {
+    suspend fun fetchWeatherData(url: String): WeatherResponse
+    suspend fun fetchGeoSearchData(url: String): GeoSearchResponse
+}
+
 @Single
-class NetworkService: Networking {
+class NetworkService(enableNetworkLogs: Boolean): Networking {
 
     init {
         println("NetworkService initialized")
     }
 
     // HttpClient is provided to ktor based on the platform
-    private val client = httpClient()
+    private val client = httpClient(enableNetworkLogs)
 
     override suspend fun fetchWeatherData(url: String): WeatherResponse {
         Log.d("NetworkService::fetchWeatherData: $url")

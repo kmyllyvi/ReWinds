@@ -37,13 +37,13 @@ sealed class Screen(val title: String, val route: String) {
         route = "place_summary/{placeName}") {
         fun createRoute(placeName: String) = "place_summary/$placeName"
     }
-    data object MonthlySummary : Screen(
-        title = "Monthly Summary",
-        route = "monthly_summary/{placeName}/{year}/{month}") {
+    data object MonthlyStatistics : Screen(
+        title = "Monthly Statistics",
+        route = "monthly_statistics/{placeName}/{year}/{month}") {
         fun createRoute(placeName: String, year: Int, month: Int): String {
             val encodedPlaceName = placeName.encodeURLPathPart() // URL Encode the placeName
             Log.d("NAV_DEBUG: encodedPlaceName: '${encodedPlaceName}'")
-            return "monthly_summary/$encodedPlaceName/$year/$month"
+            return "monthly_statistics/$encodedPlaceName/$year/$month"
         }
     }
 }
@@ -51,8 +51,8 @@ sealed class Screen(val title: String, val route: String) {
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
-    // need instantiate Navi....
-    koinInject<Navigator> { parametersOf(navController) }
+    // Provide navController to Koin and instantiate Navigator
+    val navigator = koinInject<Navigator> { parametersOf(navController) }
 
     NavHost(
         navController = navController,
@@ -72,13 +72,13 @@ fun Navigation() {
         ) { backStackEntry ->
             val itemId = backStackEntry.arguments?.getString("placeName") ?: ""
             PlaceSummaryView(
-//                placeName = itemId,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                navController = navController
             )
         }
 
         composable(
-            route = Screen.MonthlySummary.route,
+            route = Screen.MonthlyStatistics.route,
             arguments = listOf(
                 navArgument("placeName") { type = NavType.StringType },
                 navArgument("year") { type = NavType.IntType },
@@ -127,7 +127,7 @@ class AppNavigator(private val navController: NavHostController) : Navigator {
     }
 
     override fun navigateToMonthlyStatistics(placeName: String, year: Int, month: Int) {
-        navController.navigate(Screen.MonthlySummary.createRoute(placeName, year, month))
+        navController.navigate(Screen.MonthlyStatistics.createRoute(placeName, year, month))
     }
 
     override fun navigateBack() {

@@ -31,10 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import core.Navigator
+import androidx.navigation.NavController
+import core.Screen
 import io.github.aakira.napier.Napier
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -42,10 +41,9 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import place.components.MonthSelector
 import place.components.YearDropdownSelector
+import kotlin.time.ExperimentalTime
 
 // Define this outside or in a shared file if MonthSelector needs it directly
 // For now, keeping it local to SuccessStateView and MonthSelector will use the map
@@ -76,16 +74,21 @@ internal fun parseMonth(dateString: String?): Int? {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceSummaryView(onBackClick: () -> Unit, vm: PlaceSummaryViewModel = koinViewModel()) {
+fun PlaceSummaryView(onBackClick: () -> Unit, navController: NavController, vm: PlaceSummaryViewModel = koinViewModel()) {
     val uiState by vm.uiState.collectAsState()
     val currentPlaceName = vm.placeName // Access it directly
-    val navigator: Navigator by koinInject() // Inject Navigator
 
-    LaunchedEffect(vm) {
-        vm.navigationEvent.collectLatest { event ->
+    LaunchedEffect(Unit) {
+        vm.navigationEvent.collect { event ->
             when (event) {
                 is NavigationEvent.ToMonthlySummary -> {
-                    navigator.navigateToMonthlyStatistics(event.placeName, event.year, event.month)
+                    navController.navigate(
+                        Screen.MonthlyStatistics.createRoute(
+                            event.placeName,
+                            event.year,
+                            event.month
+                        )
+                    )
                 }
             }
         }
@@ -261,6 +264,7 @@ private fun calculateMonthCompletionStatusMap(
     }
 }
 
+@OptIn(ExperimentalTime::class)
 @Composable
 private fun SuccessStateView(
     modifier: Modifier = Modifier,
@@ -286,7 +290,7 @@ private fun SuccessStateView(
 
     LaunchedEffect(Unit) {
         if (selectedYear == Int.MIN_VALUE) { // Using a sentinel for first load
-            val defaultYear = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
+            val defaultYear = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
             selectedYear = place.components.initialYear?.toIntOrNull() ?: defaultYear
         }
     }

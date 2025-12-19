@@ -1,7 +1,8 @@
 package core
 
-import io.realm.kotlin.ext.realmListOf
-import org.mongodb.kbson.ObjectId
+import com.km.rewinds.db.Day as DayDb
+import com.km.rewinds.db.Hour as HourDb
+import com.km.rewinds.db.WeatherResponse as WeatherResponseDb
 
 // For mapping API data to DB model and vice versa
 class DataMapping {
@@ -12,110 +13,109 @@ class DataMapping {
         val resolvedAddress = response.resolvedAddress ?: response.address
         ?: throw IllegalArgumentException("Both resolvedAddress and address are null")
 
-        return WeatherResponseDb().apply {
-            queryCost = response.queryCost
-            latitude = response.latitude ?: Double.NaN
-            longitude = response.longitude ?: Double.NaN
-            this.resolvedAddress = resolvedAddress
-            address = response.address
-            timezone = response.timezone
-            days = response.days?.map { mapApiDayToDayDbType(it) }?.toRealmList() ?: realmListOf()
-        }
+        return WeatherResponseDb(
+            resolvedAddress = resolvedAddress,
+            queryCost = response.queryCost?.toLong(),
+            latitude = response.latitude ?: Double.NaN,
+            longitude = response.longitude ?: Double.NaN,
+            address = response.address,
+            timezone = response.timezone,
+            tzoffset = response.tzoffset
+        )
     }
     // mapper from db model to API response
 
-    fun toWeatherResponse(dbResponse: WeatherResponseDb): WeatherResponse {
+    fun toWeatherResponse(dbResponse: WeatherResponseDb, days: List<Day>): WeatherResponse {
         return WeatherResponse(
-            queryCost = dbResponse.queryCost,
+            queryCost = dbResponse.queryCost?.toInt(),
             latitude = if (dbResponse.latitude == Double.NaN) null else dbResponse.latitude,
             longitude = if (dbResponse.longitude == Double.NaN) null else dbResponse.longitude,
             resolvedAddress = dbResponse.resolvedAddress,
             address = dbResponse.address,
             timezone = dbResponse.timezone,
             tzoffset = dbResponse.tzoffset,
-            days = dbResponse.days.map { mapDayDbTypeToApiDay(it) },
+            days = days,
             stations= null // Not included in the API response
         )
     }
 
-    private fun mapApiDayToDayDbType(day: Day): DayDb {
-        return DayDb().apply {
-            // id = ObjectId() // Generate a unique ID if needed
-            datetime = day.datetime
-            datetimeEpoch = day.datetimeEpoch ?: 0
-            tempmax = day.tempmax ?: Double.NaN
-            tempmin = day.tempmin ?: Double.NaN
-            temp = day.temp ?: Double.NaN
-            feelslikemax = day.feelslikemax ?: Double.NaN
-            feelslikemin = day.feelslikemin ?: Double.NaN
-            feelslike = day.feelslike ?: Double.NaN
-            dew = day.dew ?: Double.NaN
-            humidity = day.humidity ?: Double.NaN
-            precip = day.precip ?: Double.NaN
-            precipprob = day.precipprob ?: Double.NaN
-            precipcover = day.precipcover ?: Double.NaN
-            preciptype = day.preciptype?.toRealmList() ?: realmListOf()
-            snow = day.snow ?: Double.NaN
-            snowdepth = day.snowdepth ?: Double.NaN
-            windgust = day.windgust ?: Double.NaN
-            windspeed = day.windspeed ?: Double.NaN
-            winddir = day.winddir ?: Double.NaN
-            pressure = day.pressure ?: Double.NaN
-            cloudcover = day.cloudcover ?: Double.NaN
-            visibility = day.visibility ?: Double.NaN
-            solarradiation = day.solarradiation ?: Double.NaN
-            solarenergy = day.solarenergy ?: Double.NaN
-            uvindex = day.uvindex ?: Double.NaN
-            sunrise = day.sunrise
-            sunriseEpoch = day.sunriseEpoch ?: 0
-            sunset = day.sunset
-            sunsetEpoch = day.sunsetEpoch ?: 0
-            moonphase = day.moonphase ?: Double.NaN
-            conditions = day.conditions
-            description = day.description
+    fun mapApiDayToDayDb(day: Day, weatherResponseResolvedAddress: String): DayDb {
+        return DayDb(
+            id = 0, // id is autoincremented
+            weatherResponseResolvedAddress = weatherResponseResolvedAddress,
+            datetime = day.datetime,
+            datetimeEpoch = day.datetimeEpoch ?: 0,
+            tempmax = day.tempmax,
+            tempmin = day.tempmin,
+            temp = day.temp,
+            feelslikemax = day.feelslikemax,
+            feelslikemin = day.feelslikemin,
+            feelslike = day.feelslike,
+            dew = day.dew,
+            humidity = day.humidity,
+            precip = day.precip,
+            precipprob = day.precipprob,
+            precipcover = day.precipcover,
+            preciptype = day.preciptype,
+            snow = day.snow,
+            snowdepth = day.snowdepth,
+            windgust = day.windgust,
+            windspeed = day.windspeed,
+            winddir = day.winddir,
+            pressure = day.pressure,
+            cloudcover = day.cloudcover,
+            visibility = day.visibility,
+            solarradiation = day.solarradiation,
+            solarenergy = day.solarenergy,
+            uvindex = day.uvindex,
+            sunrise = day.sunrise,
+            sunriseEpoch = day.sunriseEpoch,
+            sunset = day.sunset,
+            sunsetEpoch = day.sunsetEpoch,
+            moonphase = day.moonphase,
+            conditions = day.conditions,
+            description = day.description,
             icon = day.icon
-            // ... map other properties
-            hours = day.hours?.map { mapApiHourToHourDbType(it) }?.toRealmList() ?: realmListOf()
-        }
+        )
     }
 
-    private fun mapDayDbTypeToApiDay(dayDbType: DayDb): Day {
+    fun mapDayDbToApiDay(dayDb: DayDb, hours: List<Hour>): Day {
         // ... mapping logic for DayDbType to Day
         return Day(
-            datetime = dayDbType.datetime,
-            datetimeEpoch = dayDbType.datetimeEpoch,
-            tempmax = dayDbType.tempmax,
-            tempmin = dayDbType.tempmin,
-            temp = dayDbType.temp,
-            feelslikemax = dayDbType.feelslikemax,
-            feelslikemin = dayDbType.feelslikemin,
-            feelslike = dayDbType.feelslike,
-            dew = dayDbType.dew,
-            humidity = dayDbType.humidity,
-            precip = dayDbType.precip,
-            precipprob = dayDbType.precipprob,
-            precipcover = dayDbType.precipcover,
-            preciptype = dayDbType.preciptype?.toList(),
-            snow = dayDbType.snow,
-            snowdepth = dayDbType.snowdepth,
-            windgust = dayDbType.windgust,
-            windspeed = dayDbType.windspeed,
-            winddir = dayDbType.winddir,
-            pressure = dayDbType.pressure,
-            cloudcover = dayDbType.cloudcover,
-            visibility = dayDbType.visibility,
-            solarradiation = dayDbType.solarradiation,
-            solarenergy = dayDbType.solarenergy,
-            uvindex = dayDbType.uvindex,
-            sunrise = dayDbType.sunrise,
-            sunriseEpoch = dayDbType.sunriseEpoch,
-            sunset = dayDbType.sunset,
-            sunsetEpoch = dayDbType.sunsetEpoch,
-            moonphase = dayDbType.moonphase,
-            conditions = dayDbType.conditions,
-            description = dayDbType.description,
-            icon = dayDbType.icon,
-            hours = dayDbType.hours?.map { mapHourDbTypeToApiHour(it) },
+            datetime = dayDb.datetime,
+            datetimeEpoch = dayDb.datetimeEpoch,
+            tempmax = dayDb.tempmax,
+            tempmin = dayDb.tempmin,
+            temp = dayDb.temp,
+            feelslikemax = dayDb.feelslikemax,
+            feelslikemin = dayDb.feelslikemin,
+            feelslike = dayDb.feelslike,
+            dew = dayDb.dew,
+            humidity = dayDb.humidity,
+            precip = dayDb.precip,
+            precipprob = dayDb.precipprob,
+            precipcover = dayDb.precipcover,
+            preciptype = dayDb.preciptype,
+            snow = dayDb.snow,
+            snowdepth = dayDb.snowdepth,
+            windgust = dayDb.windgust,
+            windspeed = dayDb.windspeed,
+            winddir = dayDb.winddir,
+            pressure = dayDb.pressure,
+            cloudcover = dayDb.cloudcover,
+            visibility = dayDb.visibility,
+            solarradiation = dayDb.solarradiation,
+            solarenergy = dayDb.solarenergy,
+            uvindex = dayDb.uvindex,
+            sunrise = dayDb.sunrise,
+            sunriseEpoch = dayDb.sunriseEpoch,
+            sunset = dayDb.sunset,
+            sunsetEpoch = dayDb.sunsetEpoch,
+            moonphase = dayDb.moonphase,
+            conditions = dayDb.conditions,
+            description = dayDb.description,
+            icon = dayDb.icon,
+            hours = hours,
             // skipping stations for now
             stations = null,
             source = null,
@@ -123,74 +123,63 @@ class DataMapping {
         )
     }
 
-    private fun mapHourDbTypeToApiHour(hourDbType: HourDb): Hour {
+    fun mapHourDbToApiHour(hourDb: HourDb): Hour {
         return Hour(
-            datetime = hourDbType.datetime,
-            datetimeEpoch = hourDbType.datetimeEpoch,
-            temp = hourDbType.temp,
-            feelslike = hourDbType.feelslike,
-            humidity = hourDbType.humidity,
-            dew = hourDbType.dew,
-            precip = hourDbType.precip,
-            precipprob = hourDbType.precipprob,
-            snow = hourDbType.snow,
-            snowdepth = hourDbType.snowdepth,
-            preciptype = hourDbType.preciptype.toList(),
-            windgust = hourDbType.windgust,
-            windspeed = hourDbType.windspeed,
-            winddir = hourDbType.winddir,
-            pressure = hourDbType.pressure,
-            visibility = hourDbType.visibility,
-            cloudcover = hourDbType.cloudcover,
-            solarradiation = hourDbType.solarradiation,
-            solarenergy = hourDbType.solarenergy,
-            uvindex = hourDbType.uvindex,
-            conditions = hourDbType.conditions,
-            icon = hourDbType.icon,
-            source = hourDbType.source,
+            datetime = hourDb.datetime,
+            datetimeEpoch = hourDb.datetimeEpoch,
+            temp = hourDb.temp,
+            feelslike = hourDb.feelslike,
+            humidity = hourDb.humidity,
+            dew = hourDb.dew,
+            precip = hourDb.precip,
+            precipprob = hourDb.precipprob,
+            snow = hourDb.snow,
+            snowdepth = hourDb.snowdepth,
+            preciptype = hourDb.preciptype,
+            windgust = hourDb.windgust,
+            windspeed = hourDb.windspeed,
+            winddir = hourDb.winddir,
+            pressure = hourDb.pressure,
+            visibility = hourDb.visibility,
+            cloudcover = hourDb.cloudcover,
+            solarradiation = hourDb.solarradiation,
+            solarenergy = hourDb.solarenergy,
+            uvindex = hourDb.uvindex,
+            conditions = hourDb.conditions,
+            icon = hourDb.icon,
+            source = hourDb.source,
             stations = null
         )
     }
 
-    private fun mapApiHourToHourDbType(hour: Hour): HourDb {
-        return HourDb().apply {
-            // id = ObjectId()
-            datetime = hour.datetime
-            datetimeEpoch = hour.datetimeEpoch
-            temp = hour.temp ?: Double.NaN
-            feelslike = hour.feelslike ?: Double.NaN
-            humidity = hour.humidity ?: Double.NaN
-            dew = hour.dew ?: Double.NaN
-            precip = hour.precip ?: Double.NaN
-            precipprob = hour.precipprob ?: Double.NaN
-            snow = hour.snow ?: Double.NaN
-            snowdepth = hour.snowdepth ?: Double.NaN
-            windgust = hour.windgust ?: Double.NaN
-            windspeed = hour.windspeed ?: Double.NaN
-            winddir = hour.winddir ?: Double.NaN
-            pressure = hour.pressure ?: Double.NaN
-            visibility = hour.visibility ?: Double.NaN
-            cloudcover = hour.cloudcover ?: Double.NaN
-            solarradiation = hour.solarradiation ?: Double.NaN
-            solarenergy = hour.solarenergy ?: Double.NaN
-            uvindex = hour.uvindex ?: Double.NaN
-            conditions = hour.conditions
-            icon = hour.icon
-            source = hour.source
-            preciptype = hour.preciptype?.toRealmList() ?: realmListOf()
-            // skipping stations for now
-            // stations = hour.stations.values.map { mapApiStationToStationDbType(it) }.toRealmList()
-            stations = realmListOf()
-        }
-    }
-
-    private fun mapApiStationToStationDbType(station: Station): StationDb {
-        return StationDb().apply {
-            // id = station.id.toString()
-            name = station.name
-            distance = station.distance
-            latitude = station.latitude
-            // ... map other properties
-        }
+    fun mapApiHourToHourDb(hour: Hour, dayId: Long): HourDb {
+        return HourDb(
+            id = 0, // id is autoincremented
+            dayId = dayId,
+            datetime = hour.datetime,
+            datetimeEpoch = hour.datetimeEpoch,
+            temp = hour.temp,
+            feelslike = hour.feelslike,
+            humidity = hour.humidity,
+            dew = hour.dew,
+            precip = hour.precip,
+            precipprob = hour.precipprob,
+            snow = hour.snow,
+            snowdepth = hour.snowdepth,
+            preciptype = hour.preciptype,
+            windgust = hour.windgust,
+            windspeed = hour.windspeed,
+            winddir = hour.winddir,
+            pressure = hour.pressure,
+            visibility = hour.visibility,
+            cloudcover = hour.cloudcover,
+            solarradiation = hour.solarradiation,
+            solarenergy = hour.solarenergy,
+            uvindex = hour.uvindex,
+            conditions = hour.conditions,
+            icon = hour.icon,
+            source = hour.source,
+            stations = null // Keep it simple for now
+        )
     }
 }

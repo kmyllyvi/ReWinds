@@ -1,11 +1,12 @@
 package place
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
+import place.components.DaySummaryRow
 import kotlin.math.roundToInt
 
 // Helper function to format temperature consistently
@@ -43,6 +45,7 @@ fun MonthlyStatisticsView(
     vm: MonthlyStatisticsViewModel = koinViewModel()
 ) {
     val statistics by vm.statistics.collectAsState()
+    val dailySummaries by vm.dailySummaries.collectAsState()
 
     Scaffold(
         topBar = {
@@ -66,32 +69,45 @@ fun MonthlyStatisticsView(
             if (currentStats == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(modifier = Modifier.height(16.dp))
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item {
+                        Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    if (currentStats.numberOfDaysWithData > 0) {
-                        // Display Kiteable Days count prominently
-                        Text(
-                            text = "Kiteable Days: ${currentStats.kiteableDaysCount}",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        if (currentStats.numberOfDaysWithData > 0) {
+                            // Display Kiteable Days count prominently
+                            Text(
+                                text = "Kiteable Days: ${currentStats.kiteableDaysCount}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text("General Stats", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text("Days with data: ${currentStats.numberOfDaysWithData}")
+                            currentStats.averageMinTemp?.let { Text("Average Min Temp: ${formatTemperature(it)}") }
+                            currentStats.averageMaxTemp?.let { Text("Average Max Temp: ${formatTemperature(it)}") }
+                            currentStats.overallAverageTemp?.let { Text("Overall Average Temp: ${formatTemperature(it)}") }
+                            currentStats.absoluteMinTemp?.let { Text("Coldest Day: ${formatTemperature(it)} (on ${currentStats.coldestDate})") }
+                            currentStats.absoluteMaxTemp?.let { Text("Hottest Day: ${formatTemperature(it)} (on ${currentStats.hottestDate})") }
+                        } else {
+                            Text("No detailed weather data available for calculations in this month, or data is still loading.")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider()
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("General Stats", style = MaterialTheme.typography.titleMedium)
+                        Text("Daily Breakdown", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                        Text("Days with data: ${currentStats.numberOfDaysWithData}")
-                        currentStats.averageMinTemp?.let { Text("Average Min Temp: ${formatTemperature(it)}") }
-                        currentStats.averageMaxTemp?.let { Text("Average Max Temp: ${formatTemperature(it)}") }
-                        currentStats.overallAverageTemp?.let { Text("Overall Average Temp: ${formatTemperature(it)}") }
-                        currentStats.absoluteMinTemp?.let { Text("Coldest Day: ${formatTemperature(it)} (on ${currentStats.coldestDate})") }
-                        currentStats.absoluteMaxTemp?.let { Text("Hottest Day: ${formatTemperature(it)} (on ${currentStats.hottestDate})") }
-                    } else {
-                        Text("No detailed weather data available for calculations in this month, or data is still loading.")
+                    items(dailySummaries) { daySummary ->
+                        DaySummaryRow(daySummary)
                     }
                 }
             }

@@ -7,30 +7,18 @@ import core.Day
 import core.Hour // Import Hour
 import core.KiteSpotterConfig
 import core.Log
-import core.Navigator
 import core.WeatherRepository
 import core.WeatherResponse
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import kotlinx.datetime.minus
-
-data class DayWeatherSummary(
-    val date: String?,
-    val description: String?,
-    val maxTemp: Double?,
-    val minTemp: Double?,
-    val avgTemp: Double?,
-    val avgWindSpeed: Double?,
-    val maxWindSpeed: Double?,
-    val sustainedWindSpeed: Double? // Add new field
-)
 
 sealed interface WeatherSummaryUiState {
     object Loading : WeatherSummaryUiState
@@ -43,14 +31,24 @@ sealed interface WeatherSummaryUiState {
     data class Error(val message: String) : WeatherSummaryUiState
 }
 
+/**
+ * Sealed class representing navigation events.
+ */
 sealed class NavigationEvent {
+    /**
+     * Event to navigate to the monthly statistics screen.
+     *
+     * @property placeName The name of the place.
+     * @property year The year for the statistics.
+     * @property month The month for the statistics.
+     */
     data class ToMonthlySummary(val placeName: String, val year: Int, val month: Int) : NavigationEvent()
 }
 
 class PlaceSummaryViewModel(
     savedStateHandle: SavedStateHandle,
-    private val weatherRepository: WeatherRepository,
-    private val navigator: Navigator) : ViewModel()  {
+    private val weatherRepository: WeatherRepository
+) : ViewModel()  {
     private var weatherData: WeatherResponse? = null
     val placeName: String = savedStateHandle.get<String>("placeName")
         ?: throw IllegalArgumentException("placeNameArg not found in SavedStateHandle")
@@ -58,8 +56,11 @@ class PlaceSummaryViewModel(
     private val _uiState = MutableStateFlow<WeatherSummaryUiState>(WeatherSummaryUiState.Loading)
     val uiState: StateFlow<WeatherSummaryUiState> = _uiState.asStateFlow()
 
-    private val _navigationEvent = MutableSharedFlow<NavigationEvent>()
-    val navigationEvent = _navigationEvent.asSharedFlow()
+    private val _navigationEvent = Channel<NavigationEvent>()
+    /**
+     * A flow of navigation events.
+     */
+    val navigationEvent = _navigationEvent.receiveAsFlow()
 
     init {
         println("PlaceSummaryViewModel: $placeName")
@@ -175,7 +176,7 @@ class PlaceSummaryViewModel(
         Log.d("onShowMonth: $month/$year")
         if (year != null && month != null) {
             viewModelScope.launch {
-                _navigationEvent.emit(NavigationEvent.ToMonthlySummary(placeName, year, month))
+                _navigationEvent.send(NavigationEvent.ToMonthlySummary(placeName, year, month))
             }
         }
     }

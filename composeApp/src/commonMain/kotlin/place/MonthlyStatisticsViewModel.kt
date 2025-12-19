@@ -34,27 +34,35 @@ class MonthlyStatisticsViewModel(
 
     // Retrieve navigation arguments from SavedStateHandle
     // The keys "placeName", "year", "month" MUST match your navigation argument names
-    val placeName: String = savedStateHandle.get<String>("placeName")
-        ?: throw IllegalArgumentException("placeName argument not found in SavedStateHandle")
-    val year: Int = savedStateHandle.get<Int>("year")
-        ?: throw IllegalArgumentException("year argument not found in SavedStateHandle")
-    val month: Int = savedStateHandle.get<Int>("month")
-        ?: throw IllegalArgumentException("month argument not found in SavedStateHandle")
+    val placeName: String? = savedStateHandle.get<String>("placeName")
+    val year: Int? = savedStateHandle.get<Int>("year")
+    val month: Int? = savedStateHandle.get<Int>("month")
 
     private val _statistics = MutableStateFlow<CalculatedStats?>(null)
     val statistics: StateFlow<CalculatedStats?> = _statistics.asStateFlow()
 
+    private val _dailySummaries = MutableStateFlow<List<DayWeatherSummary>>(emptyList())
+    val dailySummaries: StateFlow<List<DayWeatherSummary>> = _dailySummaries.asStateFlow()
+
+
     init {
         // Log or print the retrieved arguments to verify
         Log.d("MonthlyStatisticsVM", "placeName: $placeName, year: $year, month: $month")
-        loadStatistics()
+        if (placeName != null && year != null && month != null) {
+            loadStatistics()
+        } else {
+            Log.d("MonthlyStatisticsVM", "Arguments not available in init. Likely a Koin check.")
+        }
     }
 
     private fun loadStatistics() {
         viewModelScope.launch {
+            if (placeName == null || year == null || month == null) return@launch
+
             // Now use the 'this.placeName', 'this.year', 'this.month' properties
             val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)
             val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, year, month)
+            _dailySummaries.value = relevantDaysSummary
 
             if (relevantDaysSummary.isNotEmpty()) {
                 _statistics.value = calculateStatsInternal(relevantDaysSummary)
@@ -63,18 +71,6 @@ class MonthlyStatisticsViewModel(
             }
         }
     }
-    // New data class to represent the UI model for a day's weather summary
-    // This is useful to decouple the UI from the raw data model (Day)
-    data class DayWeatherSummary(
-        val date: String?,
-        val description: String?,
-        val maxTemp: Double?,
-        val minTemp: Double?,
-        val avgTemp: Double?,
-        val avgWindSpeed: Double?,
-        val maxWindSpeed: Double?, // gust
-        val sustainedWindSpeed: Double? // 3h avg
-    )
 
     private fun Day.toDayWeatherSummary(): DayWeatherSummary {
         return DayWeatherSummary(

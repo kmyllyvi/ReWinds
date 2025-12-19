@@ -1,0 +1,114 @@
+CREATE TABLE WeatherResponse (
+    resolvedAddress TEXT NOT NULL PRIMARY KEY,
+    queryCost INTEGER,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    address TEXT,
+    timezone TEXT,
+    tzoffset REAL
+);
+
+CREATE TABLE Day (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    weatherResponseResolvedAddress TEXT NOT NULL,
+    datetime TEXT NOT NULL,
+    datetimeEpoch INTEGER NOT NULL,
+    tempmax REAL,
+    tempmin REAL,
+    temp REAL,
+    feelslikemax REAL,
+    feelslikemin REAL,
+    feelslike REAL,
+    dew REAL,
+    humidity REAL,
+    precip REAL,
+    precipprob REAL,
+    precipcover REAL,
+    preciptype TEXT AS kotlin.collections.List<kotlin.String>,
+    snow REAL,
+    snowdepth REAL,
+    windgust REAL,
+    windspeed REAL,
+    winddir REAL,
+    pressure REAL,
+    cloudcover REAL,
+    visibility REAL,
+    solarradiation REAL,
+    solarenergy REAL,
+    uvindex REAL,
+    sunrise TEXT,
+    sunriseEpoch INTEGER,
+    sunset TEXT,
+    sunsetEpoch INTEGER,
+    moonphase REAL,
+    conditions TEXT,
+    description TEXT,
+    icon TEXT,
+    FOREIGN KEY(weatherResponseResolvedAddress) REFERENCES WeatherResponse(resolvedAddress) ON DELETE CASCADE
+);
+
+CREATE TABLE Hour (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    dayId INTEGER NOT NULL,
+    datetime TEXT NOT NULL,
+    datetimeEpoch INTEGER,
+    temp REAL,
+    feelslike REAL,
+    humidity REAL,
+    dew REAL,
+    precip REAL,
+    precipprob REAL,
+    snow REAL,
+    snowdepth REAL,
+    preciptype TEXT AS kotlin.collections.List<kotlin.String>,
+    windgust REAL,
+    windspeed REAL,
+    winddir REAL,
+    pressure REAL,
+    visibility REAL,
+    cloudcover REAL,
+    solarradiation REAL,
+    solarenergy REAL,
+    uvindex REAL,
+    conditions TEXT,
+    icon TEXT,
+    source TEXT,
+    stations TEXT, -- Storing as TEXT for now
+    FOREIGN KEY(dayId) REFERENCES Day(id) ON DELETE CASCADE
+);
+
+-- WeatherResponse Queries
+insertWeatherResponse:
+INSERT OR REPLACE INTO WeatherResponse(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+getWeatherResponseByResolvedAddress:
+SELECT * FROM WeatherResponse WHERE resolvedAddress = ?;
+
+getAllWeatherResponseResolvedAddresses:
+SELECT resolvedAddress FROM WeatherResponse;
+
+selectAllWeatherResponses:
+SELECT * FROM WeatherResponse;
+
+deleteWeatherResponseByResolvedAddress:
+DELETE FROM WeatherResponse WHERE resolvedAddress = ?;
+
+-- Day Queries
+insertDay:
+INSERT INTO Day(weatherResponseResolvedAddress, datetime, datetimeEpoch, tempmax, tempmin, temp, feelslikemax, feelslikemin, feelslike, dew, humidity, precip, precipprob, precipcover, preciptype, snow, snowdepth, windgust, windspeed, winddir, pressure, cloudcover, visibility, solarradiation, solarenergy, uvindex, sunrise, sunriseEpoch, sunset, sunsetEpoch, moonphase, conditions, description, icon)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getDaysForWeatherResponse:
+SELECT * FROM Day WHERE weatherResponseResolvedAddress = ?;
+
+lastInsertRowId:
+SELECT last_insert_rowid();
+
+-- Hour Queries
+insertHour:
+INSERT INTO Hour(dayId, datetime, datetimeEpoch, temp, feelslike, humidity, dew, precip, precipprob, snow, snowdepth, preciptype, windgust, windspeed, winddir, pressure, visibility, cloudcover, solarradiation, solarenergy, uvindex, conditions, icon, source, stations)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getHoursForDay:
+SELECT * FROM Hour WHERE dayId = ?;

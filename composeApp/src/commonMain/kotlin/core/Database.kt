@@ -1,117 +1,210 @@
 package core
 
-import io.realm.kotlin.MutableRealm
-import io.realm.kotlin.Realm
-import io.realm.kotlin.RealmConfiguration
-import io.realm.kotlin.ext.query
-// kotlinx.coroutines.CoroutineScope removed
+import app.cash.sqldelight.db.SqlDriver
+import com.km.rewinds.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO // Keep for Dispatchers.IO
-// kotlinx.coroutines.launch removed
-import io.realm.kotlin.ext.realmListOf
-import io.realm.kotlin.types.RealmList
-import kotlinx.coroutines.withContext // Added import
-import kotlin.collections.addAll
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
+
+/**
+ * A factory for creating a platform-specific SQLDriver.
+ */
+expect class DatabaseDriverFactory {
+    fun createDriver(): SqlDriver
+}
+
+/**
+ * Creates a new AppDatabase instance.
+ */
+fun createDatabase(driverFactory: DatabaseDriverFactory): AppDatabase {
+    val driver = driverFactory.createDriver()
+    return AppDatabase(
+        driver = driver,
+        DayAdapter = com.km.rewinds.db.Day.Adapter(
+            preciptypeAdapter = listOfStringAdapter
+        ),
+        HourAdapter = com.km.rewinds.db.Hour.Adapter(
+            preciptypeAdapter = listOfStringAdapter
+        )
+    )
+}
 
 interface Database {
     // get all saved places
     suspend fun getAllSavedPlaces(): List<String>
+
     // get full data for a specific place
     suspend fun getSavedPlaceFull(place: String): WeatherResponse?
+
     // save new data
-    suspend fun saveWeatherResponse(weatherResponse: WeatherResponse) // MODIFIED: now suspend
+    suspend fun saveWeatherResponse(weatherResponse: WeatherResponse)
+
     // get data for a specific place and date
-    fun getWeatherDataFor(placeName: String, date: String): WeatherResponseDb?
+    suspend fun getWeatherDataFor(placeName: String, date: String): WeatherResponse?
+
     // delete a place
     suspend fun deletePlace(placeName: String)
 }
 
-class RealmDatabase : Database {
+class SqlDelightDatabase(
+    private val database: AppDatabase
+) : Database {
 
-    val dataMapping = DataMapping()
-
-    private val realm: Realm by lazy {
-        // define complete schema here
-        val configuration = RealmConfiguration.Builder(schema = setOf(WeatherResponseDb::class, DayDb::class, HourDb::class, StationDb::class))
-            .schemaVersion(1) // Set the initial schema version
-            // WARN! REMOVE WHEN PROD AND MIGRATE DB
-            .deleteRealmIfMigrationNeeded() // Delete the Realm if a migration is needed
-            .build()// RealmConfiguration.create(schema = setOf(WeatherResponseDb::class, DayDb::class, HourDb::class, StationDb::class))
-        Realm.open(configuration)
-    }
+    private val dataMapping = DataMapping()
+    private val dbQuery = database.appDatabaseQueries
 
     override suspend fun getAllSavedPlaces(): List<String> {
-            return realm.query<WeatherResponseDb>()
-                .distinct("resolvedAddress")
-                .find()
-                .asSequence()
-                .map { it.resolvedAddress }
-                .toList()
-    }
-
-    override suspend fun getSavedPlaceFull(place: String): WeatherResponse? {
-        return getExistingPlace(place)?.let { dataMapping.toWeatherResponse(it) }
-    }
-
-    override suspend fun saveWeatherResponse(weatherResponse: WeatherResponse) { // MODIFIED: now suspend
-        val weatherResponseDb = dataMapping.fromWeatherResponse(weatherResponse)
-        // MODIFIED: Use withContext to ensure the block completes before the function returns
-        withContext(Dispatchers.IO) { // Switch to IO dispatcher for database operations
-            realm.write { // realm.write is often a suspend function or should be treated as blocking
-                // this : MutableRealm
-                val existingPlace = getExistingPlace(weatherResponse.resolvedAddress, this)
-                if (existingPlace != null) {
-                    Log.d("WeatherRepository - Updating existing place: ${existingPlace.resolvedAddress} - first new day: ${weatherResponseDb.days.firstOrNull()?.datetime}")
-                    // Update existing place with new days, prevent adding an existing date
-                    val existingDateTimes = existingPlace.days.map { it.datetime }.toSet() // Use a Set for faster lookups
-                    val newDaysToAdd = weatherResponseDb.days.filter { it.datetime !in existingDateTimes }
-                    
-                    if (newDaysToAdd.isNotEmpty()) {
-                        Log.d("old days count for ${existingPlace.resolvedAddress}: ${existingPlace.days.count()}")
-                        existingPlace.days.addAll(newDaysToAdd)
-                        Log.d("new days count for ${existingPlace.resolvedAddress}: ${existingPlace.days.count()}")
-                    } else {
-                        Log.d("No new days to add for ${existingPlace.resolvedAddress}")
-                    }
-                } else {
-                    Log.d("WeatherRepository - Copying new place: ${weatherResponseDb.resolvedAddress}")
-                    copyToRealm(weatherResponseDb)
-                }
-            }
-            Log.d("WeatherRepository - Saved weather response for: ${weatherResponseDb.resolvedAddress}")
+        return withContext(Dispatchers.IO) {
+            dbQuery.getAllWeatherResponseResolvedAddresses().executeAsList()
         }
     }
 
-    override fun getWeatherDataFor(placeName: String, date: String): WeatherResponseDb? {
-            return realm.query<WeatherResponseDb>("address == $0", placeName)
-                .first()
-                .find()
-                ?.let { weatherResponseDb ->
-                    if (weatherResponseDb.days.any { it.datetime == date }) {
-                        weatherResponseDb
-                    } else {
-                        null
+    override suspend fun getSavedPlaceFull(place: String): WeatherResponse? {
+        return withContext(Dispatchers.IO) {
+            val dbResponse = dbQuery.getWeatherResponseByResolvedAddress(place).executeAsOneOrNull()
+                ?: return@withContext null
+
+            val dbDays = dbQuery.getDaysForWeatherResponse(place).executeAsList()
+
+            val days = dbDays.map { dbDay ->
+                val dbHours = dbQuery.getHoursForDay(dbDay.id).executeAsList()
+                val hours = dbHours.map { dataMapping.mapHourDbToApiHour(it) }
+                dataMapping.mapDayDbToApiDay(dbDay, hours)
+            }
+
+            dataMapping.toWeatherResponse(dbResponse, days)
+        }
+    }
+
+    override suspend fun saveWeatherResponse(weatherResponse: WeatherResponse) {
+        withContext(Dispatchers.IO) {
+            dbQuery.transaction {
+                val dbResponse = dataMapping.fromWeatherResponse(weatherResponse)
+                val existing = dbQuery.getWeatherResponseByResolvedAddress(dbResponse.resolvedAddress).executeAsOneOrNull()
+
+                if (existing == null) {
+                    // New place, insert everything
+                    dbQuery.insertWeatherResponse(
+                        resolvedAddress = dbResponse.resolvedAddress,
+                        queryCost = dbResponse.queryCost,
+                        latitude = dbResponse.latitude,
+                        longitude = dbResponse.longitude,
+                        address = dbResponse.address,
+                        timezone = dbResponse.timezone,
+                        tzoffset = dbResponse.tzoffset
+                    )
+
+                    weatherResponse.days?.forEach { day ->
+                        insertDayAndHours(day, dbResponse.resolvedAddress)
+                    }
+                } else {
+                    // Existing place, only add new days
+                    val existingDays = dbQuery.getDaysForWeatherResponse(dbResponse.resolvedAddress).executeAsList()
+                    val existingDateTimes = existingDays.map { it.datetime }.toSet()
+                    val newDays = weatherResponse.days?.filter { it.datetime !in existingDateTimes } ?: emptyList()
+
+                    newDays.forEach { day ->
+                        insertDayAndHours(day, dbResponse.resolvedAddress)
                     }
                 }
+            }
+        }
+    }
+
+    private fun insertDayAndHours(day: Day, resolvedAddress: String) {
+        val dayDb = dataMapping.mapApiDayToDayDb(day, resolvedAddress)
+        dbQuery.insertDay(
+            weatherResponseResolvedAddress = dayDb.weatherResponseResolvedAddress,
+            datetime = dayDb.datetime,
+            datetimeEpoch = dayDb.datetimeEpoch,
+            tempmax = dayDb.tempmax,
+            tempmin = dayDb.tempmin,
+            temp = dayDb.temp,
+            feelslikemax = dayDb.feelslikemax,
+            feelslikemin = dayDb.feelslikemin,
+            feelslike = dayDb.feelslike,
+            dew = dayDb.dew,
+            humidity = dayDb.humidity,
+            precip = dayDb.precip,
+            precipprob = dayDb.precipprob,
+            precipcover = dayDb.precipcover,
+            preciptype = dayDb.preciptype,
+            snow = dayDb.snow,
+            snowdepth = dayDb.snowdepth,
+            windgust = dayDb.windgust,
+            windspeed = dayDb.windspeed,
+            winddir = dayDb.winddir,
+            pressure = dayDb.pressure,
+            cloudcover = dayDb.cloudcover,
+            visibility = dayDb.visibility,
+            solarradiation = dayDb.solarradiation,
+            solarenergy = dayDb.solarenergy,
+            uvindex = dayDb.uvindex,
+            sunrise = dayDb.sunrise,
+            sunriseEpoch = dayDb.sunriseEpoch,
+            sunset = dayDb.sunset,
+            sunsetEpoch = dayDb.sunsetEpoch,
+            moonphase = dayDb.moonphase,
+            conditions = dayDb.conditions,
+            description = dayDb.description,
+            icon = dayDb.icon
+        )
+
+        val dayId = dbQuery.lastInsertRowId().executeAsOne()
+        day.hours?.forEach { hour ->
+            val hourDb = dataMapping.mapApiHourToHourDb(hour, dayId)
+            dbQuery.insertHour(
+                dayId = hourDb.dayId,
+                datetime = hourDb.datetime,
+                datetimeEpoch = hourDb.datetimeEpoch,
+                temp = hourDb.temp,
+                feelslike = hourDb.feelslike,
+                humidity = hourDb.humidity,
+                dew = hourDb.dew,
+                precip = hourDb.precip,
+                precipprob = hourDb.precipprob,
+                snow = hourDb.snow,
+                snowdepth = hourDb.snowdepth,
+                preciptype = hourDb.preciptype,
+                windgust = hourDb.windgust,
+                windspeed = hourDb.windspeed,
+                winddir = hourDb.winddir,
+                pressure = hourDb.pressure,
+                visibility = hourDb.visibility,
+                cloudcover = hourDb.cloudcover,
+                solarradiation = hourDb.solarradiation,
+                solarenergy = hourDb.solarenergy,
+                uvindex = hourDb.uvindex,
+                conditions = hourDb.conditions,
+                icon = hourDb.icon,
+                source = hourDb.source,
+                stations = hourDb.stations
+            )
+        }
+    }
+
+
+    override suspend fun getWeatherDataFor(placeName: String, date: String): WeatherResponse? {
+        return withContext(Dispatchers.IO) {
+            val dbResponse = dbQuery.getWeatherResponseByResolvedAddress(placeName).executeAsOneOrNull() ?: return@withContext null
+            val dbDays = dbQuery.getDaysForWeatherResponse(placeName).executeAsList().filter { it.datetime == date }
+
+            if (dbDays.isEmpty()) {
+                return@withContext null
+            }
+
+            val days = dbDays.map { dbDay ->
+                val dbHours = dbQuery.getHoursForDay(dbDay.id).executeAsList()
+                val hours = dbHours.map { dataMapping.mapHourDbToApiHour(it) }
+                dataMapping.mapDayDbToApiDay(dbDay, hours)
+            }
+            dataMapping.toWeatherResponse(dbResponse, days)
+        }
     }
 
     override suspend fun deletePlace(placeName: String) {
         withContext(Dispatchers.IO) {
-            realm.write {
-                val placeToDelete = query<WeatherResponseDb>("resolvedAddress == $0", placeName).first().find()
-                placeToDelete?.also { findLatest(it)?.also { delete(it) } }
-            }
+            dbQuery.deleteWeatherResponseByResolvedAddress(placeName)
         }
     }
-
-    // Helper function to get existing place. MutableRealm is needed when updating existing place.
-    private fun getExistingPlace(resolvedAddress: String, mutableRealm: MutableRealm? = null): WeatherResponseDb? {
-        val realm = mutableRealm ?: this.realm
-        return realm.query<WeatherResponseDb>("resolvedAddress == $0", resolvedAddress).first().find()
-    }
-}
-
-// Extension function to convert a List to RealmList
-fun <T> List<T>.toRealmList(): RealmList<T> {
-    return realmListOf<T>().also { it.addAll(this) }
 }

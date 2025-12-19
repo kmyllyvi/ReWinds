@@ -1,5 +1,6 @@
 package core
 
+import com.km.rewinds.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
@@ -15,6 +16,7 @@ import kotlinx.serialization.SerialName
 data class GeoSearchResponse(
     val results: List<GeoSearchResult>? = null
 )
+
 @Serializable
 data class GeoSearchResult(
     val id: Int,
@@ -37,18 +39,17 @@ interface WeatherRepository {
     suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse
 }
 
-
-// To fetch weather data either from network or cache
-// API usage https://www.visualcrossing.com/usage/
-// => 1000 credits free/day
-class WeatherRepositoryImpl(private val networkService: Networking,
-                            private val database: Database) : WeatherRepository {
-    val visualcrossingUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
-    val apiKey = "***REMOVED***"
-    val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours"
+class WeatherRepositoryImpl(
+    private val networkService: Networking,
+    private val database: Database,
+    private val enableNetworkLogs: Boolean = false
+) :  WeatherRepository {
+    private val visualcrossingUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
+    private val apiKey = "***REMOVED***"
+    private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours"
 
     init {
-        Log.d("init WeatherRepositoryImpl")
+        Log.d("init WeatherRepository")
     }
 
     override suspend fun getSavedPlaceNames(): List<String> {
@@ -62,14 +63,6 @@ class WeatherRepositoryImpl(private val networkService: Networking,
             database.getSavedPlaceFull(resolvedPlace)
         }
     }
-
-    // https://www.visualcrossing.com/resources/documentation/weather-api/timeline-weather-api/
-    // date format "yyyy-mm-dd"
-    // example https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/konstanz/2023-06-20?unitGroup=metric&key=***REMOVED***&contentType=json
-
-// ... other imports
-
-// Inside WeatherRepositoryImpl class
 
     private fun generateDateList(startDateStr: String, endDateStr: String): List<String> {
         val dates = mutableListOf<String>()
@@ -208,8 +201,6 @@ class WeatherRepositoryImpl(private val networkService: Networking,
         return correctedResponse
     }
 
-
-    // .../services/timeline/[location]/[date1]/[date2]?key=YOUR_API_KEY
     private suspend fun fetchWeatherFromNetwork(place: String, fromDate: String, toDate: String?): WeatherResponse {
         var requestUrl = "$visualcrossingUrl$place/$fromDate"
         if(toDate != null) {
@@ -219,9 +210,6 @@ class WeatherRepositoryImpl(private val networkService: Networking,
         return doRequest(requestUrl)
     }
 
-    // TODO add dynamic day search
-// => https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/London,UK/last30days?key=YOUR_API_KEY
-    // https://www.visualcrossing.com/resources/documentation/weather-api/using-the-time-period-parameter-to-specify-dynamic-dates-for-weather-api-requests/
     private suspend fun fetchWeatherFromNetwork(place: String, previousDaysCount: Int): WeatherResponse {
         val dynamicRangeString = "last${previousDaysCount}days"
         val requestUrl = "$visualcrossingUrl$place/$dynamicRangeString$apiQuery"

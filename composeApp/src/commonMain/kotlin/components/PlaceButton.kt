@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,13 +51,13 @@ fun PlaceButton(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            IconButton(onClick = { onDelete(text) }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete place",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
+//            IconButton(onClick = { onDelete(text) }) {
+//                Icon(
+//                    imageVector = Icons.Filled.Delete,
+//                    contentDescription = "Delete place",
+//                    tint = MaterialTheme.colorScheme.error
+//                )
+//            }
         }
     }
 }
