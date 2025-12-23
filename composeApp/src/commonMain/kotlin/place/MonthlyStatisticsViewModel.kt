@@ -24,7 +24,8 @@ data class CalculatedStats(
     val coldestDate: String? = null,
     val absoluteMaxTemp: Double? = null,
     val hottestDate: String? = null,
-    val kiteableDaysCount: Int = 0 // New field for kiteable days
+    val kiteableDaysCount: Int = 0, // New field for kiteable days
+    val totalSolarEnergy: Double? = null
 )
 
 class MonthlyStatisticsViewModel(
@@ -81,7 +82,8 @@ class MonthlyStatisticsViewModel(
             avgTemp = this.temp,
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust, // map from windgust
-            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours)
+            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
+            solarenergy = this.solarenergy
         )
     }
 
@@ -148,6 +150,8 @@ class MonthlyStatisticsViewModel(
         val minTemps = validDays.mapNotNull { it.minTemp }
         val maxTemps = validDays.mapNotNull { it.maxTemp }
         val avgTemps = validDays.mapNotNull { it.avgTemp }
+        val totalSolarEnergy = validDays.mapNotNull { it.solarenergy }.sum()
+
 
         var absMinTemp: Double? = null
         var coldestDate: String? = null
@@ -180,7 +184,8 @@ class MonthlyStatisticsViewModel(
             coldestDate = coldestDate,
             absoluteMaxTemp = absMaxTemp,
             hottestDate = hottestDate,
-            kiteableDaysCount = kiteableDaysCount // Set the new count
+            kiteableDaysCount = kiteableDaysCount, // Set the new count
+            totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
         )
     }
 }

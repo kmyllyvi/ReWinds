@@ -136,7 +136,8 @@ class PlaceSummaryViewModel(
             avgTemp = this.temp,
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust,
-            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours) // Call the new function
+            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
+            solarenergy = this.solarenergy
         )
     }
 

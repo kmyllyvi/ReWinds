@@ -8,5 +8,6 @@ data class DayWeatherSummary(
     val avgTemp: Double?,
     val avgWindSpeed: Double?,
     val maxWindSpeed: Double?, // gust
-    val sustainedWindSpeed: Double? // 3h avg
+    val sustainedWindSpeed: Double?, // 3h avg
+    val solarenergy: Double?
 )

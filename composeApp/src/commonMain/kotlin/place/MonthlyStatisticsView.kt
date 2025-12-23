@@ -94,6 +94,7 @@ fun MonthlyStatisticsView(
                             currentStats.overallAverageTemp?.let { Text("Overall Average Temp: ${formatTemperature(it)}") }
                             currentStats.absoluteMinTemp?.let { Text("Coldest Day: ${formatTemperature(it)} (on ${currentStats.coldestDate})") }
                             currentStats.absoluteMaxTemp?.let { Text("Hottest Day: ${formatTemperature(it)} (on ${currentStats.hottestDate})") }
+                            currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²") }
                         } else {
                             Text("No detailed weather data available for calculations in this month, or data is still loading.")
                         }
