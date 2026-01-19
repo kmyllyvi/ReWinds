@@ -74,6 +74,7 @@ class MonthlyStatisticsViewModel(
     }
 
     private fun Day.toDayWeatherSummary(): DayWeatherSummary {
+        val foggyHours = this.hours?.count { (it.visibility ?: 24.0) < 1.0 } ?: 0
         return DayWeatherSummary(
             date = this.datetime,
             description = this.description ?: this.conditions,
@@ -83,7 +84,9 @@ class MonthlyStatisticsViewModel(
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust, // map from windgust
             sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
-            solarenergy = this.solarenergy
+            solarenergy = this.solarenergy,
+            isFoggy = foggyHours > 0,
+            foggyHours = foggyHours
         )
     }
 

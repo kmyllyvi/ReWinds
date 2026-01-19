@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -62,7 +64,7 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                 Text(text = "${daySummary.avgWindSpeed} km/h", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                         contentDescription = if (expanded) "Collapse" else "Expand"
                     )
                 }
@@ -77,6 +79,24 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(text = "Solar Energy: $it", style = MaterialTheme.typography.bodySmall)
                     }
+                    // --- START: Added Fog/Low Visibility Info ---
+                    if (daySummary.isFoggy) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.VisibilityOff,
+                                contentDescription = "Low Visibility",
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Low visibility for ${daySummary.foggyHours} hour(s)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                    // --- END: Added Fog/Low Visibility Info ---
                 }
             }
         }

@@ -128,6 +128,7 @@ class PlaceSummaryViewModel(
 
     private fun Day.toDayWeatherSummary(): DayWeatherSummary {
         Log.d("mapping day ${this.datetime}, wind: ${this.windspeed}")
+        val foggyHours = this.hours?.count { (it.visibility ?: 24.0) < 1.0 } ?: 0
         return DayWeatherSummary(
             date = this.datetime,
             description = this.description ?: this.conditions,
@@ -137,7 +138,9 @@ class PlaceSummaryViewModel(
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust,
             sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
-            solarenergy = this.solarenergy
+            solarenergy = this.solarenergy,
+            isFoggy = foggyHours > 0,
+            foggyHours = foggyHours
         )
     }
 
