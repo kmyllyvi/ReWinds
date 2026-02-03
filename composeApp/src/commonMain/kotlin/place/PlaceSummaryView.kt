@@ -42,6 +42,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import place.components.MonthSelector
+import place.components.MonthSelectorWithTemperature
 import place.components.YearDropdownSelector
 import kotlin.time.ExperimentalTime
 
@@ -175,8 +176,9 @@ private fun PlaceDetailsContent(
     onYearSelected: (Int?) -> Unit,
     selectedMonth: Int?,
     onMonthSelected: (Int?) -> Unit,
-    monthCompletionStatusMap: Map<Int, Boolean>,
-    onPromptForMissingDays: (Int, Int) -> Unit,
+    monthCompletionStatusMap: Map<Int, Int>, // Map of month to missing days count
+    monthAverageTemps: Map<Int, Double?>, // Map of month to average temperature
+    onPromptForMissingDays: (Int, Int, Int) -> Unit, // (year, month, missingDaysCount)
     viewModel: PlaceSummaryViewModel
 ) {
     Column(
@@ -199,10 +201,11 @@ private fun PlaceDetailsContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        MonthSelector(
+        MonthSelectorWithTemperature(
             selectedMonth = selectedMonth,
             onMonthSelected = onMonthSelected,
             monthCompletionStatus = monthCompletionStatusMap,
+            monthAverageTemps = monthAverageTemps,
             currentSelectedYear = selectedYear,
             onPromptForMissingDays = onPromptForMissingDays,
             modifier = Modifier.fillMaxWidth(),
@@ -264,6 +267,15 @@ private fun calculateMonthCompletionStatusMap(
     }
 }
 
+// Helper function to calculate missing days count from MonthCompletionInfo map
+private fun calculateMissingDaysMap(
+    detailedMap: Map<Int, MonthCompletionInfo>
+): Map<Int, Int> {
+    return detailedMap.mapValues { (_, info) ->
+        maxOf(0, info.totalDaysInMonth - info.presentDaysCount)
+    }
+}
+
 @OptIn(ExperimentalTime::class)
 @Composable
 private fun SuccessStateView(
@@ -284,9 +296,13 @@ private fun SuccessStateView(
         calculateMonthCompletionStatusMap(selectedYear, successState.storedDays)
     }
 
-    val fullyLoadedStatus = remember(detailedMonthCompletionStatusMap) {
-        detailedMonthCompletionStatusMap.mapValues { entry -> entry.value.isFullyLoaded }
+    // Calculate missing days count for each month (0 = fully loaded, > 0 = missing days)
+    val missingDaysMap = remember(detailedMonthCompletionStatusMap) {
+        calculateMissingDaysMap(detailedMonthCompletionStatusMap)
     }
+
+    // Get average temperature for each month from ViewModel
+    val monthlyAverageTemps by viewModel.monthlyAverageTemps.collectAsState()
 
     LaunchedEffect(Unit) {
         if (selectedYear == Int.MIN_VALUE) { // Using a sentinel for first load
@@ -306,13 +322,18 @@ private fun SuccessStateView(
         onYearSelected = { year -> selectedYear = year },
         selectedMonth = selectedMonth,
         onMonthSelected = { month -> selectedMonth = month },
-        monthCompletionStatusMap = fullyLoadedStatus,
-        onPromptForMissingDays = { yearArg, monthArg ->
+        monthCompletionStatusMap = missingDaysMap,
+        monthAverageTemps = monthlyAverageTemps,
+        onPromptForMissingDays = { yearArg, monthArg, missingDaysArg ->
             yearToDownloadForDialog = yearArg
             monthToDownloadForDialog = monthArg
             val monthNames = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
             val monthName = monthNames.getOrElse(monthArg - 1) { "Month $monthArg" }
-            missingDaysTextForDialog = "$monthName $yearArg is not yet downloaded. Download now?"
+            missingDaysTextForDialog = if (missingDaysArg > 0) {
+                "$monthName $yearArg is missing $missingDaysArg day${if (missingDaysArg > 1) "s" else ""}. Download missing data?"
+            } else {
+                "$monthName $yearArg is not yet downloaded. Download now?"
+            }
             showMissingDaysDialog = true
         },
         viewModel = viewModel

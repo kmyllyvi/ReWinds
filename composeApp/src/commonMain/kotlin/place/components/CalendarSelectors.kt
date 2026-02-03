@@ -1,11 +1,14 @@
 package place.components
 
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -25,6 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import components.monthFullyLoadedColor
+import components.monthNotLoadedColor
+import components.monthPartiallyLoadedColor
 
 
 // Basic helper, replace with kotlinx-datetime for accuracy
@@ -99,9 +105,9 @@ internal fun YearDropdownSelector(
 internal fun MonthSelector(
     selectedMonth: Int?, // null means "All Months"
     onMonthSelected: (Int?) -> Unit, // Allow selecting "All Months" by passing null
-    monthCompletionStatus: Map<Int, Boolean>, // Map of month (1-12) to isFullyLoaded (true/false)
+    monthCompletionStatus: Map<Int, Int>, // Map of month (1-12) to missingDaysCount (0 = fully loaded, > 0 = missing days)
     currentSelectedYear: Int?, // To know which year to check for completeness for prompting
-    onPromptForMissingDays: (Int, Int) -> Unit,
+    onPromptForMissingDays: (Int, Int, Int) -> Unit, // (year, month, missingDaysCount)
     onDownloadedMonthSelected: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -121,25 +127,33 @@ internal fun MonthSelector(
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 monthRow.forEach { month ->
-                    val isFullyLoaded =
-                        monthCompletionStatus[month] ?: false // Default to false if not in map
+                    val missingDaysCount =
+                        monthCompletionStatus[month] ?: 0 // Default to 0 (fully loaded) if not in map
+                    val isFullyLoaded = missingDaysCount == 0
+
+                    // Calculate if month is partially loaded (some data exists but not all)
+                    val totalDaysInMonth = getApproxDaysInMonth(month, currentSelectedYear ?: 2025)
+                    val loadedDays = totalDaysInMonth - missingDaysCount
+                    val isPartiallyLoaded = loadedDays > 0 && missingDaysCount > 0
 
                     val monthItemOnClick = {
                         onMonthSelected(month) // Select the month visually first
                         if (currentSelectedYear != null) {
-                            // If this month ise NOT (fully) downloaded => prompt to download
+                            // If this month has any missing days => prompt to download
                             if (isFullyLoaded) {
-                                // Already downloaded month selected
+                                // Already fully downloaded month selected
                                 onDownloadedMonthSelected(currentSelectedYear, month)
                             } else {
-                                onPromptForMissingDays(currentSelectedYear, month)
+                                // Month is partially or not yet downloaded
+                                onPromptForMissingDays(currentSelectedYear, month, missingDaysCount)
                             }
                         }
                     }
                     MonthItem(
                         month = month,
                         isSelected = month == selectedMonth,
-                        hasData = isFullyLoaded, // Pass the fully loaded status
+                        hasData = isFullyLoaded, // Pass fully loaded status (true only if 0 missing days)
+                        isPartiallyLoaded = isPartiallyLoaded, // Show partial state only if some data is loaded
                         onClick = monthItemOnClick
                     )
                 }
@@ -213,6 +227,7 @@ internal fun MonthItem(
     isSelected: Boolean,
     hasData: Boolean, // This now means "isFullyLoaded"
     onClick: () -> Unit,
+    isPartiallyLoaded: Boolean = false, // New parameter for partial loading
     modifier: Modifier = Modifier
 ) {
     val monthNames = remember {
@@ -222,15 +237,14 @@ internal fun MonthItem(
 
     // Updated color logic:
     // Selected takes precedence.
-    // If not selected, Green if hasData (fully loaded), Red if not.
+    // If not selected: Dark green if fully loaded, Yellow if partially loaded, Gray if not loaded.
     val containerColor = when {
         isSelected -> MaterialTheme.colorScheme.primary
-        hasData -> Color.Green // Explicit Green (Material Green 500)
-        else -> Color.Gray  // Explicit Red (Material Red 500)
+        hasData -> monthFullyLoadedColor // Fully loaded (dark green)
+        isPartiallyLoaded -> monthPartiallyLoadedColor // Partially loaded (yellow)
+        else -> monthNotLoadedColor // Not loaded (gray)
     }
-    // Content color that works well on Primary, Green, and Red backgrounds
-    val contentColor =
-        Color.White // Or MaterialTheme.colorScheme.onPrimary if you prefer consistency for selected state
+    val contentColor = Color.White
 
 
     Button(
@@ -242,6 +256,118 @@ internal fun MonthItem(
         modifier = modifier.padding(horizontal = 4.dp)
     ) {
         Text(text = monthName)
+    }
+}
+
+@Composable
+internal fun MonthSelectorWithTemperature(
+    selectedMonth: Int?, // null means "All Months"
+    onMonthSelected: (Int?) -> Unit,
+    monthCompletionStatus: Map<Int, Int>, // Map of month (1-12) to missingDaysCount
+    monthAverageTemps: Map<Int, Double?>, // Map of month to average temperature
+    currentSelectedYear: Int?,
+    onPromptForMissingDays: (Int, Int, Int) -> Unit,
+    onDownloadedMonthSelected: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val monthNames = remember {
+        listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+    }
+
+    Column(modifier = modifier.padding(vertical = 8.dp)) {
+        Text(
+            "Select Month:",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(12) { index ->
+                val month = index + 1
+                val missingDaysCount = monthCompletionStatus[month] ?: 0
+                val isFullyLoaded = missingDaysCount == 0
+                val totalDaysInMonth = getApproxDaysInMonth(month, currentSelectedYear ?: 2025)
+                val loadedDays = totalDaysInMonth - missingDaysCount
+                val isPartiallyLoaded = loadedDays > 0 && missingDaysCount > 0
+                val avgTemp = monthAverageTemps[month]
+
+                val monthItemOnClick = {
+                    onMonthSelected(month)
+                    if (currentSelectedYear != null) {
+                        if (isFullyLoaded) {
+                            onDownloadedMonthSelected(currentSelectedYear, month)
+                        } else {
+                            onPromptForMissingDays(currentSelectedYear, month, missingDaysCount)
+                        }
+                    }
+                }
+
+                MonthItemWithTemperature(
+                    month = month,
+                    monthName = monthNames.getOrElse(month - 1) { "Month $month" },
+                    isSelected = month == selectedMonth,
+                    hasData = isFullyLoaded,
+                    isPartiallyLoaded = isPartiallyLoaded,
+                    avgTemp = avgTemp,
+                    onClick = monthItemOnClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun MonthItemWithTemperature(
+    month: Int,
+    monthName: String,
+    isSelected: Boolean,
+    hasData: Boolean,
+    isPartiallyLoaded: Boolean = false,
+    avgTemp: Double?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val containerColor = when {
+        isSelected -> MaterialTheme.colorScheme.primary
+        hasData -> monthFullyLoadedColor // Fully loaded (dark green)
+        isPartiallyLoaded -> monthPartiallyLoadedColor // Partially loaded (yellow)
+        else -> monthNotLoadedColor // Not loaded (gray)
+    }
+    val contentColor = Color.White
+
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        shape = MaterialTheme.shapes.small
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = monthName,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            avgTemp?.let {
+                Text(
+                    text = "${(it * 10).toInt() / 10.0}°",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
     }
 }
 

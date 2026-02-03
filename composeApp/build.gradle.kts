@@ -41,6 +41,10 @@ kotlin {
 
     sourceSets {
 
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
         commonMain.dependencies {
             // compose
             implementation(compose.runtime)

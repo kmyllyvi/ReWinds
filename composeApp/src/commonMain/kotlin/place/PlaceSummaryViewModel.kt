@@ -62,6 +62,9 @@ class PlaceSummaryViewModel(
      */
     val navigationEvent = _navigationEvent.receiveAsFlow()
 
+    private val _monthlyAverageTemps = MutableStateFlow<Map<Int, Double?>>(emptyMap())
+    val monthlyAverageTemps: StateFlow<Map<Int, Double?>> = _monthlyAverageTemps.asStateFlow()
+
     init {
         println("PlaceSummaryViewModel: $placeName")
         loadWeatherData()
@@ -81,7 +84,7 @@ class PlaceSummaryViewModel(
 
                 if (loadedData != null) {
                     weatherData = loadedData
-                    Log.d("Loaded days for $placeName: ${weatherData?.days}")
+                    Log.d("Loaded ${weatherData?.days?.count()} days for $placeName")
 
                     val newStoredDays = loadedData.days?.toDayWeatherSummaryList() ?: emptyList()
 
@@ -90,6 +93,8 @@ class PlaceSummaryViewModel(
                         storedDays = newStoredDays
                     )
                     _uiState.value = newState
+                    // Update monthly average temperatures
+                    _monthlyAverageTemps.value = calculateMonthlyAverageTemps(newStoredDays)
 
                 } else {
                     Log.d("No weather data found for $placeName")
@@ -127,7 +132,6 @@ class PlaceSummaryViewModel(
     }
 
     private fun Day.toDayWeatherSummary(): DayWeatherSummary {
-        Log.d("mapping day ${this.datetime}, wind: ${this.windspeed}")
         val foggyHours = this.hours?.count { (it.visibility ?: 24.0) < 1.0 } ?: 0
         return DayWeatherSummary(
             date = this.datetime,
@@ -142,6 +146,33 @@ class PlaceSummaryViewModel(
             isFoggy = foggyHours > 0,
             foggyHours = foggyHours
         )
+    }
+
+    // Helper to parse date parts (year, month) from a date string "YYYY-MM-DD"
+    private fun parseDateParts(dateString: String?): Pair<Int?, Int?> {
+        if (dateString == null) return Pair(null, null)
+        val parts = dateString.split('-')
+        val year = parts.getOrNull(0)?.toIntOrNull()
+        val month = parts.getOrNull(1)?.toIntOrNull()
+        return Pair(year, month)
+    }
+
+    // Calculate average temperature for each month from stored days
+    private fun calculateMonthlyAverageTemps(
+        storedDays: List<DayWeatherSummary>
+    ): Map<Int, Double?> {
+        return (1..12).associateWith { monthIndex ->
+            val daysInMonth = storedDays.filter { daySummary ->
+                val (_, dayMonth) = parseDateParts(daySummary.date)
+                dayMonth == monthIndex
+            }
+
+            if (daysInMonth.isEmpty()) {
+                null
+            } else {
+                daysInMonth.mapNotNull { it.avgTemp }.average()
+            }
+        }
     }
 
     fun onDownloadFullMonth(year: Int, month: Int) {

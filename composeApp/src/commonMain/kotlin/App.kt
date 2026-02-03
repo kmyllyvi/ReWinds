@@ -17,7 +17,8 @@ fun App() {
 // APP START
 @Composable
 fun AppContent() {
-    var showContent by remember { mutableStateOf(false) }
+    // State to control the visibility of the start up/welcome screen
+    var showContent by remember { mutableStateOf(true) }
 
     MaterialTheme {
         Column(

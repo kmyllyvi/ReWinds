@@ -11,6 +11,11 @@ import androidx.compose.runtime.Composable
 // https://www.composables.com/colorconverter
 val button_bg_color = Color.Cyan
 
+// Month status colors
+val monthFullyLoadedColor = Color(0xFF2E7D32) // Dark green
+val monthPartiallyLoadedColor = Color.Blue
+val monthNotLoadedColor = Color.Gray
+
 // Define your light theme colors
 private val LightColorScheme = lightColorScheme(
     primary = Color.Magenta,

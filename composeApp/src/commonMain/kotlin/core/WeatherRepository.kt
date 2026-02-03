@@ -87,6 +87,39 @@ class WeatherRepositoryImpl(
         return dates
     }
 
+    // Data class to represent a date range gap that needs to be fetched
+    private data class DateGap(val startDate: String, val endDate: String)
+
+    // Calculate consecutive date ranges from a list of missing dates
+    private fun calculateDateGaps(missingDates: List<String>): List<DateGap> {
+        if (missingDates.isEmpty()) return emptyList()
+
+        val sortedDates = missingDates.map { LocalDate.parse(it) }.sorted()
+        val gaps = mutableListOf<DateGap>()
+
+        var gapStart = sortedDates[0]
+        var gapEnd = sortedDates[0]
+
+        for (i in 1 until sortedDates.size) {
+            val currentDate = sortedDates[i]
+            val expectedNextDate = gapEnd.plus(1, DateTimeUnit.DAY)
+
+            if (currentDate == expectedNextDate) {
+                // Continue the current gap
+                gapEnd = currentDate
+            } else {
+                // End the current gap and start a new one
+                gaps.add(DateGap(gapStart.toString(), gapEnd.toString()))
+                gapStart = currentDate
+                gapEnd = currentDate
+            }
+        }
+
+        // Add the final gap
+        gaps.add(DateGap(gapStart.toString(), gapEnd.toString()))
+        return gaps
+    }
+
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse {
         Log.d("WeatherRepository, getDaysRange for: $place, from: $fromDate, to: $toDate")
 
@@ -124,9 +157,9 @@ class WeatherRepositoryImpl(
 
             val existingPlaceData = database.getSavedPlaceFull(place)
 
-            if (existingPlaceData != null) {
-                // Filter days from DB that are within the requested fromDate and toDate
-                val daysInDbWithinDateRange = existingPlaceData.days?.filter { day ->
+            // Step 1: Identify which dates are already in the database
+            val foundDatesInDb: Set<String> = if (existingPlaceData != null) {
+                existingPlaceData.days?.filter { day ->
                     try {
                         val dayDate = LocalDate.parse(day.datetime)
                         val from = LocalDate.parse(fromDate)
@@ -135,28 +168,55 @@ class WeatherRepositoryImpl(
                     } catch (e: Exception) {
                         false // If date parsing fails for a stored day, exclude it
                     }
-                }
-
-                val foundDatesInDb: Set<String> = (daysInDbWithinDateRange?.map { it.datetime })?.toSet() ?: emptySet()
-                val allTargetDatesFound = targetDates.all { foundDatesInDb.contains(it) }
-                if (allTargetDatesFound) {
-                    Log.d("WeatherRepository - Full range $fromDate to $toDate found in DB for $place.")
-                    // Return a WeatherResponse using the main place data but only with days from the specified range
-                    return existingPlaceData.copy(days = daysInDbWithinDateRange)
-                } else {
-                    val missingCount = targetDates.size - foundDatesInDb.size
-                    Log.d("WeatherRepository - Range $fromDate to $toDate incomplete in DB for $place ($missingCount days missing). Fetching from network.")
-                    // Fall through to fetch from network
-                }
+                }?.map { it.datetime }?.toSet() ?: emptySet()
             } else {
-                Log.d("WeatherRepository - No existing data structure found in DB for place $place. Fetching range from network.")
-                // Fall through to fetch from network
+                emptySet()
             }
 
-            // Fetch from network if existingPlaceData is null or the range is incomplete
-            val networkResponse = fetchWeatherFromNetwork(place, fromDate, toDate)
-            database.saveWeatherResponse(networkResponse) // This must merge data intelligently
-            return networkResponse
+            // Step 2: Calculate missing dates
+            val missingDates = targetDates.filter { !foundDatesInDb.contains(it) }
+
+            if (missingDates.isEmpty()) {
+                // All data is already in the database
+                Log.d("WeatherRepository - Full range $fromDate to $toDate found in DB for $place.")
+                val daysInDbWithinDateRange = existingPlaceData?.days?.filter { day ->
+                    targetDates.contains(day.datetime)
+                }
+                return existingPlaceData!!.copy(days = daysInDbWithinDateRange)
+            }
+
+            // Step 3: Calculate consecutive date gaps
+            val dateGaps = calculateDateGaps(missingDates)
+            Log.d("WeatherRepository - Found ${missingDates.size} missing days in ${dateGaps.size} gap(s) for $place. Fetching gaps...")
+
+            // Step 4: Fetch each gap from the network
+            for (gap in dateGaps) {
+                try {
+                    Log.d("WeatherRepository - Fetching gap: ${gap.startDate} to ${gap.endDate}")
+                    val gapResponse = fetchWeatherFromNetwork(place, gap.startDate, gap.endDate)
+                    database.saveWeatherResponse(gapResponse) // Save and merge each gap
+                } catch (e: Exception) {
+                    Log.e("Failed to fetch gap ${gap.startDate} to ${gap.endDate} for $place", e)
+                    // Continue with other gaps even if one fails
+                }
+            }
+
+            // Step 5: Re-query the database to get the complete range
+            val updatedPlaceData = database.getSavedPlaceFull(place)
+            val finalDaysInRange = updatedPlaceData?.days?.filter { day ->
+                targetDates.contains(day.datetime)
+            }?.sortedBy { it.datetime } // Sort by date
+
+            return updatedPlaceData?.copy(days = finalDaysInRange) ?: WeatherResponse(
+                queryCost = 0,
+                latitude = existingPlaceData?.latitude ?: 0.0,
+                longitude = existingPlaceData?.longitude ?: 0.0,
+                resolvedAddress = existingPlaceData?.resolvedAddress ?: place,
+                address = existingPlaceData?.address ?: place,
+                timezone = existingPlaceData?.timezone ?: "",
+                tzoffset = existingPlaceData?.tzoffset ?: 0.0,
+                days = emptyList()
+            )
         }
     }
 
@@ -219,7 +279,7 @@ class WeatherRepositoryImpl(
     private suspend fun doRequest(requestUrl: String): WeatherResponse {
         try {
             val response = networkService.fetchWeatherData(requestUrl)
-            Log.d("WeatherRepository - new weather data: $response")
+            Log.d("WeatherRepository - new weather data SUCCESS")
             return response
         } catch (e: Exception) {
             Log.e("Request failed for URL: $requestUrl")
