@@ -31,8 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import core.Screen
+import core.Navigator
+import core.PlaceSummaryRoute
 import io.github.aakira.napier.Napier
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -75,7 +75,12 @@ internal fun parseMonth(dateString: String?): Int? {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlaceSummaryView(onBackClick: () -> Unit, navController: NavController, vm: PlaceSummaryViewModel = koinViewModel()) {
+fun PlaceSummaryView(
+    route: PlaceSummaryRoute,
+    onBackClick: () -> Unit,
+    navigator: Navigator,
+    vm: PlaceSummaryViewModel = koinViewModel { org.koin.core.parameter.parametersOf(route) }
+) {
     val uiState by vm.uiState.collectAsState()
     val currentPlaceName = vm.placeName // Access it directly
 
@@ -83,12 +88,10 @@ fun PlaceSummaryView(onBackClick: () -> Unit, navController: NavController, vm: 
         vm.navigationEvent.collect { event ->
             when (event) {
                 is NavigationEvent.ToMonthlySummary -> {
-                    navController.navigate(
-                        Screen.MonthlyStatistics.createRoute(
-                            event.placeName,
-                            event.year,
-                            event.month
-                        )
+                    navigator.navigateToMonthlyStatistics(
+                        event.placeName,
+                        event.year,
+                        event.month
                     )
                 }
             }

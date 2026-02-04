@@ -1,4 +1,3 @@
-import androidx.navigation.NavHostController
 import com.km.rewinds.db.AppDatabase
 import core.*
 import home.HomeViewModel
@@ -22,11 +21,8 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // Repository
     single<WeatherRepository> { WeatherRepositoryImpl(get(), get(), enableNetworkLogs) }
 
-    // Navigation
-    // The NavHostController is provided at runtime from the Composable
-    factory<Navigator> { (navController: NavHostController) -> AppNavigator(navController) }
-
     // ViewModels
+    // Navigator is created in Router.kt composable, not through DI
     viewModelOf(::HomeViewModel)
     viewModelOf(::PlaceSummaryViewModel)
     viewModelOf(::MonthlyStatisticsViewModel)

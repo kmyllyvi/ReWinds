@@ -23,14 +23,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import components.PlaceButton
 import core.GeoSearchResult
-import core.Screen
+import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun HomeView(vm: HomeViewModel = koinViewModel(), navController: NavController) {
+fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val searchText by vm.searchText.collectAsState()
 
@@ -38,7 +37,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navController: NavController) 
         vm.navigationEvent.collect { event ->
             when (event) {
                 is NavigationEvent.ToPlaceSummary -> {
-                    navController.navigate(Screen.PlaceSummary.createRoute(event.placeName))
+                    navigator.navigateToPlaceSummary(event.placeName)
                 }
             }
         }

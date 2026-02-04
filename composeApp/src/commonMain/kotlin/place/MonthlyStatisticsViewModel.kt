@@ -1,12 +1,12 @@
 package place
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel // KMM ViewModel
 import androidx.lifecycle.viewModelScope
 import core.Day
 import core.Hour
 import core.KiteSpotterConfig
 import core.Log // Assuming you have a Log wrapper or use Napier
+import core.MonthlyStatisticsRoute
 import core.WeatherRepository
 import core.WeatherResponse
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,15 +29,13 @@ data class CalculatedStats(
 )
 
 class MonthlyStatisticsViewModel(
-    savedStateHandle: SavedStateHandle, // Inject SavedStateHandle
+    route: MonthlyStatisticsRoute,
     private val weatherRepository: WeatherRepository
 ) : ViewModel() { // Extend androidx.lifecycle.ViewModel
 
-    // Retrieve navigation arguments from SavedStateHandle
-    // The keys "placeName", "year", "month" MUST match your navigation argument names
-    val placeName: String? = savedStateHandle.get<String>("placeName")
-    val year: Int? = savedStateHandle.get<Int>("year")
-    val month: Int? = savedStateHandle.get<Int>("month")
+    val placeName: String = route.placeName
+    val year: Int = route.year
+    val month: Int = route.month
 
     private val _statistics = MutableStateFlow<CalculatedStats?>(null)
     val statistics: StateFlow<CalculatedStats?> = _statistics.asStateFlow()
@@ -49,16 +47,11 @@ class MonthlyStatisticsViewModel(
     init {
         // Log or print the retrieved arguments to verify
         Log.d("MonthlyStatisticsVM", "placeName: $placeName, year: $year, month: $month")
-        if (placeName != null && year != null && month != null) {
-            loadStatistics()
-        } else {
-            Log.d("MonthlyStatisticsVM", "Arguments not available in init. Likely a Koin check.")
-        }
+        loadStatistics()
     }
 
     private fun loadStatistics() {
         viewModelScope.launch {
-            if (placeName == null || year == null || month == null) return@launch
 
             // Now use the 'this.placeName', 'this.year', 'this.month' properties
             val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)

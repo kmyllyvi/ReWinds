@@ -24,8 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import core.MonthlyStatisticsRoute
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import place.components.DaySummaryRow
 import kotlin.math.roundToInt
 
@@ -42,7 +44,9 @@ fun MonthlyStatisticsView(
     year: Int,
     month: Int, // 1-12
     onBackClick: () -> Unit,
-    vm: MonthlyStatisticsViewModel = koinViewModel()
+    vm: MonthlyStatisticsViewModel = koinViewModel {
+        parametersOf(MonthlyStatisticsRoute(placeName, year, month))
+    }
 ) {
     val statistics by vm.statistics.collectAsState()
     val dailySummaries by vm.dailySummaries.collectAsState()

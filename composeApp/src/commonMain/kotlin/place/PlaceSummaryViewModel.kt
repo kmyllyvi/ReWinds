@@ -1,12 +1,12 @@
 package place
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import core.Day
 import core.Hour // Import Hour
 import core.KiteSpotterConfig
 import core.Log
+import core.PlaceSummaryRoute
 import core.WeatherRepository
 import core.WeatherResponse
 import kotlinx.coroutines.channels.Channel
@@ -46,12 +46,11 @@ sealed class NavigationEvent {
 }
 
 class PlaceSummaryViewModel(
-    savedStateHandle: SavedStateHandle,
+    route: PlaceSummaryRoute,
     private val weatherRepository: WeatherRepository
 ) : ViewModel()  {
     private var weatherData: WeatherResponse? = null
-    val placeName: String = savedStateHandle.get<String>("placeName")
-        ?: throw IllegalArgumentException("placeNameArg not found in SavedStateHandle")
+    val placeName: String = route.placeName
 
     private val _uiState = MutableStateFlow<WeatherSummaryUiState>(WeatherSummaryUiState.Loading)
     val uiState: StateFlow<WeatherSummaryUiState> = _uiState.asStateFlow()
