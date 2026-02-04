@@ -283,7 +283,8 @@ private fun SuccessStateView(
     successState: WeatherSummaryUiState.Success,
     viewModel: PlaceSummaryViewModel
 ) {
-    var selectedYear by remember { mutableStateOf<Int?>(Int.MIN_VALUE) }
+    // Get selected year from ViewModel (persists across navigation)
+    val selectedYear by viewModel.selectedYear.collectAsState()
     var selectedMonth by remember { mutableStateOf<Int?>(null) }
 
     var showMissingDaysDialog by remember { mutableStateOf(false) }
@@ -306,20 +307,23 @@ private fun SuccessStateView(
 
     LaunchedEffect(Unit) {
         if (selectedYear == Int.MIN_VALUE) { // Using a sentinel for first load
-            val defaultYear = kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
-            selectedYear = place.components.initialYear?.toIntOrNull() ?: defaultYear
+            viewModel.setSelectedYear(place.components.initialYear)
         }
     }
 
     LaunchedEffect(selectedYear) {
         selectedMonth = null // Reset month when year changes
+        // Update month temperatures for the selected year
+        if (selectedYear != Int.MIN_VALUE) {
+            viewModel.updateMonthTemperaturesForYear(selectedYear)
+        }
     }
 
     PlaceDetailsContent(
         modifier = modifier, // Pass modifier from SuccessStateView
         currentPlaceDescription = successState.currentPlaceDescription,
         selectedYear = selectedYear,
-        onYearSelected = { year -> selectedYear = year },
+        onYearSelected = { year -> viewModel.setSelectedYear(year) },
         selectedMonth = selectedMonth,
         onMonthSelected = { month -> selectedMonth = month },
         monthCompletionStatusMap = missingDaysMap,

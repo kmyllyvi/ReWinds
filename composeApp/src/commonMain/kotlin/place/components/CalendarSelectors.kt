@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import components.monthFullyLoadedColor
 import components.monthNotLoadedColor
 import components.monthPartiallyLoadedColor
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 
 // Basic helper, replace with kotlinx-datetime for accuracy
@@ -43,8 +46,13 @@ private fun getApproxDaysInMonth(month: Int, year: Int): Int {
 }
 
 
-// DO NOT CHANGE!
-val initialYear = "2025" // constant
+// Get current year dynamically - works across all platforms (iOS, Android)
+@OptIn(kotlin.time.ExperimentalTime::class)
+val initialYear: Int
+    get() = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .year
+val initialYearStr: String = initialYear.toString()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +62,8 @@ internal fun YearDropdownSelector(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    // Fixed list of years
-    val yearsToDisplay = remember { (2020..2025).toList().sortedDescending() }
+    // Fixed list of years (excluding current year since it's shown separately as default)
+    val yearsToDisplay = remember { (2020..initialYear - 1).toList().sortedDescending() }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -69,7 +77,7 @@ internal fun YearDropdownSelector(
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
-                value = selectedYear?.toString() ?: initialYear,
+                value = selectedYear?.toString() ?: initialYearStr,
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -81,7 +89,7 @@ internal fun YearDropdownSelector(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 DropdownMenuItem(
-                    text = { Text(initialYear) },
+                    text = { Text(initialYearStr) },
                     onClick = {
                         onYearSelected(null)
                         expanded = false

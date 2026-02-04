@@ -65,6 +65,13 @@ class PlaceSummaryViewModel(
     private val _monthlyAverageTemps = MutableStateFlow<Map<Int, Double?>>(emptyMap())
     val monthlyAverageTemps: StateFlow<Map<Int, Double?>> = _monthlyAverageTemps.asStateFlow()
 
+    private val _selectedYear = MutableStateFlow<Int?>(Int.MIN_VALUE)
+    val selectedYear: StateFlow<Int?> = _selectedYear.asStateFlow()
+
+    fun setSelectedYear(year: Int?) {
+        _selectedYear.value = year
+    }
+
     init {
         println("PlaceSummaryViewModel: $placeName")
         loadWeatherData()
@@ -157,14 +164,15 @@ class PlaceSummaryViewModel(
         return Pair(year, month)
     }
 
-    // Calculate average temperature for each month from stored days
+    // Calculate average temperature for each month from stored days for a specific year
     private fun calculateMonthlyAverageTemps(
-        storedDays: List<DayWeatherSummary>
+        storedDays: List<DayWeatherSummary>,
+        year: Int? = null
     ): Map<Int, Double?> {
         return (1..12).associateWith { monthIndex ->
             val daysInMonth = storedDays.filter { daySummary ->
-                val (_, dayMonth) = parseDateParts(daySummary.date)
-                dayMonth == monthIndex
+                val (dayYear, dayMonth) = parseDateParts(daySummary.date)
+                dayMonth == monthIndex && (year == null || dayYear == year)
             }
 
             if (daysInMonth.isEmpty()) {
@@ -204,6 +212,13 @@ class PlaceSummaryViewModel(
                     message = "Error downloading data for $year-$month: ${e.message ?: "Unknown error"}",
                 )
             }
+        }
+    }
+
+    fun updateMonthTemperaturesForYear(year: Int?) {
+        val currentState = _uiState.value
+        if (currentState is WeatherSummaryUiState.Success) {
+            _monthlyAverageTemps.value = calculateMonthlyAverageTemps(currentState.storedDays, year)
         }
     }
 

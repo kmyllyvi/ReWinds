@@ -97,14 +97,40 @@ class PlaceSummaryViewModelTest {
         assertEquals(27.1, result[3])
     }
 
+    @Test
+    fun calculateMonthlyAverageTemps_withYearFilter_onlyIncludesDaysFromSelectedYear() {
+        // Arrange
+        val days = listOf(
+            // 2024 data
+            DayWeatherSummary("2024-01-15", null, null, null, 10.0, null, null, null, null, false, 0),
+            DayWeatherSummary("2024-01-20", null, null, null, 12.0, null, null, null, null, false, 0),
+            // 2025 data
+            DayWeatherSummary("2025-01-15", null, null, null, 20.0, null, null, null, null, false, 0),
+            DayWeatherSummary("2025-01-20", null, null, null, 22.0, null, null, null, null, false, 0),
+        )
+
+        // Act - filter for 2025 only
+        val result2025 = calculateMonthlyAverageTemps(days, 2025)
+
+        // Assert - should only average the 2025 data
+        assertEquals(21.0, result2025[1]) // Average of 20.0 and 22.0
+
+        // Act - filter for 2024 only
+        val result2024 = calculateMonthlyAverageTemps(days, 2024)
+
+        // Assert - should only average the 2024 data
+        assertEquals(11.0, result2024[1]) // Average of 10.0 and 12.0
+    }
+
     // Helper function extracted from ViewModel for testing
     private fun calculateMonthlyAverageTemps(
-        storedDays: List<DayWeatherSummary>
+        storedDays: List<DayWeatherSummary>,
+        year: Int? = null
     ): Map<Int, Double?> {
         return (1..12).associateWith { monthIndex ->
             val daysInMonth = storedDays.filter { daySummary ->
-                val (_, dayMonth) = parseDateParts(daySummary.date)
-                dayMonth == monthIndex
+                val (dayYear, dayMonth) = parseDateParts(daySummary.date)
+                dayMonth == monthIndex && (year == null || dayYear == year)
             }
 
             if (daysInMonth.isEmpty()) {
