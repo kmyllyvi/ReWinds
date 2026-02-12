@@ -32,7 +32,18 @@ composeApp/
       ├── commonMain/           # Shared code
       ├── androidMain/          # Android-specific
       └── iosMain/              # iOS-specific
+
+iosApp/
+  ├── Podfile                   # CocoaPods dependencies
+  ├── Pods/                     # CocoaPods managed dependencies (sqlite3, etc)
+  ├── iosApp.xcworkspace/       # ⚠️ USE THIS (not .xcodeproj)
+  └── iosApp.xcodeproj/         # Old project file (ignore with cocoapods)
 ```
+
+### ⚠️ Important: Using Xcode
+**Always open `iosApp.xcworkspace`** - CocoaPods requires this!
+- `.xcworkspace` includes CocoaPods managed dependencies
+- `.xcodeproj` alone won't have access to sqlite3 and other pods
 
 ## Current Status
 
@@ -48,3 +59,8 @@ composeApp/
 
 ## Development Notes
 See `docs/DEVELOPMENT.md` for detailed session logs and technical decisions.
+
+## Session Tracking
+- **Latest Session**: Feb 12, 2026 - SQLite3 iOS cocoapods integration
+- **Commit**: 92038d2 - Configuration saved to project repo
+- **Status**: iOS simulator builds working; device builds need memory optimization
