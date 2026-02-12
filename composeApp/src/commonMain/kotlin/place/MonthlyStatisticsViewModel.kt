@@ -34,8 +34,9 @@ class MonthlyStatisticsViewModel(
 ) : ViewModel() { // Extend androidx.lifecycle.ViewModel
 
     val placeName: String = route.placeName
-    val year: Int = route.year
-    val month: Int = route.month
+
+    private var currentYear: Int = route.year
+    private var currentMonth: Int = route.month
 
     private val _statistics = MutableStateFlow<CalculatedStats?>(null)
     val statistics: StateFlow<CalculatedStats?> = _statistics.asStateFlow()
@@ -46,16 +47,22 @@ class MonthlyStatisticsViewModel(
 
     init {
         // Log or print the retrieved arguments to verify
-        Log.d("MonthlyStatisticsVM", "placeName: $placeName, year: $year, month: $month")
+        Log.d("MonthlyStatisticsVM", "placeName: $placeName, year: $currentYear, month: $currentMonth")
+        loadStatistics()
+    }
+
+    fun reloadStatistics(year: Int? = null, month: Int? = null) {
+        if (year != null) currentYear = year
+        if (month != null) currentMonth = month
         loadStatistics()
     }
 
     private fun loadStatistics() {
         viewModelScope.launch {
 
-            // Now use the 'this.placeName', 'this.year', 'this.month' properties
+            // Now use the 'this.placeName', 'this.currentYear', 'this.currentMonth' properties
             val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)
-            val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, year, month)
+            val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, currentYear, currentMonth)
             _dailySummaries.value = relevantDaysSummary
 
             if (relevantDaysSummary.isNotEmpty()) {

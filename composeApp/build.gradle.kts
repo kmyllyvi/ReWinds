@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.sqlDelight)
+    alias(libs.plugins.kotlinCocoapods)
 }
 
 repositories {
@@ -118,6 +119,29 @@ kotlin {
                 dependsOn(iosMain)
             }
         }
+    }
+
+    cocoapods {
+        // Required properties
+        // Specify the required Pod version here
+        // Otherwise, the Gradle project version is used
+        version = "1.0"
+
+        // Optional properties
+        // Configure the Pod name here instead of changing the Gradle project name
+        // name = "MyCocoaPod"
+
+        framework {
+            // Required properties
+            // Framework name configuration. Use this property instead of deprecated 'frameworkName'
+            baseName = "ReWinds"
+        }
+
+        pod("sqlite3")
+
+        // Maps custom Xcode configuration to NativeBuildType
+        // xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
+        // xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
     }
 }
 

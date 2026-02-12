@@ -19,8 +19,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -51,7 +53,13 @@ fun MonthlyStatisticsView(
     val statistics by vm.statistics.collectAsState()
     val dailySummaries by vm.dailySummaries.collectAsState()
 
-    Scaffold(
+    key(year, month) {
+        // Reload data when month or year changes
+        LaunchedEffect(year, month) {
+            vm.reloadStatistics(year = year, month = month)
+        }
+
+        Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("$placeName - ${monthName(month)} $year Stats") },
@@ -117,5 +125,6 @@ fun MonthlyStatisticsView(
                 }
             }
         }
+    }
     }
 }
