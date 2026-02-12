@@ -6,12 +6,12 @@ Pod::Spec.new do |spec|
     spec.authors                  = ''
     spec.license                  = ''
     spec.summary                  = ''
-    spec.vendored_frameworks      = 'build/cocoapods/framework/MyFramework.framework'
+    spec.vendored_frameworks      = 'build/cocoapods/framework/ReWinds.framework'
     spec.libraries                = 'c++'
     spec.dependency 'sqlite3'
-    if !Dir.exist?('build/cocoapods/framework/MyFramework.framework') || Dir.empty?('build/cocoapods/framework/MyFramework.framework')
+    if !Dir.exist?('build/cocoapods/framework/ReWinds.framework') || Dir.empty?('build/cocoapods/framework/ReWinds.framework')
         raise "
-        Kotlin framework 'MyFramework' doesn't exist yet, so a proper Xcode project can't be generated.
+        Kotlin framework 'ReWinds' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
             ./gradlew :composeApp:generateDummyFramework
         Alternatively, proper pod installation is performed during Gradle sync in the IDE (if Podfile location is set)"
@@ -21,7 +21,7 @@ Pod::Spec.new do |spec|
     }
     spec.pod_target_xcconfig = {
         'KOTLIN_PROJECT_PATH' => ':composeApp',
-        'PRODUCT_MODULE_NAME' => 'MyFramework',
+        'PRODUCT_MODULE_NAME' => 'ReWinds',
     }
     spec.script_phases = [
         {

@@ -37,6 +37,8 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
             binaryOption("bundleId", "com.km.rewinds.ReWinds")
+            // Disable devirtualization to reduce memory usage during compilation
+            freeCompilerArgs += "-Xno-devirtualization"
         }
     }
 
