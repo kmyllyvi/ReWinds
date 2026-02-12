@@ -21,7 +21,11 @@
 - **Git**: On `develop` branch, all changes committed
 
 ## ⚠️ Remaining Issues
-- Some issues remain (to be identified/discussed)
+- **Xcode Build**: 428 duplicate symbols linker error when building iosApp
+  - Likely cause: sqlite3 being linked multiple times
+  - Applied fix: Updated Podfile post_install hook to link sqlite3 properly
+  - Status: Needs testing after `pod install`
+  - If still failing: Need duplicate symbol names to diagnose further
 
 ## Quick Build Commands
 ```bash
