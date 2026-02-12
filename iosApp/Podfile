@@ -1,24 +1,14 @@
-# Uncomment the next line to define a global platform for your project
 platform :ios, '15.3'
 
 target 'iosApp' do
-  # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
   pod 'composeApp', :path => '../composeApp'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    # Set deployment target for all targets
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.3'
-
-      # Avoid duplicate symbol issues
-      if target.name == 'composeApp'
-        # composeApp should link against sqlite3, not embed it
-        config.build_settings['OTHER_LDFLAGS'] ||= ''
-        config.build_settings['OTHER_LDFLAGS'] += ' -lsqlite3'
-      end
     end
   end
 end
