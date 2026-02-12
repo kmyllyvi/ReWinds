@@ -124,26 +124,22 @@ kotlin {
     }
 
     cocoapods {
-        // Required properties
-        // Specify the required Pod version here
-        // Otherwise, the Gradle project version is used
+        homepage = "https://github.com/kmyllyvi/ReWinds"
+        summary = "The Weather History App"
         version = "1.0"
-
-        // Optional properties
-        // Configure the Pod name here instead of changing the Gradle project name
-        // name = "MyCocoaPod"
+        ios.deploymentTarget = "15.3"
+        podfile = project.file("../iosApp/Podfile")
 
         framework {
-            // Required properties
-            // Framework name configuration. Use this property instead of deprecated 'frameworkName'
-            baseName = "ReWinds"
+            baseName = "composeApp"
+            compilerOptions.optIn.add("-Xbinary=bundleId=com.km.rewinds.ReWinds")
+            isStatic = true
         }
 
-        pod("sqlite3")
-
-        // Maps custom Xcode configuration to NativeBuildType
-        // xcodeConfigurationToNativeBuildType["CUSTOM_DEBUG"] = NativeBuildType.DEBUG
-        // xcodeConfigurationToNativeBuildType["CUSTOM_RELEASE"] = NativeBuildType.RELEASE
+        pod("sqlite3") {
+            version = "3.51.1"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
     }
 }
 

@@ -1,17 +1,18 @@
 Pod::Spec.new do |spec|
     spec.name                     = 'composeApp'
     spec.version                  = '1.0'
-    spec.homepage                 = ''
+    spec.homepage                 = 'https://github.com/kmyllyvi/ReWinds'
     spec.source                   = { :http=> ''}
     spec.authors                  = ''
     spec.license                  = ''
-    spec.summary                  = ''
-    spec.vendored_frameworks      = 'build/cocoapods/framework/ReWinds.framework'
+    spec.summary                  = 'The Weather History App'
+    spec.vendored_frameworks      = 'build/cocoapods/framework/composeApp.framework'
     spec.libraries                = 'c++'
-    spec.dependency 'sqlite3'
-    if !Dir.exist?('build/cocoapods/framework/ReWinds.framework') || Dir.empty?('build/cocoapods/framework/ReWinds.framework')
+    spec.ios.deployment_target    = '15.3'
+    spec.dependency 'sqlite3', '3.51.1'
+    if !Dir.exist?('build/cocoapods/framework/composeApp.framework') || Dir.empty?('build/cocoapods/framework/composeApp.framework')
         raise "
-        Kotlin framework 'ReWinds' doesn't exist yet, so a proper Xcode project can't be generated.
+        Kotlin framework 'composeApp' doesn't exist yet, so a proper Xcode project can't be generated.
         'pod install' should be executed after running ':generateDummyFramework' Gradle task:
             ./gradlew :composeApp:generateDummyFramework
         Alternatively, proper pod installation is performed during Gradle sync in the IDE (if Podfile location is set)"
@@ -21,7 +22,7 @@ Pod::Spec.new do |spec|
     }
     spec.pod_target_xcconfig = {
         'KOTLIN_PROJECT_PATH' => ':composeApp',
-        'PRODUCT_MODULE_NAME' => 'ReWinds',
+        'PRODUCT_MODULE_NAME' => 'composeApp',
     }
     spec.script_phases = [
         {
