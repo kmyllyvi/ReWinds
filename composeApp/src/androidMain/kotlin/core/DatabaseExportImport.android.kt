@@ -7,10 +7,23 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import java.io.File
 
+// Global context reference for Android
+private lateinit var appContext: Context
+
+/**
+ * Initialize Android database export/import with application context
+ */
+fun initializeDatabaseExportImport(context: Context) {
+    appContext = context.applicationContext
+}
+
 /**
  * Android implementation of database export/import
  */
-actual class DatabaseExportImport(private val context: Context) {
+actual class DatabaseExportImport {
+
+    private val context: Context
+        get() = appContext
 
     /**
      * Export database to Documents folder

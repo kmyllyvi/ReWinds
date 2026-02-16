@@ -13,6 +13,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,18 +21,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import components.DebugMenu
 import components.PlaceButton
+import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.Navigator
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val searchText by vm.searchText.collectAsState()
+    val databaseExportImport: DatabaseExportImport = koinInject()
+
+    var showDebugMenu by remember { mutableStateOf(false) }
+    var debugMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -77,6 +88,43 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             onPlaceSelected = vm::onSavedPlaceSelected,
             onDeleteClicked = vm::onDeleteRequest
         )
+
+        // Debug menu (for development)
+        if (showDebugMenu) {
+            DebugMenu(
+                databaseExportImport = databaseExportImport,
+                onExportResult = { message ->
+                    debugMessage = message
+                },
+                onImportResult = { message ->
+                    debugMessage = message
+                },
+                onBackupListResult = { backups ->
+                    debugMessage = if (backups.isEmpty()) {
+                        "No backups found"
+                    } else {
+                        "Found ${backups.size} backups:\n${backups.joinToString("\n")}"
+                    }
+                }
+            )
+        }
+
+        // Debug toggle button
+        Button(
+            onClick = { showDebugMenu = !showDebugMenu },
+            modifier = Modifier.padding(8.dp)
+        ) {
+            Text(if (showDebugMenu) "Hide Debug Menu" else "Show Debug Menu")
+        }
+
+        // Show debug messages
+        if (debugMessage.isNotEmpty()) {
+            Text(
+                text = debugMessage,
+                modifier = Modifier.padding(8.dp),
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }
 

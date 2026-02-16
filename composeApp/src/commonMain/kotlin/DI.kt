@@ -21,6 +21,9 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // Repository
     single<WeatherRepository> { WeatherRepositoryImpl(get(), get(), enableNetworkLogs) }
 
+    // Database Export/Import (platform-specific implementation)
+    single<DatabaseExportImport> { DatabaseExportImport() }
+
     // ViewModels
     // Navigator is created in Router.kt composable, not through DI
     viewModelOf(::HomeViewModel)
