@@ -45,6 +45,13 @@ iosApp/
 - `.xcworkspace` includes CocoaPods managed dependencies
 - `.xcodeproj` alone won't have access to sqlite3 and other pods
 
+### ⚠️ Important: Xcode Build Settings with CocoaPods
+**DO NOT manually add `-framework` linker flags for Pod-managed frameworks!**
+- The Pod's `podspec` (via `vendored_frameworks`) handles all framework linkage
+- Manual `-framework ComposeApp` in `OTHER_LDFLAGS` causes duplicate symbol errors
+- Xcode build settings should only have `$(inherited)` for Pod-managed frameworks
+- See `docs/DEVELOPMENT-120226.md` for detailed explanation
+
 ## Current Status
 
 ### ✅ Working

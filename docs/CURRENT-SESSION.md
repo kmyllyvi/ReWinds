@@ -18,25 +18,24 @@
 - **Podfile**: ✅ Simplified to minimal config
 - **Android**: ✅ Normal builds work
 
-## ⚠️ BLOCKING ISSUE - To Resume From
-**Problem**: Xcode build fails with **428 duplicate symbols** linker error
-- Occurs when building iosApp in Xcode
-- Problem appears to be in framework or podspec, NOT Podfile
-- Attempted fix (complex post_install hook) didn't work
+## ✅ RESOLVED: 428 Duplicate Symbols Linker Error
 
-**To Debug Next Session**:
-1. Try building in Xcode again
-2. Capture the **actual duplicate symbol names** from error (first 5-10 lines)
-3. Look for pattern: `_sqlite3_*` or `_kfun:*` or something else?
-4. This will reveal if duplicate is coming from:
-   - sqlite3 symbols (linking issue)
-   - Kotlin symbols (framework build issue)
-   - Something else
+**Root Cause**: The Xcode project had TWO sources linking the ComposeApp framework:
+1. Explicit linker flag in `OTHER_LDFLAGS`: `-framework ComposeApp`
+2. Automatic linking from the Pod's `vendored_frameworks`
 
-**Files to Check**:
-- composeApp/build.gradle.kts (cocoapods config)
-- composeApp/composeApp.podspec (dependency declaration)
-- iosApp/Podfile (now simplified)
+This caused the same framework to be linked twice, creating 428 duplicate Kotlin symbols.
+
+**Solution Applied**:
+1. ✅ Removed stale `shared/build/xcode-frameworks` search path from iosApp.xcodeproj (leftover from old project structure)
+2. ✅ Removed explicit `-framework ComposeApp` from `OTHER_LDFLAGS` in Xcode build settings
+   - The Pod now handles ALL framework linkage via `vendored_frameworks` in composeApp.podspec
+   - Xcode should ONLY use inherited settings
+
+**Files Fixed**:
+- `iosApp/iosApp.xcodeproj/project.pbxproj` (removed stale paths and duplicate linker flags)
+
+**Result**: ✅ Xcode build succeeds, app runs in iOS Simulator with sqlite3 support!
 
 ## 💰 Session Cost
 **Total Cost**: $0.93

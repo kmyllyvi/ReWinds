@@ -137,6 +137,35 @@ kotlin.apple.xcodeCompatibility.nowarn=true
 - **Critical**: Always use `.xcworkspace` in Xcode (not `.xcodeproj`)
 - sqlite3 and other pods now accessible in Xcode project
 
+### Fixing the 428 Duplicate Symbols Linker Error (Final Resolution)
+
+**Problem**: Xcode build failed with 428 duplicate Kotlin symbols
+- All duplicates were Kotlin/Objective-C bridge symbols (`_OBJC_CLASS_$_*`, `_OBJC_METACLASS_$_*`)
+- Symbols appeared twice within the same framework file
+- Root cause: Framework being linked TWICE
+
+**Investigation Process**:
+1. Captured actual error output showing duplicate symbols
+2. Discovered duplicate sources:
+   - `iosApp.xcodeproj` had stale search path: `shared/build/xcode-frameworks` (non-existent module)
+   - Build settings had explicit linker flag: `-framework ComposeApp`
+   - The Pod's `vendored_frameworks` also provides ComposeApp
+   - Result: Framework linked twice!
+
+**Solution Applied**:
+1. **Remove stale search path** from `iosApp.xcodeproj/project.pbxproj`
+   - Removed reference to non-existent `shared` module
+   - This was confusing the linker about which frameworks to use
+
+2. **Remove duplicate linker flag** from `OTHER_LDFLAGS`
+   - Removed explicit `-framework ComposeApp` from Xcode build settings
+   - Let the Pod handle ALL framework linkage via `vendored_frameworks`
+   - Build settings now only have `$(inherited)` in OTHER_LDFLAGS
+
+**Key Learning**: With CocoaPods, the Pod's podspec declares framework dependencies via `vendored_frameworks`. Xcode build settings should NOT also specify `-framework` for dependencies managed by CocoaPods. This creates duplicate linking.
+
+**Result**: ✅ Xcode build succeeds, app runs in iOS Simulator with sqlite3 support
+
 ### Recommendations
 
 **For Development/Testing**:
