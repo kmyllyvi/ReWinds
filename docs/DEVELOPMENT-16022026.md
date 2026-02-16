@@ -41,8 +41,14 @@ Enable users to export valuable data from Android emulator and import it on iOS 
 - Rollback capability?
 - Data validation before import?
 
-## 📋 Implementation Plan (TBD)
-*To be filled in after design decisions*
+## 📋 Implementation Plan
+**See**: `EXPORT-IMPORT-PLAN.md` for detailed design and technical approach
+
+**Summary**:
+- Export: Raw `.db` file to shared location (Dropbox/iCloud)
+- Import: Debug menu with file picker on iOS
+- Safety: Basic file validation (extension, exists, valid SQLite)
+- Developer-only feature (no end-user UI)
 
 ## 💰 Session Cost
 *To be filled in at end of session*
