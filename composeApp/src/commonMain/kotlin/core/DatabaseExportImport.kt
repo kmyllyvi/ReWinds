@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 /**
  * Platform-specific database export/import manager
  */
-expect class DatabaseExportImport {
+expect class DatabaseExportImport() {
     /**
      * Export the current database to an accessible location
      * @return Path to exported file or error message
