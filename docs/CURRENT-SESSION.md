@@ -38,11 +38,7 @@ This caused the same framework to be linked twice, creating 428 duplicate Kotlin
 **Result**: ✅ Xcode build succeeds, app runs in iOS Simulator with sqlite3 support!
 
 ## 💰 Session Cost
-**Total Cost**: $0.93
-**Duration (API)**: 6m 37s
-**Duration (wall clock)**: ~19.5 hours (with breaks/IDE work)
-**Tokens Used**: 42.1k input, 27.0k output
-**Model**: claude-haiku-4-5
+*To be filled in at end of next session*
 
 ## Quick Build Commands
 ```bash

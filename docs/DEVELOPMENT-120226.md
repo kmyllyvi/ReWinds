@@ -187,6 +187,14 @@ kotlin.apple.xcodeCompatibility.nowarn=true
 - [ ] Set up CI/CD pipeline for device builds
 - [ ] Document iOS app integration steps
 
+## 💰 Session Cost (Complete)
+**Total Cost**: $4.04
+**API Duration**: 21m 17s
+**Wall Clock Duration**: 4d 20h 5m (with breaks, testing, IDE work)
+**Tokens Used**: 111.9k input, 77.0k output
+**Cache Usage**: 17.5m cache read, 1.4m cache write
+**Code Changes**: 668 lines added, 128 lines removed
+
 ### References
 - Kotlin Multiplatform: https://kotl.in/kmp
 - Cocoapods integration: https://kotl.in/cocoapods
