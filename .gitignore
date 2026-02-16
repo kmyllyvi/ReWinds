@@ -3,6 +3,7 @@
 .gradle
 **/build/
 xcuserdata
+DerivedData/
 !src/**/build/
 local.properties
 .idea
@@ -16,3 +17,4 @@ captures
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+Pods/
