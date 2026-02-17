@@ -21,28 +21,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import components.DebugMenu
 import components.PlaceButton
-import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.Navigator
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val searchText by vm.searchText.collectAsState()
-    val databaseExportImport: DatabaseExportImport = koinInject()
-
-    var showDebugMenu by remember { mutableStateOf(false) }
-    var debugMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -89,40 +79,75 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             onDeleteClicked = vm::onDeleteRequest
         )
 
-        // Debug menu (for development)
-        if (showDebugMenu) {
-            DebugMenu(
-                databaseExportImport = databaseExportImport,
-                onExportResult = { message ->
-                    debugMessage = message
-                },
-                onImportResult = { message ->
-                    debugMessage = message
-                },
-                onBackupListResult = { backups ->
-                    debugMessage = if (backups.isEmpty()) {
-                        "No backups found"
-                    } else {
-                        "Found ${backups.size} backups:\n${backups.joinToString("\n")}"
-                    }
-                }
-            )
-        }
-
-        // Debug toggle button
+        // Debug menu toggle button
         Button(
-            onClick = { showDebugMenu = !showDebugMenu },
+            onClick = { vm.toggleDebugMenu() },
             modifier = Modifier.padding(8.dp)
         ) {
-            Text(if (showDebugMenu) "Hide Debug Menu" else "Show Debug Menu")
+            Text(if (uiState.showDebugMenu) "Hide Debug Menu" else "Show Debug Menu")
         }
 
-        // Show debug messages
-        if (debugMessage.isNotEmpty()) {
+        // Debug menu content
+        if (uiState.showDebugMenu) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "🛠️ Debug Tools",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Button(
+                    onClick = { vm.exportDatabase() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text("📤 Export Database")
+                }
+
+                Button(
+                    onClick = { vm.listBackups() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text("📋 List Backups")
+                }
+
+                // Import Database Section
+                Text(
+                    "📥 Import Database",
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = uiState.importFilePath,
+                    onValueChange = { vm.onImportFilePathChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("File path") },
+                    singleLine = true
+                )
+                Button(
+                    onClick = { vm.importDatabase() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text("Import")
+                }
+            }
+        }
+
+        // Debug messages
+        if (uiState.debugMessage.isNotEmpty()) {
             Text(
-                text = debugMessage,
+                text = uiState.debugMessage,
                 modifier = Modifier.padding(8.dp),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }

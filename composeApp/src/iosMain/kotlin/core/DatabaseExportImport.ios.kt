@@ -3,15 +3,17 @@ package core
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.NSString
 import platform.Foundation.stringByAppendingPathComponent
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSError
 
 /**
  * iOS implementation of database export/import
- * Note: For now, this is a basic implementation that works around Kotlin/Native NSFileManager complexities
  */
 actual class DatabaseExportImport {
 
@@ -40,10 +42,36 @@ actual class DatabaseExportImport {
 
     /**
      * Import database from file (iOS)
-     * Placeholder: The actual import would require file picker and database connection management
+     * Copies the file at filePath to the app's database location (app.db)
      */
+    @OptIn(ExperimentalForeignApi::class)
     actual suspend fun importDatabase(filePath: String): Result<String> = withContext(Dispatchers.IO) {
-        Result.success("Import placeholder - replace app.db at ${getDatabasePath()} with selected file")
+        try {
+            val fileManager = NSFileManager.defaultManager
+            val targetPath = getDatabasePath()
+            val error: NSError? = null
+
+            // Check if source file exists
+            if (!fileManager.fileExistsAtPath(filePath)) {
+                return@withContext Result.failure(Exception("Source file not found: $filePath"))
+            }
+
+            // Remove existing database file if it exists
+            if (fileManager.fileExistsAtPath(targetPath)) {
+                fileManager.removeItemAtPath(targetPath, error = null)
+            }
+
+            // Copy file to database location
+            val copySuccess = fileManager.copyItemAtPath(filePath, toPath = targetPath, error = null)
+
+            return@withContext if (copySuccess) {
+                Result.success("Database imported successfully from $filePath")
+            } else {
+                Result.failure(Exception("Failed to copy database file"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /**
