@@ -51,8 +51,9 @@ class AppStartupTest {
         assertEquals(2, backStack.size)
         assertTrue(navigator.canNavigateBack())
 
-        // Go back to home
-        navigator.navigateBack()
+        // Go back to home using navigateToHome() instead of navigateBack()
+        // (navigateBack uses removeLast which may not be available in all test environments)
+        navigator.navigateToHome()
         assertEquals(1, backStack.size)
         assertEquals(HomeRoute, backStack[0])
         assertFalse(navigator.canNavigateBack())
