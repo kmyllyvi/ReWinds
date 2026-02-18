@@ -23,6 +23,29 @@
 - **iOS**: Cocoapods manages sqlite3 dependency
 - **Database**: SQLDelight with sqlite3 driver
 
+## Development Workflow
+
+This project uses a **two-agent workflow** for development and quality assurance:
+
+### Coder Agent
+**Responsibilities**: Implementation, bug fixes, feature development
+- Makes code changes and commits
+- Verifies code compiles (metadata tests)
+- Follows architectural rules (MV* pattern, etc.)
+
+**Invocation**: "Coder Agent, implement [feature/fix]" or "Coder Agent, work on [task description]"
+
+### QA Agent
+**Responsibilities**: Testing, code review, validation
+- Runs full test suite on committed changes
+- Reviews code against CLAUDE.md rules and conventions
+- Identifies regressions, edge cases, or violations
+- Reports findings and suggests fixes
+
+**Invocation**: "QA Agent, test and review the latest commit" or "QA Agent, test commit [hash]"
+
+**Workflow**: User tells Coder Agent to implement → Coder commits → User tells QA Agent to review/test → QA reports back
+
 ## Project Structure
 ```
 composeApp/

@@ -10,10 +10,10 @@ import kotlin.test.assertTrue
 import androidx.compose.runtime.mutableStateListOf
 
 /**
- * Integration tests for app startup routing
- * Verifies that the Navigation system starts with HomeRoute
+ * Unit tests for navigation back stack initialization
+ * Verifies that NavigatorImpl correctly manages the initial route
  */
-class AppStartupTest {
+class NavigatorBackStackTest {
 
     @Test
     fun testAppInitializesWithHomeRoute() {
