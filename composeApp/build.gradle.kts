@@ -124,6 +124,15 @@ kotlin {
             val iosSimulatorArm64Main by getting {
                 dependsOn(iosMain)
             }
+
+            // iOS test source set
+            val iosTest by creating {
+                dependsOn(commonTest.get())
+            }
+
+            val iosArm64Test by getting { dependsOn(iosTest) }
+            val iosX64Test by getting { dependsOn(iosTest) }
+            val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
         }
     }
 
