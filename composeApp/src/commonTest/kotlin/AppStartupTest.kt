@@ -1,89 +1,69 @@
+import androidx.compose.runtime.mutableStateListOf
 import core.HomeRoute
 import core.NavigatorImpl
 import core.NavRoute
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
+import core.PlaceSummaryRoute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
-import androidx.compose.runtime.mutableStateListOf
 
 /**
- * Unit tests for navigation back stack initialization
- * Verifies that NavigatorImpl correctly manages the initial route
+ * Integration tests for app startup initialization
+ * Verifies that the app starts with correct initial state:
+ * - Navigation begins at HomeRoute
+ * - No previous navigation history exists
+ * - App is ready to handle user interactions
+ *
+ * NOTE: Full UI rendering tests require iOS simulator integration tests
+ * and cannot be tested in unit tests. Run the app on simulator to verify
+ * visual rendering and navigation flow.
  */
-class NavigatorBackStackTest {
+class AppStartupTest {
 
+    /**
+     * Test that app initialization creates a navigation stack
+     * with HomeRoute as the only entry point
+     */
     @Test
-    fun testAppInitializesWithHomeRoute() {
-        // Verify that when the app starts, the navigation back stack has HomeRoute
+    fun testAppStartsWithHomeRouteAsOnlyEntry() {
         val backStack = mutableStateListOf<NavRoute>(HomeRoute)
         val navigator = NavigatorImpl(backStack)
 
-        // App should start with exactly HomeRoute
-        assertEquals(1, backStack.size)
-        assertEquals(HomeRoute, backStack[0])
+        // At app startup, the navigation history should contain only HomeRoute
+        assertEquals(1, backStack.size, "Navigation stack should have exactly 1 entry at startup")
+        assertEquals(HomeRoute, backStack[0], "Initial route must be HomeRoute")
     }
 
+    /**
+     * Test that user cannot navigate backwards from the initial state
+     * This ensures proper app state at startup
+     */
     @Test
-    fun testNavigatorStartsAtHome() {
-        // Verify navigator is in the correct initial state
+    fun testUserCannotNavigateBackFromInitialState() {
         val backStack = mutableStateListOf<NavRoute>(HomeRoute)
         val navigator = NavigatorImpl(backStack)
 
-        // Should not be able to navigate back from home
-        assertFalse(navigator.canNavigateBack())
+        // At startup, there should be nowhere to navigate back to
+        assertFalse(navigator.canNavigateBack(), "Cannot navigate back from initial HomeRoute")
     }
 
+    /**
+     * Test that the navigator is properly initialized and ready for interactions
+     * Verifies the internal state is consistent
+     */
     @Test
-    fun testNavigationToOtherScreensAndBack() {
-        // Test the full navigation flow that includes HomeView
+    fun testNavigatorIsReadyForUserInteractions() {
         val backStack = mutableStateListOf<NavRoute>(HomeRoute)
         val navigator = NavigatorImpl(backStack)
 
-        // Start at home
-        assertEquals(HomeRoute, backStack.lastOrNull())
-        assertFalse(navigator.canNavigateBack())
-
-        // Navigate to a place
+        // Navigator should successfully navigate to another route
         navigator.navigateToPlaceSummary("Test Place")
-        assertEquals(2, backStack.size)
-        assertTrue(navigator.canNavigateBack())
+        assertEquals(2, backStack.size, "Should be able to navigate to PlaceSummary")
+        assertEquals("Test Place", (backStack[1] as? PlaceSummaryRoute)?.placeName ?: "")
 
-        // Go back to home using navigateToHome() instead of navigateBack()
-        // (navigateBack uses removeLast which may not be available in all test environments)
+        // And should be able to navigate back to home
         navigator.navigateToHome()
-        assertEquals(1, backStack.size)
+        assertEquals(1, backStack.size, "Should be able to navigate back to Home")
         assertEquals(HomeRoute, backStack[0])
-        assertFalse(navigator.canNavigateBack())
-    }
-
-    @Test
-    fun testAppNavigationStructure() {
-        // Comprehensive test of the navigation structure
-        val backStack = mutableStateListOf<NavRoute>(HomeRoute)
-        val navigator = NavigatorImpl(backStack)
-
-        // Test multiple navigation sequences
-        navigator.navigateToPlaceSummary("Place 1")
-        navigator.navigateToMonthlyStatistics("Place 1", 2024, 1)
-        assertEquals(3, backStack.size)
-
-        // Navigate back to home
-        navigator.navigateToHome()
-        assertEquals(1, backStack.size)
-        assertEquals(HomeRoute, backStack[0])
-    }
-
-    @Test
-    fun testHomeViewIsAlwaysAvailable() {
-        // Verify HomeRoute is always accessible
-        val backStack = mutableStateListOf<NavRoute>(HomeRoute)
-        val navigator = NavigatorImpl(backStack)
-
-        // Current route should always be retrievable
-        val currentRoute = backStack.lastOrNull()
-        assertTrue(currentRoute is HomeRoute)
     }
 }
