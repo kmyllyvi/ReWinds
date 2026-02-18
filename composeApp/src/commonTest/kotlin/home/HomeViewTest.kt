@@ -5,10 +5,6 @@ import core.GeoSearchResult
 import core.WeatherRepository
 import home.HomeViewModel
 import home.PlaceDisplayData
-import org.koin.core.context.GlobalContext
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -64,11 +60,7 @@ class HomeViewModelTest {
 
     @AfterTest
     fun teardown() {
-        try {
-            stopKoin()
-        } catch (e: Exception) {
-            // Ignore
-        }
+        // Cleanup if needed (no Koin usage in common tests)
     }
 
     @Test
