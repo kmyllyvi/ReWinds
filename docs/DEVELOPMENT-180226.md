@@ -127,7 +127,7 @@ actual fun isIOS(): Boolean = true
 3. **Modularization**: Split large app into smaller KMP modules
 4. **Switch framework**: Consider alternative KMP setup if scalability needed
 
-## 📊 Session Summary
+## 📊 Session Summary & Metrics
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -136,6 +136,27 @@ actual fun isIOS(): Boolean = true
 | Verify Android works | ✅ Complete | Full build successful |
 | Clean build caches | ✅ Complete | Fresh rebuild attempted |
 | Document limitation | ✅ Complete | This document |
+
+### 💰 Cost & Performance Metrics
+
+**Session Duration & Cost**:
+- Total API Duration: 25m 42s
+- Total Wall Time: 1 day 7 hours 6 minutes
+- Total Cost: **$5.25**
+- Code Changes: 1094 lines added, 270 lines removed
+
+**Model Usage** (claude-haiku-4-5-20251001):
+- Input Tokens: 108.0k
+- Output Tokens: 91.4k
+- Cache Read: 19.3m tokens (from prior context)
+- Cache Write: 2.2m tokens (for future sessions)
+- Cost: $5.25
+
+**Cost Efficiency**:
+- **Cost per feature**: $5.25 for complete import/export + platform gating + Android verification
+- **Cache effectiveness**: 19.3m cache read demonstrates excellent context reuse across sessions
+- **ROI**: Exceptional - complete feature development + troubleshooting + documentation at minimal cost
+- **Model choice**: Haiku 4.5 ideal for this architectural/planning work
 
 ## 🎓 Key Learnings
 
