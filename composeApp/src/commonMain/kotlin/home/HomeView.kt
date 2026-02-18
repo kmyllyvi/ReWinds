@@ -101,26 +101,26 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                Button(
-                    onClick = { vm.exportDatabase() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text("📤 Export Database")
-                }
-
-                Button(
-                    onClick = { vm.listBackups() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text("📋 List Backups")
-                }
-
-                // Import Database Section (Android only - disabled on iOS temporarily)
+                // Database Import/Export (Android only)
                 if (isAndroid()) {
+                    Button(
+                        onClick = { vm.exportDatabase() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("📤 Export Database")
+                    }
+
+                    Button(
+                        onClick = { vm.listBackups() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("📋 List Backups")
+                    }
+
                     Text(
                         "📥 Import Database",
                         style = MaterialTheme.typography.labelMedium,
