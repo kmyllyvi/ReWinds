@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import components.PlaceButton
 import core.GeoSearchResult
+import core.isAndroid
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -118,26 +119,28 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     Text("📋 List Backups")
                 }
 
-                // Import Database Section
-                Text(
-                    "📥 Import Database",
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = uiState.importFilePath,
-                    onValueChange = { vm.onImportFilePathChange(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("File path") },
-                    singleLine = true
-                )
-                Button(
-                    onClick = { vm.importDatabase() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Text("Import")
+                // Import Database Section (Android only - disabled on iOS temporarily)
+                if (isAndroid()) {
+                    Text(
+                        "📥 Import Database",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = uiState.importFilePath,
+                        onValueChange = { vm.onImportFilePathChange(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("File path") },
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = { vm.importDatabase() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("Import")
+                    }
                 }
             }
         }

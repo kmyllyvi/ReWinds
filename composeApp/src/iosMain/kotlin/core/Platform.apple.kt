@@ -31,3 +31,6 @@ actual class DatabaseDriverFactory {
         return NativeSqliteDriver(AppDatabase.Schema, "app.db")
     }
 }
+
+actual fun isAndroid(): Boolean = false
+actual fun isIOS(): Boolean = true

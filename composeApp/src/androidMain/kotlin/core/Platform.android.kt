@@ -32,3 +32,6 @@ actual open class DatabaseDriverFactory(private val context: Context) {
         return AndroidSqliteDriver(AppDatabase.Schema, context, "app.db")
     }
 }
+
+actual fun isAndroid(): Boolean = true
+actual fun isIOS(): Boolean = false
