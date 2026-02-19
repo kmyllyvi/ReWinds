@@ -218,66 +218,10 @@ private fun PlaceDetailsContent(
         )
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        // The StoredDaysList is now removed from here
-        // The content for the selected month will be shown in the MonthlySummaryView
     }
 }
 
-// private helper function to check month completion status (downloaded or not)
-private fun calculateMonthCompletionStatusMap(
-    selectedYear: Int?,
-    storedDays: List<DayWeatherSummary> // Make sure DayWeatherSummary is the correct type
-): Map<Int, MonthCompletionInfo> {
-    if (selectedYear == null || selectedYear == Int.MIN_VALUE) {
-        return emptyMap()
-    }
-    return (1..12).associateWith { monthIndex ->
-        val firstDayOfMonth = LocalDate(selectedYear, monthIndex, 1)
-        val totalDaysInMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH)
-            .minus(1, DateTimeUnit.DAY).dayOfMonth
 
-        val presentDaysCount = storedDays.count { daySummary ->
-            val (dYear, dMonth) = try {
-                val dateStr = daySummary.date
-                if (dateStr != null) {
-                    val parts = dateStr.split('-')
-                    if (parts.size >= 2) {
-                        val year = parts[0].toIntOrNull()
-                        val month = parts[1].toIntOrNull()
-                        if (year != null && month != null) {
-                            Pair(year, month)
-                        } else {
-                            Pair(-1, -1)
-                        }
-                    } else {
-                        Pair(-1, -1)
-                    }
-                } else {
-                    Pair(-1, -1)
-                }
-            } catch (e: Exception) {
-                Napier.w("Error parsing date: ${daySummary.date}", e, tag = "PlaceSummaryView")
-                Pair(-1, -1)
-            }
-            dYear == selectedYear && dMonth == monthIndex
-        }
-        MonthCompletionInfo(
-            presentDaysCount = presentDaysCount,
-            totalDaysInMonth = totalDaysInMonth,
-            isFullyLoaded = presentDaysCount >= totalDaysInMonth
-        )
-    }
-}
-
-// Helper function to calculate missing days count from MonthCompletionInfo map
-private fun calculateMissingDaysMap(
-    detailedMap: Map<Int, MonthCompletionInfo>
-): Map<Int, Int> {
-    return detailedMap.mapValues { (_, info) ->
-        maxOf(0, info.totalDaysInMonth - info.presentDaysCount)
-    }
-}
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -297,12 +241,12 @@ private fun SuccessStateView(
 
     // This map holds MonthCompletionInfo (detailed)
     val detailedMonthCompletionStatusMap = remember(selectedYear, successState.storedDays) {
-        calculateMonthCompletionStatusMap(selectedYear, successState.storedDays)
+        viewModel.calculateMonthCompletionStatusMap(selectedYear, successState.storedDays)
     }
 
     // Calculate missing days count for each month (0 = fully loaded, > 0 = missing days)
     val missingDaysMap = remember(detailedMonthCompletionStatusMap) {
-        calculateMissingDaysMap(detailedMonthCompletionStatusMap)
+        viewModel.calculateMissingDaysMap(detailedMonthCompletionStatusMap)
     }
 
     // Get average temperature for each month from ViewModel

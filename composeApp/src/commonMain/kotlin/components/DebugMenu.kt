@@ -12,9 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-// import core.DatabaseExportImport
+import core.DatabaseExportImport
 import kotlinx.coroutines.launch
 
 /**
@@ -22,7 +21,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun DebugMenu(
-    // databaseExportImport: DatabaseExportImport,
+    databaseExportImport: DatabaseExportImport,
     onExportResult: (String) -> Unit = {},
     onImportResult: (String) -> Unit = {},
     onBackupListResult: (List<String>) -> Unit = {}
@@ -49,15 +48,15 @@ fun DebugMenu(
             // Export Database Button
             Button(
                 onClick = {
-//                    coroutineScope.launch {
-//                        val result = databaseExportImport.exportDatabase()
-//                        result.onSuccess { message ->
-//                            onExportResult("✅ Export: $message")
-//                        }
-//                        result.onFailure { exception ->
-//                            onExportResult("❌ Export failed: ${exception.message}")
-//                        }
-//                    }
+                    coroutineScope.launch {
+                        val result = databaseExportImport.exportDatabase()
+                        result.onSuccess { message ->
+                            onExportResult("✅ Export: $message")
+                        }
+                        result.onFailure { exception ->
+                            onExportResult("❌ Export failed: ${exception.message}")
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -72,15 +71,15 @@ fun DebugMenu(
             // List Backups Button
             Button(
                 onClick = {
-//                    coroutineScope.launch {
-//                        val result = databaseExportImport.listBackups()
-//                        result.onSuccess { backups ->
-//                            onBackupListResult(backups)
-//                        }
-//                        result.onFailure { exception ->
-//                            onBackupListResult(emptyList())
-//                        }
-//                    }
+                    coroutineScope.launch {
+                        val result = databaseExportImport.listBackups()
+                        result.onSuccess { backups ->
+                            onBackupListResult(backups)
+                        }
+                        result.onFailure { exception ->
+                            onBackupListResult(emptyList())
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

@@ -23,7 +23,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     single<WeatherRepository> { WeatherRepositoryImpl(get(), get(), enableNetworkLogs) }
 
     // Database Export/Import (platform-specific implementation)
-    // single<DatabaseExportImport> { DatabaseExportImport() }
+    single<DatabaseExportImport> { DatabaseExportImport() }
 
     // ViewModels
     viewModelOf(::AppViewModel)

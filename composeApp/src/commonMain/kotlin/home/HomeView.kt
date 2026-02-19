@@ -102,46 +102,46 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 )
 
                 // Database Import/Export (Android only)
-                if (isAndroid()) {
-//                    Button(
-//                        onClick = { vm.exportDatabase() },
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(vertical = 4.dp)
-//                    ) {
-//                        Text("📤 Export Database")
-//                    }
-//
-//                    Button(
-//                        onClick = { vm.listBackups() },
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(vertical = 4.dp)
-//                    ) {
-//                        Text("📋 List Backups")
-//                    }
-//
-//                    Text(
-//                        "📥 Import Database",
-//                        style = MaterialTheme.typography.labelMedium,
-//                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
-//                    )
-//                    OutlinedTextField(
-//                        value = uiState.importFilePath,
-//                        onValueChange = { vm.onImportFilePathChange(it) },
-//                        modifier = Modifier.fillMaxWidth(),
-//                        label = { Text("File path") },
-//                        singleLine = true
-//                    )
-//                    Button(
-//                        onClick = { vm.importDatabase() },
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(vertical = 4.dp)
-//                    ) {
-//                        Text("Import")
-//                    }
-                }
+                // if (isAndroid()) {
+                    Button(
+                        onClick = { vm.exportDatabase() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("📤 Export Database")
+                    }
+
+                    Button(
+                        onClick = { vm.listBackups() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("📋 List Backups")
+                    }
+
+                    Text(
+                        "📥 Import Database",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = uiState.importFilePath,
+                        onValueChange = { vm.onImportFilePathChange(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("File path") },
+                        singleLine = true
+                    )
+                    Button(
+                        onClick = { vm.importDatabase() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text("Import")
+                    }
+              //  }
             }
         }
 

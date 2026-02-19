@@ -2,7 +2,7 @@ package home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-//import core.DatabaseExportImport
+import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.NetworkException
 import core.WeatherRepository
@@ -77,8 +77,8 @@ sealed class NavigationEvent {
  */
 @OptIn(FlowPreview::class)
 class HomeViewModel(
-    private val weatherRepository: WeatherRepository
-    //, private val databaseExportImport: DatabaseExportImport
+    private val weatherRepository: WeatherRepository,
+    private val databaseExportImport: DatabaseExportImport
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -223,37 +223,37 @@ class HomeViewModel(
     /**
      * Export the database to an accessible location.
      */
-//    fun exportDatabase() {
-//        viewModelScope.launch {
-//            val result = databaseExportImport.exportDatabase()
-//            result.onSuccess { message ->
-//                _uiState.update { it.copy(debugMessage = "✅ $message") }
-//            }
-//            result.onFailure { exception ->
-//                _uiState.update { it.copy(debugMessage = "❌ Export failed: ${exception.message}") }
-//            }
-//        }
-//    }
+    fun exportDatabase() {
+        viewModelScope.launch {
+            val result = databaseExportImport.exportDatabase()
+            result.onSuccess { message ->
+                _uiState.update { it.copy(debugMessage = "✅ $message") }
+            }
+            result.onFailure { exception ->
+                _uiState.update { it.copy(debugMessage = "❌ Export failed: ${exception.message}") }
+            }
+        }
+    }
 
     /**
      * List available backup files.
      */
-//    fun listBackups() {
-//        viewModelScope.launch {
-//            val result = databaseExportImport.listBackups()
-//            result.onSuccess { backups ->
-//                val message = if (backups.isEmpty()) {
-//                    "No backups found"
-//                } else {
-//                    "📋 Found ${backups.size} backups:\n${backups.joinToString("\n")}"
-//                }
-//                _uiState.update { it.copy(debugMessage = message) }
-//            }
-//            result.onFailure { exception ->
-//                _uiState.update { it.copy(debugMessage = "❌ List failed: ${exception.message}") }
-//            }
-//        }
-//    }
+    fun listBackups() {
+        viewModelScope.launch {
+            val result = databaseExportImport.listBackups()
+            result.onSuccess { backups ->
+                val message = if (backups.isEmpty()) {
+                    "No backups found"
+                } else {
+                    "📋 Found ${backups.size} backups:\n${backups.joinToString("\n")}"
+                }
+                _uiState.update { it.copy(debugMessage = message) }
+            }
+            result.onFailure { exception ->
+                _uiState.update { it.copy(debugMessage = "❌ List failed: ${exception.message}") }
+            }
+        }
+    }
 
     /**
      * Update the import file path input.
@@ -265,21 +265,21 @@ class HomeViewModel(
     /**
      * Import database from the specified file path.
      */
-//    fun importDatabase() {
-//        val filePath = _uiState.value.importFilePath
-//        if (filePath.isBlank()) {
-//            _uiState.update { it.copy(debugMessage = "❌ Please enter a file path") }
-//            return
-//        }
-//
-//        viewModelScope.launch {
-//            val result = databaseExportImport.importDatabase(filePath)
-//            result.onSuccess { message ->
-//                _uiState.update { it.copy(debugMessage = "📥 $message", importFilePath = "") }
-//            }
-//            result.onFailure { exception ->
-//                _uiState.update { it.copy(debugMessage = "❌ Import failed: ${exception.message}") }
-//            }
-//        }
-//    }
+    fun importDatabase() {
+        val filePath = _uiState.value.importFilePath
+        if (filePath.isBlank()) {
+            _uiState.update { it.copy(debugMessage = "❌ Please enter a file path") }
+            return
+        }
+
+        viewModelScope.launch {
+            val result = databaseExportImport.importDatabase(filePath)
+            result.onSuccess { message ->
+                _uiState.update { it.copy(debugMessage = "📥 $message", importFilePath = "") }
+            }
+            result.onFailure { exception ->
+                _uiState.update { it.copy(debugMessage = "❌ Import failed: ${exception.message}") }
+            }
+        }
+    }
 }

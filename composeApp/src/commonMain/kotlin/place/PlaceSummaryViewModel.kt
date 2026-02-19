@@ -9,6 +9,7 @@ import core.Log
 import core.PlaceSummaryRoute
 import core.WeatherRepository
 import core.WeatherResponse
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -229,4 +230,63 @@ class PlaceSummaryViewModel(
             }
         }
     }
+
+        // helper function to check month completion status (downloaded or not)
+        fun calculateMonthCompletionStatusMap(
+            selectedYear: Int?,
+            storedDays: List<DayWeatherSummary> // Make sure DayWeatherSummary is the correct type
+        ): Map<Int, MonthCompletionInfo> {
+            if (selectedYear == null || selectedYear == Int.MIN_VALUE) {
+                return emptyMap()
+            }
+            return (1..12).associateWith { monthIndex ->
+                val firstDayOfMonth = LocalDate(selectedYear, monthIndex, 1)
+                val totalDaysInMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH)
+                    .minus(1, DateTimeUnit.DAY).dayOfMonth
+
+                val presentDaysCount = storedDays.count { daySummary ->
+                    val (dYear, dMonth) = try {
+                        val dateStr = daySummary.date
+                        if (dateStr != null) {
+                            val parts = dateStr.split('-')
+                            if (parts.size >= 2) {
+                                val year = parts[0].toIntOrNull()
+                                val month = parts[1].toIntOrNull()
+                                if (year != null && month != null) {
+                                    Pair(year, month)
+                                } else {
+                                    Pair(-1, -1)
+                                }
+                            } else {
+                                Pair(-1, -1)
+                            }
+                        } else {
+                            Pair(-1, -1)
+                        }
+                    } catch (e: Exception) {
+                        Napier.w(
+                            "Error parsing date: ${daySummary.date}",
+                            e,
+                            tag = "PlaceSummaryView"
+                        )
+                        Pair(-1, -1)
+                    }
+                    dYear == selectedYear && dMonth == monthIndex
+                }
+                MonthCompletionInfo(
+                    presentDaysCount = presentDaysCount,
+                    totalDaysInMonth = totalDaysInMonth,
+                    isFullyLoaded = presentDaysCount >= totalDaysInMonth
+                )
+            }
+        }
+
+        // Helper function to calculate missing days count from MonthCompletionInfo map
+        fun calculateMissingDaysMap(
+            detailedMap: Map<Int, MonthCompletionInfo>
+        ): Map<Int, Int> {
+            return detailedMap.mapValues { (_, info) ->
+                maxOf(0, info.totalDaysInMonth - info.presentDaysCount)
+            }
+        }
 }
