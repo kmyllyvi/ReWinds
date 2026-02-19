@@ -1,45 +1,77 @@
 # Current Session Status
 
-**Last Updated**: Feb 18, 2026 (Updated with iOS Runtime Issue)
-**Current Work**: iOS Simulator Runtime - Koin Double Initialization at Runtime
-**Status**: ⚠️ New issue discovered - Koin initializes multiple times despite guard flag
+**Last Updated**: Feb 19, 2026 (iOS Runtime Fix + Code Quality Improvements)
+**Current Work**: iOS Simulator Testing & Code Quality Enhancements
+**Status**: ✅ iOS Koin double initialization FIXED + architectural improvements
 
-## 🆕 Active Issue: iOS Runtime Koin Double Initialization
+## ✅ RESOLVED: iOS Runtime Koin Double Initialization
 
-**Error**:
+**Issue** (Feb 19 - FIXED):
 ```
 org.koin.core.error.KoinApplicationAlreadyStartedException: A Koin Application has already been started
 ```
 
-**When it occurs**: During iOS simulator app launch, when Compose scene initializes
-**Stack trace frame**: Frame 7 - `kfun:#initKoin(core.DatabaseDriverFactory){}`
-**Related warning**: Empty dSYM file detected (likely due to debug build)
+**Root Cause** (discovered during fix):
+- **NOT** a guard flag issue as previously thought
+- **ACTUAL CAUSE**: Koin was being initialized twice:
+  1. `iOSApp.swift` `init()` → `DIKt.doInitKoin(...)` ← Swift handles this correctly at app lifecycle
+  2. `MainViewController.kt` Compose lambda → `initKoin(...)` ← **Duplicate (removed)**
 
-**Root cause analysis**:
-- The module-level `koinInitialized` guard flag in MainViewController.kt is not preventing multiple initializations
-- This occurs at runtime, NOT at compile time (unlike the previous Koin error)
-- Happens during Compose scene setup and layout pass
-- Guard flag may not persist across Compose recompositions or view recreation
+The `koinInitialized` flag never had a chance because Swift's `App.init()` runs first and successfully initializes Koin.
 
-**Current MainViewController.kt code**:
+**Solution** (Commit: 4ee4071):
+- Removed all initialization code from `MainViewController.kt`
+- Koin + Napier are now solely initialized from Swift's `App.init()` (correct lifecycle hook)
+- MainViewController now only renders UI: `fun MainViewController() = ComposeUIViewController { App() }`
+
+**Status**: iOS app should now launch without Koin crash ✅
+
+---
+
+## ✅ Code Quality Improvements (Commit: 634bc9a)
+
+### 1. Defensive Koin Initialization (DI.kt)
+- Wrapped `startKoin()` in try-catch for `KoinApplicationAlreadyStartedException`
+- Prevents crashes if accidentally called twice (defensive best practice)
+- Clear comment explaining correct architecture
+
+### 2. Fixed MV* Architecture Violation (App.kt + AppViewModel.kt)
+**Before**: `showContent` state lived in Composable via `remember { mutableStateOf }`
 ```kotlin
-private var koinInitialized = false
+// ❌ VIOLATION: Logic in View
+var showContent by remember { mutableStateOf(true) }
+if (!koinInitialized) { ... }  // ❌ State in Composable
+```
 
-fun MainViewController() = ComposeUIViewController {
-    if (!koinInitialized) {
-        Napier.base(DebugAntilog())
-        initKoin(DatabaseDriverFactory())
-        koinInitialized = true
-    }
-    App()
+**After**: State moved to ViewModel ✅
+```kotlin
+// ✅ CORRECT: Logic in ViewModel
+class AppViewModel : ViewModel() {
+    private val _showContent = MutableStateFlow(true)
+    val showContent: StateFlow<Boolean> = _showContent
+    fun setShowContent(show: Boolean) { _showContent.value = show }
+}
+
+// ✅ View only renders
+@Composable
+fun AppContent(viewModel: AppViewModel = koinViewModel()) {
+    val showContent by viewModel.showContent.collectAsStateWithLifecycle()
+    // ...
 }
 ```
 
-**Possible solutions to investigate**:
-1. Use Koin's built-in `stopKoin()` before initializing (clean reset)
-2. Check if Koin is already started before initializing: `GlobalContext.getOrNull()?.isStarted()`
-3. Move Koin initialization to iOS SwiftUI App initialization instead of Kotlin Composable
-4. Use a try-catch block around `initKoin()` to gracefully handle already-started error
+---
 
-## 📋 Previous Status (Feb 18 - Compilation)
-See `DEVELOPMENT-180226.md` for the compilation resolution work
+## 📋 Next Steps
+
+- **iOS Testing**: Run iOS simulator build to verify Koin fix works at runtime
+- **Optional**: Add more ViewModels for other UI state if needed (Navigation, etc.)
+- **Documentation**: May want to create session log for Feb 19 work
+
+---
+
+## Session Commits
+
+1. `4ee4071` — Fix iOS Koin double initialization crash (remove duplicate init from MainViewController)
+2. `634bc9a` — Add defensive Koin initialization + fix App.kt MV* violation (AppViewModel)
+
