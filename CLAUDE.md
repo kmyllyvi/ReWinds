@@ -1,7 +1,10 @@
 # ReWinds Development Guide
 
 **Project**: Compose Multiplatform app (iOS + Android)
-**Current Goal**: Add sqlite3 support for iOS via cocoapods
+**Current Goals**: Fix runtime error on iOS
+
+IMPORTANT!
+All development files and rules under "/docs" folder. Start with README!
 
 ## Quick Start
 

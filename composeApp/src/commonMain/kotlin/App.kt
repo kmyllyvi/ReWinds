@@ -7,7 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import core.Navigation
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun App() {
@@ -16,9 +18,9 @@ fun App() {
 
 // APP START
 @Composable
-fun AppContent() {
+fun AppContent(viewModel: AppViewModel = koinViewModel()) {
     // State to control the visibility of the start up/welcome screen
-    var showContent by remember { mutableStateOf(true) }
+    val showContent by viewModel.showContent.collectAsStateWithLifecycle()
 
     MaterialTheme {
         Column(
@@ -31,7 +33,7 @@ fun AppContent() {
             // Animate the button OUT when showContent = true
             AnimatedVisibility(visible = !showContent) {
                 Button(
-                    onClick = { showContent = true },
+                    onClick = { viewModel.setShowContent(true) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp),

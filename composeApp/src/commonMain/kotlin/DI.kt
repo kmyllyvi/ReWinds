@@ -2,6 +2,7 @@ import com.km.rewinds.db.AppDatabase
 import core.*
 import home.HomeViewModel
 import org.koin.core.context.startKoin
+import org.koin.core.error.KoinApplicationAlreadyStartedException
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import place.MonthlyStatisticsViewModel
@@ -22,9 +23,10 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     single<WeatherRepository> { WeatherRepositoryImpl(get(), get(), enableNetworkLogs) }
 
     // Database Export/Import (platform-specific implementation)
-    single<DatabaseExportImport> { DatabaseExportImport() }
+    // single<DatabaseExportImport> { DatabaseExportImport() }
 
     // ViewModels
+    viewModelOf(::AppViewModel)
     // Navigator is created in Router.kt composable, not through DI
     viewModelOf(::HomeViewModel)
     viewModelOf(::PlaceSummaryViewModel)
@@ -32,7 +34,12 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {
-    startKoin {
-        modules(appModule(databaseDriverFactory, enableNetworkLogs = true))
+    try {
+        startKoin {
+            modules(appModule(databaseDriverFactory, enableNetworkLogs = true))
+        }
+    } catch (e: KoinApplicationAlreadyStartedException) {
+        // Already initialized. This can happen if called multiple times by mistake,
+        // but in the correct architecture (Swift App.init calls this once), it shouldn't occur.
     }
 }
