@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.NSString
 import kotlinx.cinterop.ExperimentalForeignApi
 
 actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
@@ -40,7 +41,7 @@ actual class DatabaseDriverFactory {
             NSUserDomainMask,
             true
         ) as? List<*>
-        val documentsPath = (paths?.firstOrNull() as? String) ?: ""
+        val documentsPath = (paths?.firstOrNull() as? NSString)?.toString() ?: ""
         val databasePath = "$documentsPath/app.db"
 
         return NativeSqliteDriver(AppDatabase.Schema, databasePath)
