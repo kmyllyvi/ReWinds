@@ -8,14 +8,35 @@
 - **Full History**: See dated `DEVELOPMENT-MMDDYY.md` files below
 
 ### Session Files (Latest First)
+- `DEVELOPMENT-180226.md` - Feb 18, 2026: iOS build resolution & Android-focused strategy (feature gating, OOM documented)
+- `DEVELOPMENT-170226.md` - Feb 17, 2026: iOS database import implementation & build optimization attempts
+- `DEVELOPMENT-160226.md` - Feb 16, 2026: Database export/import plan & architecture setup
+- `DEVELOPMENT-160226-2.md` - Feb 16, 2026: Additional session work (continuation)
 - `DEVELOPMENT-120226.md` - Feb 12, 2026: SQLite3 iOS cocoapods setup (iOS simulator working, device builds OOM)
 
 ### How to Use This Repo
 
 **For Development**:
 1. Read CLAUDE.md for quick start
-2. Run: `./gradlew :composeApp:linkPodReleaseFrameworkIosSimulatorArm64` (iOS simulator)
+2. Build appropriate target (see iOS Build Commands below)
 3. Check docs/DEVELOPMENT-*.md if issues arise
+
+### iOS Build Commands
+
+```bash
+# iOS Simulator Builds (Recommended for Development)
+./gradlew :composeApp:linkPodReleaseFrameworkIosSimulatorArm64      # Arm64 simulator
+./gradlew :composeApp:linkPodReleaseFrameworkIosSimulatorX64        # Intel simulator
+
+# iOS Device Builds (May require 8GB+ heap, known OOM issues)
+./gradlew :composeApp:linkPodReleaseFrameworkIosArm64               # Physical device
+
+# Android Builds
+./gradlew :composeApp:assembleDebug                                 # Android debug APK
+./gradlew buildAndroidOnly                                          # Android without iOS
+```
+
+**Note**: iOS builds currently have memory constraints. See `DEVELOPMENT-180226.md` for details.
 
 **At End of Session (for Claude)**:
 - Update `CURRENT-SESSION.md` with what was accomplished
