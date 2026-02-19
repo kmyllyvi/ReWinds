@@ -10,6 +10,10 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSUserDomainMask
+import kotlinx.cinterop.ExperimentalForeignApi
 
 actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
     return HttpClient(Darwin) {
@@ -27,8 +31,19 @@ actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
 }
 
 actual class DatabaseDriverFactory {
+    @OptIn(ExperimentalForeignApi::class)
     actual fun createDriver(): SqlDriver {
-        return NativeSqliteDriver(AppDatabase.Schema, "app.db")
+        // Get absolute path to Documents directory for consistent database location
+        // This ensures the database is stored in the same location as the import function
+        val paths = NSSearchPathForDirectoriesInDomains(
+            NSDocumentDirectory,
+            NSUserDomainMask,
+            true
+        ) as? List<*>
+        val documentsPath = (paths?.firstOrNull() as? String) ?: ""
+        val databasePath = "$documentsPath/app.db"
+
+        return NativeSqliteDriver(AppDatabase.Schema, databasePath)
     }
 }
 
