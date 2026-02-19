@@ -4,7 +4,7 @@
 
 **Primary**: Resolve iOS build memory issues by disabling iOS-specific features
 **Secondary**: Stabilize Android as the primary working platform
-**Outcome**: Document a known iOS limitation and establish Android as reliable baseline
+**Outcome**: iOS build is still not working (blank screen) - must fix. It worked before export/import db functionality so suggesting  to remove this  whole feature with all related code.
 
 ## ✅ Accomplishments
 
@@ -206,9 +206,73 @@ actual fun isIOS(): Boolean = true
 - **Build Config**: See `gradle.properties` for optimization flags
 - **CLAUDE.md**: Project instructions and quick reference
 
+## 🆕 Post-Session Discovery: iOS Runtime Koin Issue
+
+**Reported**: After feature gating implementation completed
+**Error**: `org.koin.core.error.KoinApplicationAlreadyStartedException: A Koin Application has already been started`
+**Timing**: Occurs during iOS simulator app launch, Compose scene initialization
+**Warning**: Empty dSYM file detected (likely debug build artifact)
+
+### Stack Trace Analysis
+- **Frame 7** (error origin): `kfun:#initKoin(core.DatabaseDriverFactory){}`
+- **Context**: Compose layout pass → BackgroundInputView rendering
+- **Indicates**: Koin initialization called multiple times during view hierarchy setup
+
+### Root Cause
+Module-level guard flag in MainViewController.kt doesn't persist across Compose recompositions:
+```kotlin
+private var koinInitialized = false
+
+fun MainViewController() = ComposeUIViewController {
+    if (!koinInitialized) {
+        initKoin(DatabaseDriverFactory())  // Called multiple times
+        koinInitialized = true
+    }
+    App()
+}
+```
+
+The `MainViewController()` function is invoked multiple times, and the guard may not be retained properly across recomposition cycles.
+
+### Recommended Solutions (Priority Order)
+
+**Option 1: Check Koin state before init** (Cleanest)
+```kotlin
+if (GlobalContext.getOrNull()?.isStarted() != true) {
+    initKoin(DatabaseDriverFactory())
+}
+```
+
+**Option 2: Try-catch graceful failure**
+```kotlin
+try {
+    initKoin(DatabaseDriverFactory())
+} catch (e: KoinApplicationAlreadyStartedException) {
+    // Already initialized, continue silently
+}
+```
+
+**Option 3: Move to SwiftUI app initialization**
+- Initialize Koin in iOS App before Compose
+
+**Option 4: Stop and restart**
+```kotlin
+GlobalContext.stopKoin()
+initKoin(DatabaseDriverFactory())
+```
+
 ## 💡 Final Note
 
-The import/export feature is fully implemented and working on Android. The iOS limitation is purely a **compilation issue**, not a code quality problem. This approach allows you to:
+The import/export feature is fully implemented and working on Android. iOS now has two layers of resolution:
+
+1. **Compilation**: ✅ RESOLVED via platform gating (features hidden on iOS)
+2. **Runtime**: ⚠️ NEW - Koin initialization guard needs improvement
+
+Current state:
+- Android: ✅ Production-ready with full features
+- iOS: ⚠️ Compiles successfully, but crashes at app launch due to Koin re-initialization
+
+This approach allows you to:
 
 1. Ship a fully-featured Android app immediately
 2. Keep iOS app buildable (without import/export)
