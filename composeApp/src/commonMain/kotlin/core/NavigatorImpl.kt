@@ -21,7 +21,7 @@ class NavigatorImpl(
 
     override fun navigateBack() {
         if (backStack.size > 1) {
-            backStack.removeLast()
+            backStack.removeAt(backStack.size - 1)
         }
     }
 

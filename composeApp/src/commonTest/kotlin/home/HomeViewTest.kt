@@ -1,6 +1,5 @@
 package home
 
-import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.WeatherRepository
 import home.HomeViewModel
@@ -12,6 +11,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlin.OptIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 /**
  * Mock implementation of WeatherRepository for testing
@@ -36,31 +41,29 @@ class MockWeatherRepository : WeatherRepository {
  * Unit tests for HomeViewModel to verify app logic and state management
  * Tests the core functionality without requiring full DI initialization
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
     private lateinit var viewModel: HomeViewModel
     private lateinit var weatherRepository: MockWeatherRepository
-    private lateinit var databaseExportImport: DatabaseExportImport
+    private val testDispatcher = StandardTestDispatcher()
 
     @BeforeTest
     fun setup() {
+        // Set the Main dispatcher for ViewModel coroutines (viewModelScope uses Main by default)
+        Dispatchers.setMain(testDispatcher)
+
         // Create mock implementations for testing
         weatherRepository = MockWeatherRepository()
-        databaseExportImport = DatabaseExportImport()
 
-        // Wrap ViewModel initialization to handle any Koin setup issues
-        try {
-            viewModel = HomeViewModel(weatherRepository, databaseExportImport)
-        } catch (e: Exception) {
-            // If ViewModel initialization fails due to Koin, create a simpler version
-            // This is acceptable for unit tests focused on state management
-            throw e  // Re-throw so we know there's an issue
-        }
+        // Initialize ViewModel with mock dependencies
+        viewModel = HomeViewModel(weatherRepository)
     }
 
     @AfterTest
     fun teardown() {
-        // Cleanup if needed (no Koin usage in common tests)
+        // Reset the Main dispatcher
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -100,14 +103,17 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun testImportDatabaseWithEmptyPath() {
-        // Try to import with empty path
-        viewModel.importDatabase()
+    fun testImportFilePathSetting() {
+        // Test that we can set import file path
+        assertEquals("", viewModel.uiState.value.importFilePath)
 
-        // Should show error message
-        val message = viewModel.uiState.value.debugMessage
-        assertTrue(message.contains("❌"), "Error message should contain ❌ symbol")
-        assertTrue(message.contains("Please enter a file path"), "Error message should mention file path")
+        val testPath = "/documents/test.db"
+        viewModel.onImportFilePathChange(testPath)
+        assertEquals(testPath, viewModel.uiState.value.importFilePath)
+
+        // Clear the path
+        viewModel.onImportFilePathChange("")
+        assertEquals("", viewModel.uiState.value.importFilePath)
     }
 
     @Test
