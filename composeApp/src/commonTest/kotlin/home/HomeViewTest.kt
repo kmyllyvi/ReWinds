@@ -1,5 +1,6 @@
 package home
 
+import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.WeatherRepository
 import home.HomeViewModel
@@ -37,6 +38,7 @@ class MockWeatherRepository : WeatherRepository {
     override suspend fun deletePlace(name: String) {}
 }
 
+
 /**
  * Unit tests for HomeViewModel to verify app logic and state management
  * Tests the core functionality without requiring full DI initialization
@@ -57,7 +59,9 @@ class HomeViewModelTest {
         weatherRepository = MockWeatherRepository()
 
         // Initialize ViewModel with mock dependencies
-        viewModel = HomeViewModel(weatherRepository)
+        // Using real DatabaseExportImport since it's final and can't be mocked;
+        // these tests don't exercise export/import functionality
+        viewModel = HomeViewModel(weatherRepository, DatabaseExportImport())
     }
 
     @AfterTest
