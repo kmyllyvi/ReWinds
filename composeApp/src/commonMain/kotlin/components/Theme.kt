@@ -14,13 +14,13 @@ val monthNotLoadedColor = Color.Gray
 
 // Define your light theme colors
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF4CAF50),          // Vibrant dark green for buttons
+    primary = Color(0xFF83d324),          // Dark green for buttons
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFC8E6C9), // Light green for place cards
+    primaryContainer = Color(0xFFe2f2ce), // Light green for place cards
     onPrimaryContainer = Color(0xFF1B5E20),
-    secondary = Color(0xFF388E3C),        // Secondary green
+    secondary = Color(0xFF83d324),        // Secondary green
     onSecondary = Color.White,
-    tertiary = Color(0xFF4CAF50),
+    tertiary = Color(0xFF83d324),
     onTertiary = Color.White,
     background = Color(0xFFFFFFFF),
     surface = Color(0xFFFFFFFF),
@@ -32,14 +32,14 @@ private val LightColorScheme = lightColorScheme(
 
 // Define your dark theme colors
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF81C784),          // Bright green for dark theme
-    onPrimary = Color(0xFF1B5E20),
-    primaryContainer = Color(0xFF2E7D32), // Dark green container
-    onPrimaryContainer = Color(0xFFC8E6C9),
-    secondary = Color(0xFF66BB6A),        // Medium green secondary
-    onSecondary = Color(0xFF1B5E20),
-    tertiary = Color(0xFF81C784),
-    onTertiary = Color(0xFF1B5E20),
+    primary = Color(0xFF83d324),          // Dark green for dark theme
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFe2f2ce), // Light green container for dark mode
+    onPrimaryContainer = Color(0xFF1B5E20),
+    secondary = Color(0xFF83d324),        // Green secondary
+    onSecondary = Color.White,
+    tertiary = Color(0xFF83d324),
+    onTertiary = Color.White,
     background = Color(0xFF121212),
     surface = Color(0xFF121212),
     onBackground = Color(0xFFE6E1E5),
