@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import components.AppTheme
 import core.Navigation
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -22,7 +23,7 @@ fun AppContent(viewModel: AppViewModel = koinViewModel()) {
     // State to control the visibility of the start up/welcome screen
     val showContent by viewModel.showContent.collectAsStateWithLifecycle()
 
-    MaterialTheme {
+    AppTheme {
         Column(
             modifier = Modifier
                 .fillMaxSize()
