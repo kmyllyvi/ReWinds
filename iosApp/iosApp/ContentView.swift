@@ -13,7 +13,7 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-                .ignoresSafeArea(.all) // Needed for iOS (otherwise visible frame)
+                .ignoresSafeArea(.keyboard)
     }
 }
 

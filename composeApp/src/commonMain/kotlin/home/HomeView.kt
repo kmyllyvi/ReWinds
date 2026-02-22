@@ -80,7 +80,6 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header with title and settings icon
         HomeHeader(onSettingsClick = { vm.toggleDebugMenu() }, showDebug = uiState.showDebugMenu)
@@ -89,9 +88,8 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(vertical = 12.dp)
+                .weight(1f),
+                contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             // Search section
             item {
@@ -180,7 +178,7 @@ private fun HomeHeader(onSettingsClick: () -> Unit, showDebug: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            // .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
