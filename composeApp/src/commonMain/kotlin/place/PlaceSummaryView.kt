@@ -1,15 +1,22 @@
 package place
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,6 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -99,7 +109,7 @@ fun PlaceSummaryView(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        // containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -186,8 +196,7 @@ private fun PlaceDetailsContent(
     viewModel: PlaceSummaryViewModel
 ) {
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier
     ) {
         currentPlaceDescription?.let {
             Text(
@@ -199,26 +208,124 @@ private fun PlaceDetailsContent(
             )
         }
 
+        // Year selector
         YearDropdownSelector(
             selectedYear = selectedYear,
             onYearSelected = onYearSelected,
             modifier = Modifier.fillMaxWidth()
         )
 
-        MonthSelectorWithTemperature(
-            selectedMonth = selectedMonth,
-            onMonthSelected = onMonthSelected,
-            monthCompletionStatus = monthCompletionStatusMap,
-            monthAverageTemps = monthAverageTemps,
-            currentSelectedYear = selectedYear,
-            onPromptForMissingDays = onPromptForMissingDays,
-            modifier = Modifier.fillMaxWidth(),
-            onDownloadedMonthSelected = { year, month ->
-                viewModel.onShowMonth(year, month)
-            }
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Months grid
+        if (selectedYear != null && selectedYear != Int.MIN_VALUE) {
+            MonthsGridLayout(
+                year = selectedYear,
+                monthCompletionStatus = monthCompletionStatusMap,
+                monthAverageTemps = monthAverageTemps,
+                onMonthSelected = { month ->
+                    onMonthSelected(month)
+                    viewModel.onShowMonth(selectedYear, month)
+                },
+                onPromptForMissingDays = onPromptForMissingDays
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthsGridLayout(
+    year: Int,
+    monthCompletionStatus: Map<Int, Int>,
+    monthAverageTemps: Map<Int, Double?>,
+    onMonthSelected: (Int) -> Unit,
+    onPromptForMissingDays: (Int, Int, Int) -> Unit
+) {
+    LazyColumn {
+        item {
+            Text(
+                "$year",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
+        items((1..12).chunked(2)) { monthPair ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                monthPair.forEach { month ->
+                    MonthCardForGrid(
+                        month = month,
+                        year = year,
+                        missingDaysCount = monthCompletionStatus[month] ?: 0,
+                        temperature = monthAverageTemps[month],
+                        modifier = Modifier.weight(1f),
+                        onMonthSelected = { onMonthSelected(month) },
+                        onPromptForMissingDays = { onPromptForMissingDays(year, month, monthCompletionStatus[month] ?: 0) }
+                    )
+                }
+                // Add spacer if odd number of months
+                if (monthPair.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun MonthCardForGrid(
+    month: Int,
+    year: Int,
+    missingDaysCount: Int,
+    temperature: Double?,
+    modifier: Modifier = Modifier,
+    onMonthSelected: () -> Unit,
+    onPromptForMissingDays: () -> Unit
+) {
+    val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    val monthName = monthNames.getOrElse(month - 1) { "M$month" }
+    val hasData = missingDaysCount == 0
+    val backgroundColor = if (hasData) Color(0xFFe2f2ce) else Color(0xFFF0F0F0)
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(backgroundColor)
+            .clickable {
+                if (hasData) {
+                    onMonthSelected()
+                } else {
+                    onPromptForMissingDays()
+                }
+            }
+            .padding(16.dp)
+    ) {
+        Column {
+            Text(
+                "$monthName $year",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 18.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (hasData && temperature != null) {
+                val tempStr = kotlin.math.round(temperature * 10) / 10.0
+                Text("Temp: $tempStr°C", style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                // TODO: Show kiteable days count when available
+                Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
+            } else {
+                Text(
+                    if (missingDaysCount > 0) "Missing data" else "No data",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
