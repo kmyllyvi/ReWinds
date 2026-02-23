@@ -20,13 +20,10 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
@@ -81,7 +78,6 @@ internal fun parseMonth(dateString: String?): Int? {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceSummaryView(
     route: PlaceSummaryRoute,
@@ -106,48 +102,74 @@ fun PlaceSummaryView(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = currentPlaceName,
-                        style = MaterialTheme.typography.titleMedium, // Smaller font
-                        maxLines = 2,                                // Max 2 lines
-                        overflow = TextOverflow.Ellipsis             // Ellipsize if too long
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Standard back icon
-                            contentDescription = "Back" // For accessibility
-                        )
-                    }
-                }
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Split Header Design
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Subtle background header label
+            Text(
+                "Monthly Data",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
             )
+
+            // Main header with place name and info button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.padding(end = 8.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                    Text(
+                        currentPlaceName,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(
+                    onClick = {},
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = "Info",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (val state = uiState) {
-                is WeatherSummaryUiState.Loading -> {
-                    LoadingStateView(modifier = Modifier.fillMaxSize())
-                }
-                is WeatherSummaryUiState.Success -> {
-                    SuccessStateView(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp), // Apply horizontal padding here
-                        successState = state,
-                        viewModel = vm
-                    )
-                }
-                is WeatherSummaryUiState.Error -> {
-                    ErrorStateView(
-                        modifier = Modifier.fillMaxSize(),
-                        errorState = state
-                    )
-                }
+
+        // Content Area
+        when (val state = uiState) {
+            is WeatherSummaryUiState.Loading -> {
+                LoadingStateView(modifier = Modifier.fillMaxSize())
+            }
+            is WeatherSummaryUiState.Success -> {
+                SuccessStateView(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    successState = state,
+                    viewModel = vm
+                )
+            }
+            is WeatherSummaryUiState.Error -> {
+                ErrorStateView(
+                    modifier = Modifier.fillMaxSize(),
+                    errorState = state
+                )
             }
         }
     }
