@@ -293,6 +293,7 @@ private fun MonthCardForGrid(
 
     Box(
         modifier = modifier
+            .height(140.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable {
@@ -310,12 +311,12 @@ private fun MonthCardForGrid(
                 style = MaterialTheme.typography.titleMedium,
                 fontSize = 18.sp
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (hasData && temperature != null) {
                 val tempStr = kotlin.math.round(temperature * 10) / 10.0
                 Text("Temp: $tempStr°C", style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 // TODO: Show kiteable days count when available
                 Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
             } else {
