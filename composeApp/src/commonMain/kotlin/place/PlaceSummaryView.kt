@@ -106,48 +106,69 @@ fun PlaceSummaryView(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = currentPlaceName,
-                        style = MaterialTheme.typography.titleMedium, // Smaller font
-                        maxLines = 2,                                // Max 2 lines
-                        overflow = TextOverflow.Ellipsis             // Ellipsize if too long
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Custom Header - Monthly view design
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Back arrow + Place name
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back"
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Standard back icon
-                            contentDescription = "Back" // For accessibility
-                        )
-                    }
                 }
-            )
+                Text(
+                    currentPlaceName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Info button
+            IconButton(
+                onClick = {},
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(
+                    Icons.Filled.Info,
+                    contentDescription = "Info",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (val state = uiState) {
-                is WeatherSummaryUiState.Loading -> {
-                    LoadingStateView(modifier = Modifier.fillMaxSize())
-                }
-                is WeatherSummaryUiState.Success -> {
-                    SuccessStateView(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp), // Apply horizontal padding here
-                        successState = state,
-                        viewModel = vm
-                    )
-                }
-                is WeatherSummaryUiState.Error -> {
-                    ErrorStateView(
-                        modifier = Modifier.fillMaxSize(),
-                        errorState = state
-                    )
-                }
+
+        // Content
+        when (val state = uiState) {
+            is WeatherSummaryUiState.Loading -> {
+                LoadingStateView(modifier = Modifier.fillMaxSize())
+            }
+            is WeatherSummaryUiState.Success -> {
+                SuccessStateView(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    successState = state,
+                    viewModel = vm
+                )
+            }
+            is WeatherSummaryUiState.Error -> {
+                ErrorStateView(
+                    modifier = Modifier.fillMaxSize(),
+                    errorState = state
+                )
             }
         }
     }
