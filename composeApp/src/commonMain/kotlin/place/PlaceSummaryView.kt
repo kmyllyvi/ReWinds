@@ -51,9 +51,7 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
-import place.components.MonthSelector
-import place.components.MonthSelectorWithTemperature
-import place.components.YearDropdownSelector
+import place.components.YearSelector
 import kotlin.time.ExperimentalTime
 
 // Define this outside or in a shared file if MonthSelector needs it directly
@@ -109,7 +107,6 @@ fun PlaceSummaryView(
     }
 
     Scaffold(
-        // containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -208,10 +205,12 @@ private fun PlaceDetailsContent(
             )
         }
 
-        // Year selector
-        YearDropdownSelector(
+        // Year selector - horizontal scrolling list
+        val availableYears = remember { (2020..place.components.initialYear).toList().sortedDescending() }
+        YearSelector(
+            availableYears = availableYears,
             selectedYear = selectedYear,
-            onYearSelected = onYearSelected,
+            onYearSelected = { year -> onYearSelected(year) },
             modifier = Modifier.fillMaxWidth()
         )
 
