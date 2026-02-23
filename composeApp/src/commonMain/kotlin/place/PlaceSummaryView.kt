@@ -87,7 +87,7 @@ fun PlaceSummaryView(
     route: PlaceSummaryRoute,
     onBackClick: () -> Unit,
     navigator: Navigator,
-    vm: PlaceSummaryViewModel = koinViewModel { org.koin.core.parameter.parametersOf(route) }
+    vm: PlaceSummaryViewModel = koinViewModel(key = route.placeName) { org.koin.core.parameter.parametersOf(route) }
 ) {
     val uiState by vm.uiState.collectAsState()
     val currentPlaceName = vm.placeName // Access it directly
