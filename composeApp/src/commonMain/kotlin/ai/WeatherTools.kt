@@ -1,0 +1,457 @@
+package ai
+
+import core.WeatherRepository
+import core.Log
+import kotlinx.datetime.LocalDate
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.JsonPrimitive
+
+/**
+ * Sealed class representing a tool available to Claude.
+ * Each tool has a name, description, and input schema (as JSON).
+ */
+sealed class Tool {
+    abstract val name: String
+    abstract val description: String
+    abstract val inputSchema: JsonObject
+
+    /**
+     * get_wind_summary: Fetches wind data for a location over a date range.
+     * Returns average wind speed, gusts, and sustained wind calculations per day.
+     */
+    object GetWindSummary : Tool() {
+        override val name = "get_wind_summary"
+        override val description = "Get wind data for a saved location over a date range. Returns average wind speed, gusts, and sustained wind calculations per day."
+
+        override val inputSchema: JsonObject = buildJsonObject {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("location_name") {
+                    put("type", "string")
+                    put("description", "Name of the saved place")
+                }
+                putJsonObject("start_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+                putJsonObject("end_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+            }
+            putJsonArray("required") {
+                add(JsonPrimitive("location_name"))
+                add(JsonPrimitive("start_date"))
+                add(JsonPrimitive("end_date"))
+            }
+        }
+    }
+
+    /**
+     * list_saved_places: Returns all saved location names in the user's library.
+     */
+    object ListSavedPlaces : Tool() {
+        override val name = "list_saved_places"
+        override val description = "List all saved place names that have weather data available."
+
+        override val inputSchema: JsonObject = buildJsonObject {
+            put("type", "object")
+            putJsonObject("properties") {
+                // No properties - this tool takes no input
+            }
+            putJsonArray("required") {
+                // No required fields
+            }
+        }
+    }
+
+    /**
+     * get_monthly_stats: Returns aggregated wind statistics for a given month.
+     */
+    object GetMonthlyStats : Tool() {
+        override val name = "get_monthly_stats"
+        override val description = "Get aggregated wind statistics for a saved location for a specific month. Returns min, max, average wind speeds and gust data."
+
+        override val inputSchema: JsonObject = buildJsonObject {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("location_name") {
+                    put("type", "string")
+                    put("description", "Name of the saved place")
+                }
+                putJsonObject("year") {
+                    put("type", "integer")
+                    put("description", "Year (YYYY)")
+                }
+                putJsonObject("month") {
+                    put("type", "integer")
+                    put("description", "Month (1-12)")
+                }
+            }
+            putJsonArray("required") {
+                add(JsonPrimitive("location_name"))
+                add(JsonPrimitive("year"))
+                add(JsonPrimitive("month"))
+            }
+        }
+    }
+
+    /**
+     * get_best_days: Filters days matching specified wind criteria.
+     */
+    object GetBestDays : Tool() {
+        override val name = "get_best_days"
+        override val description = "Find days in a date range matching specific wind and weather criteria. Useful for finding ideal conditions for kitesurfing/windsurfing."
+
+        override val inputSchema: JsonObject = buildJsonObject {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("location_name") {
+                    put("type", "string")
+                    put("description", "Name of the saved place")
+                }
+                putJsonObject("start_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+                putJsonObject("end_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+                putJsonObject("min_wind_speed") {
+                    put("type", "number")
+                    put("description", "Minimum wind speed in knots (optional)")
+                }
+                putJsonObject("max_wind_speed") {
+                    put("type", "number")
+                    put("description", "Maximum wind speed in knots (optional)")
+                }
+                putJsonObject("max_gust") {
+                    put("type", "number")
+                    put("description", "Maximum gust speed in knots (optional)")
+                }
+                putJsonObject("no_rain") {
+                    put("type", "boolean")
+                    put("description", "Exclude rainy days (optional)")
+                }
+            }
+            putJsonArray("required") {
+                add(JsonPrimitive("location_name"))
+                add(JsonPrimitive("start_date"))
+                add(JsonPrimitive("end_date"))
+            }
+        }
+    }
+}
+
+/**
+ * WeatherTools manages the tool infrastructure.
+ * Provides all tool schemas and dispatches tool calls to handlers.
+ */
+object WeatherTools {
+    /**
+     * Returns all available tool schemas.
+     * These schemas are passed to Claude API in requests.
+     */
+    fun allToolSchemas(): List<Tool> = listOf(
+        Tool.GetWindSummary,
+        Tool.ListSavedPlaces,
+        Tool.GetMonthlyStats,
+        Tool.GetBestDays
+    )
+
+    /**
+     * Dispatches a tool call to the appropriate handler.
+     * @param toolName The name of the tool being called (kebab-case)
+     * @param args The arguments as a JsonObject
+     * @param repo The WeatherRepository instance to query
+     * @return A JSON string with the tool result or error
+     */
+    suspend fun handleToolCall(
+        toolName: String,
+        args: JsonObject,
+        repo: WeatherRepository
+    ): String = try {
+        Log.d("WeatherTools: handling tool call '$toolName' with args: $args")
+
+        when (toolName) {
+            "get_wind_summary" -> handleGetWindSummary(args, repo)
+            "list_saved_places" -> handleListSavedPlaces(repo)
+            "get_monthly_stats" -> handleGetMonthlyStats(args, repo)
+            "get_best_days" -> handleGetBestDays(args, repo)
+            else -> {
+                Log.e("WeatherTools: unknown tool '$toolName'")
+                buildErrorJson("Unknown tool: $toolName", toolName)
+            }
+        }
+    } catch (e: Exception) {
+        Log.e("WeatherTools: exception in handleToolCall for '$toolName'", e)
+        buildErrorJson("Internal error: ${e.message}", toolName)
+    }
+
+    /**
+     * Get wind summary for a location over a date range.
+     * Returns lean JSON with place info and daily wind summaries.
+     */
+    private suspend fun handleGetWindSummary(
+        args: JsonObject,
+        repo: WeatherRepository
+    ): String = try {
+        val locationName = args["location_name"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: location_name", "get_wind_summary")
+        val startDate = args["start_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: start_date", "get_wind_summary")
+        val endDate = args["end_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: end_date", "get_wind_summary")
+
+        // Validate date format
+        try {
+            LocalDate.parse(startDate)
+            LocalDate.parse(endDate)
+        } catch (e: Exception) {
+            return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_wind_summary")
+        }
+
+        val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
+
+        if (weatherResponse.days.isNullOrEmpty()) {
+            return buildJsonObject {
+                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("date_range", "$startDate to $endDate")
+                putJsonArray("wind_summary") {}
+                put("note", "No data available for this date range")
+            }.toString()
+        }
+
+        val windSummary = weatherResponse.days!!.map { day ->
+            buildJsonObject {
+                put("date", day.datetime)
+                // Convert m/s to knots (1 m/s ≈ 1.944 knots)
+                if (day.windspeed != null) {
+                    put("avg_wind_knots", String.format("%.1f", day.windspeed * 1.944).toDouble())
+                }
+                if (day.windgust != null) {
+                    put("max_gust_knots", String.format("%.1f", day.windgust * 1.944).toDouble())
+                }
+                // Simple heuristic: sustained wind is between 15-25 knots
+                val avgWindKnots = day.windspeed?.let { it * 1.944 } ?: 0.0
+                put("sustained_15_25", avgWindKnots in 15.0..25.0)
+                // Include temperature and precipitation for context
+                if (day.temp != null) put("temp_c", day.temp)
+                if (day.precip != null && day.precip > 0) put("precip_mm", day.precip)
+            }
+        }
+
+        buildJsonObject {
+            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("date_range", "$startDate to $endDate")
+            put("days_count", windSummary.size)
+            putJsonArray("wind_summary") {
+                windSummary.forEach { daySummary ->
+                    add(daySummary)
+                }
+            }
+        }.toString()
+    } catch (e: Exception) {
+        Log.e("handleGetWindSummary failed", e)
+        buildErrorJson("Failed to fetch wind summary: ${e.message}", "get_wind_summary")
+    }
+
+    /**
+     * List all saved place names.
+     */
+    private suspend fun handleListSavedPlaces(repo: WeatherRepository): String = try {
+        val places = repo.getSavedPlaceNames()
+
+        buildJsonObject {
+            put("count", places.size)
+            putJsonArray("places") {
+                places.forEach { add(JsonPrimitive(it)) }
+            }
+        }.toString()
+    } catch (e: Exception) {
+        Log.e("handleListSavedPlaces failed", e)
+        buildErrorJson("Failed to list saved places: ${e.message}", "list_saved_places")
+    }
+
+    /**
+     * Get monthly statistics for a location.
+     * Returns aggregated wind data for the entire month.
+     */
+    private suspend fun handleGetMonthlyStats(
+        args: JsonObject,
+        repo: WeatherRepository
+    ): String = try {
+        val locationName = args["location_name"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: location_name", "get_monthly_stats")
+        val year = args["year"]?.jsonPrimitive?.content?.toIntOrNull()
+            ?: return buildErrorJson("Missing or invalid field: year (must be integer)", "get_monthly_stats")
+        val month = args["month"]?.jsonPrimitive?.content?.toIntOrNull()
+            ?: return buildErrorJson("Missing or invalid field: month (must be integer 1-12)", "get_monthly_stats")
+
+        if (month < 1 || month > 12) {
+            return buildErrorJson("Invalid month: must be between 1 and 12", "get_monthly_stats")
+        }
+
+        // Build date range for the month
+        val monthStr = month.toString().padStart(2, '0')
+        val startDate = "$year-$monthStr-01"
+        val endDate = "$year-$monthStr-${getDaysInMonth(year, month)}"
+
+        val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
+
+        if (weatherResponse.days.isNullOrEmpty()) {
+            return buildJsonObject {
+                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("month", "$year-$monthStr")
+                put("note", "No data available for this month")
+            }.toString()
+        }
+
+        val days = weatherResponse.days!!
+        val windSpeeds = days.mapNotNull { it.windspeed?.times(1.944) }
+        val gusts = days.mapNotNull { it.windgust?.times(1.944) }
+        val precipDays = days.count { it.precip != null && it.precip > 0 }
+
+        val stats = buildJsonObject {
+            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("month", "$year-$monthStr")
+            put("days_with_data", days.size)
+            if (windSpeeds.isNotEmpty()) {
+                put("avg_wind_knots", String.format("%.1f", windSpeeds.average()).toDouble())
+                put("min_wind_knots", String.format("%.1f", windSpeeds.minOrNull() ?: 0).toDouble())
+                put("max_wind_knots", String.format("%.1f", windSpeeds.maxOrNull() ?: 0).toDouble())
+            }
+            if (gusts.isNotEmpty()) {
+                put("avg_gust_knots", String.format("%.1f", gusts.average()).toDouble())
+                put("max_gust_knots", String.format("%.1f", gusts.maxOrNull() ?: 0).toDouble())
+            }
+            put("rainy_days", precipDays)
+        }
+
+        stats.toString()
+    } catch (e: Exception) {
+        Log.e("handleGetMonthlyStats failed", e)
+        buildErrorJson("Failed to fetch monthly stats: ${e.message}", "get_monthly_stats")
+    }
+
+    /**
+     * Filter days by wind and weather criteria.
+     * Returns only days matching the specified conditions.
+     */
+    private suspend fun handleGetBestDays(
+        args: JsonObject,
+        repo: WeatherRepository
+    ): String = try {
+        val locationName = args["location_name"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: location_name", "get_best_days")
+        val startDate = args["start_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: start_date", "get_best_days")
+        val endDate = args["end_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: end_date", "get_best_days")
+
+        // Parse optional filter parameters
+        val minWindSpeed = args["min_wind_speed"]?.jsonPrimitive?.content?.toDoubleOrNull()
+        val maxWindSpeed = args["max_wind_speed"]?.jsonPrimitive?.content?.toDoubleOrNull()
+        val maxGust = args["max_gust"]?.jsonPrimitive?.content?.toDoubleOrNull()
+        val noRain = args["no_rain"]?.jsonPrimitive?.content?.toBoolean() ?: false
+
+        // Validate date format
+        try {
+            LocalDate.parse(startDate)
+            LocalDate.parse(endDate)
+        } catch (e: Exception) {
+            return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_best_days")
+        }
+
+        val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
+
+        if (weatherResponse.days.isNullOrEmpty()) {
+            return buildJsonObject {
+                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("date_range", "$startDate to $endDate")
+                put("matching_days", 0)
+                putJsonArray("days") {}
+            }.toString()
+        }
+
+        // Filter days by criteria
+        val matchingDays = weatherResponse.days!!.filter { day ->
+            val windKnots = day.windspeed?.let { it * 1.944 } ?: 0.0
+            val gustKnots = day.windgust?.let { it * 1.944 } ?: 0.0
+            val hasPrecip = day.precip != null && day.precip > 0
+
+            val windOk = (minWindSpeed == null || windKnots >= minWindSpeed) &&
+                         (maxWindSpeed == null || windKnots <= maxWindSpeed)
+            val gustOk = maxGust == null || gustKnots <= maxGust
+            val rainOk = !noRain || !hasPrecip
+
+            windOk && gustOk && rainOk
+        }
+
+        val matchingDaysSummary = matchingDays.map { day ->
+            buildJsonObject {
+                put("date", day.datetime)
+                if (day.windspeed != null) {
+                    put("avg_wind_knots", String.format("%.1f", day.windspeed * 1.944).toDouble())
+                }
+                if (day.windgust != null) {
+                    put("max_gust_knots", String.format("%.1f", day.windgust * 1.944).toDouble())
+                }
+                if (day.conditions != null) put("conditions", day.conditions)
+                if (day.precip != null && day.precip > 0) put("precip_mm", day.precip)
+            }
+        }
+
+        buildJsonObject {
+            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("date_range", "$startDate to $endDate")
+            put("matching_days", matchingDays.size)
+            putJsonArray("days") {
+                matchingDaysSummary.forEach { daySummary ->
+                    add(daySummary)
+                }
+            }
+        }.toString()
+    } catch (e: Exception) {
+        Log.e("handleGetBestDays failed", e)
+        buildErrorJson("Failed to filter best days: ${e.message}", "get_best_days")
+    }
+
+    /**
+     * Builds a structured error JSON response.
+     */
+    private fun buildErrorJson(message: String, toolName: String): String {
+        return buildJsonObject {
+            put("error", message)
+            put("tool", toolName)
+        }.toString()
+    }
+
+    /**
+     * Helper to get the number of days in a month.
+     */
+    private fun getDaysInMonth(year: Int, month: Int): Int {
+        return when (month) {
+            1, 3, 5, 7, 8, 10, 12 -> 31
+            4, 6, 9, 11 -> 30
+            2 -> if (isLeapYear(year)) 29 else 28
+            else -> 28
+        }
+    }
+
+    /**
+     * Helper to determine if a year is a leap year.
+     */
+    private fun isLeapYear(year: Int): Boolean {
+        return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+    }
+}
