@@ -2,8 +2,10 @@ package home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import core.Database
 import core.DatabaseExportImport
 import core.GeoSearchResult
+import core.Log
 import core.NetworkException
 import core.WeatherRepository
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +80,8 @@ sealed class NavigationEvent {
 @OptIn(FlowPreview::class)
 class HomeViewModel(
     private val weatherRepository: WeatherRepository,
-    private val databaseExportImport: DatabaseExportImport
+    private val databaseExportImport: DatabaseExportImport,
+    private val database: Database
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -101,6 +104,15 @@ class HomeViewModel(
 
     init {
         loadSavedPlaces()
+
+        // Cleanup any forecast data on app startup (keep only historical data up to yesterday)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                database.cleanupForecastDays()
+            } catch (e: Exception) {
+                Log.e("Failed to cleanup forecast days", e)
+            }
+        }
 
         viewModelScope.launch {
             searchText

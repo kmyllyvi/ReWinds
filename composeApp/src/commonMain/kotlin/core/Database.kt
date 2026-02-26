@@ -5,6 +5,12 @@ import com.km.rewinds.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * A factory for creating a platform-specific SQLDriver.
@@ -44,6 +50,9 @@ interface Database {
 
     // delete a place
     suspend fun deletePlace(placeName: String)
+
+    // cleanup forecast data: remove any days after yesterday
+    suspend fun cleanupForecastDays()
 }
 
 class SqlDelightDatabase(
@@ -205,6 +214,17 @@ class SqlDelightDatabase(
     override suspend fun deletePlace(placeName: String) {
         withContext(Dispatchers.IO) {
             dbQuery.deleteWeatherResponseByResolvedAddress(placeName)
+        }
+    }
+
+    override suspend fun cleanupForecastDays() {
+        withContext(Dispatchers.IO) {
+            val yesterday = LocalDate.parse(Clock.System.now().toLocalDateTime(TimeZone.UTC).date.toString()).minus(1, DateTimeUnit.DAY).toString()
+            val places = getAllSavedPlaces()
+            places.forEach { place ->
+                dbQuery.deleteDaysAfterDate(place, yesterday)
+                Log.d("Database - Cleaned up forecast days after $yesterday for $place")
+            }
         }
     }
 }

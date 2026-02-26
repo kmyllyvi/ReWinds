@@ -102,6 +102,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
 getDaysForWeatherResponse:
 SELECT * FROM Day WHERE weatherResponseResolvedAddress = ?;
 
+deleteDaysAfterDate:
+DELETE FROM Day WHERE weatherResponseResolvedAddress = ? AND datetime > ?;
+
 lastInsertRowId:
 SELECT last_insert_rowid();
 

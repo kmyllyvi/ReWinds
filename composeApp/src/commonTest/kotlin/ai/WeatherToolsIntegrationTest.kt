@@ -1,14 +1,12 @@
 package ai
 
-import core.Day
 import core.WeatherRepository
 import core.WeatherResponse
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.plus
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -34,9 +32,10 @@ class WeatherToolsIntegrationTest {
             val result = WeatherTools.handleToolCall("get_wind_summary", args, integrationRepository)
 
             assertTrue(isValidJson(result), "Result should be valid JSON")
-            assertTrue(result.contains("place"), "Should have place field")
-            assertTrue(result.contains("date_range"), "Should have date_range field")
-            assertTrue(result.contains("wind_summary"), "Should have wind_summary array")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("place"), "Should have place field")
+            assertTrue(json.containsKey("date_range"), "Should have date_range field")
+            assertTrue(json.containsKey("wind_summary"), "Should have wind_summary array")
         }
     }
 
@@ -50,9 +49,12 @@ class WeatherToolsIntegrationTest {
             val result = WeatherTools.handleToolCall("list_saved_places", args, integrationRepository)
 
             assertTrue(isValidJson(result), "Result should be valid JSON")
-            assertTrue(result.contains("Tarifa"), "Should contain Tarifa")
-            assertTrue(result.contains("Cabarete"), "Should contain Cabarete")
-            assertTrue(result.contains("count"), "Should show count")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("places"), "Should contain places array")
+            assertTrue(json.containsKey("count"), "Should show count")
+            val placesStr = json.toString()
+            assertTrue(placesStr.contains("Tarifa"), "Places should contain Tarifa")
+            assertTrue(placesStr.contains("Cabarete"), "Places should contain Cabarete")
         }
     }
 
@@ -69,9 +71,10 @@ class WeatherToolsIntegrationTest {
             val result = WeatherTools.handleToolCall("get_monthly_stats", args, integrationRepository)
 
             assertTrue(isValidJson(result), "Result should be valid JSON")
-            assertTrue(result.contains("place"), "Should have place field")
-            assertTrue(result.contains("month"), "Should have month field")
-            assertTrue(result.contains("avg_wind_knots"), "Should have avg_wind_knots")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("place"), "Should have place field")
+            assertTrue(json.containsKey("month"), "Should have month field")
+            assertTrue(json.containsKey("avg_wind_knots"), "Should have avg_wind_knots")
         }
     }
 
@@ -88,8 +91,9 @@ class WeatherToolsIntegrationTest {
             val result = WeatherTools.handleToolCall("get_best_days", args, integrationRepository)
 
             assertTrue(isValidJson(result), "Result should be valid JSON")
-            assertTrue(result.contains("place"), "Should have place field")
-            assertTrue(result.contains("matching_days"), "Should have matching_days count")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("place"), "Should have place field")
+            assertTrue(json.containsKey("matching_days"), "Should have matching_days count")
         }
     }
 
@@ -134,15 +138,19 @@ class WeatherToolsIntegrationTest {
             }
             val result = WeatherTools.handleToolCall("get_wind_summary", args, integrationRepository)
 
-            assertTrue(result.contains("place"), "Should have place")
-            assertTrue(result.contains("date_range"), "Should have date_range")
-            assertTrue(result.contains("days_count"), "Should have days_count")
-            assertTrue(result.contains("wind_summary"), "Should have wind_summary")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("place"), "Should have place")
+            assertTrue(json.containsKey("date_range"), "Should have date_range")
+            assertTrue(json.containsKey("days_count"), "Should have days_count")
+            assertTrue(json.containsKey("wind_summary"), "Should have wind_summary")
         }
     }
 
-    private fun isValidJson(json: String): Boolean {
-        return json.startsWith("{") && json.endsWith("}")
+    private fun isValidJson(json: String): Boolean = try {
+        Json.parseToJsonElement(json)
+        true
+    } catch (e: Exception) {
+        false
     }
 }
 
@@ -180,59 +188,13 @@ private class IntegrationMockRepository : WeatherRepository {
             days = emptyList()
         )
 
-        val start = LocalDate.parse(fromDate)
         val end = if (toDate != null) {
-            LocalDate.parse(toDate)
+            toDate
         } else {
-            start
+            fromDate
         }
 
-        val days = mutableListOf<Day>()
-        var current = start
-        while (current <= end) {
-            days.add(
-                Day(
-                    datetime = current.toString(),
-                    datetimeEpoch = null,
-                    tempmax = 22.0,
-                    tempmin = 15.0,
-                    temp = 18.5,
-                    feelslikemax = null,
-                    feelslikemin = null,
-                    feelslike = null,
-                    dew = null,
-                    humidity = 65.0,
-                    precip = null,
-                    precipprob = null,
-                    precipcover = null,
-                    preciptype = null,
-                    snow = null,
-                    snowdepth = null,
-                    windgust = 12.0,
-                    windspeed = 10.0,
-                    winddir = 230.0,
-                    pressure = null,
-                    cloudcover = null,
-                    visibility = null,
-                    solarradiation = null,
-                    solarenergy = null,
-                    uvindex = null,
-                    sunrise = null,
-                    sunriseEpoch = null,
-                    sunset = null,
-                    sunsetEpoch = null,
-                    moonphase = null,
-                    conditions = "Clear",
-                    description = null,
-                    icon = null,
-                    stations = null,
-                    source = "test",
-                    hours = null,
-                    normal = null
-                )
-            )
-            current = current.plus(1, DateTimeUnit.DAY)
-        }
+        val days = TestWeatherRepositoryFactory.generateTestDays(fromDate, end)
 
         return WeatherResponse(
             resolvedAddress = placeData.name,

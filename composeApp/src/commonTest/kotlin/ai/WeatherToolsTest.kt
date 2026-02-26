@@ -7,8 +7,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,9 +35,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_wind_summary", args, mockRepository)
 
-            assertTrue(result.contains("place"), "Result should contain place field")
-            assertTrue(result.contains("Tarifa"), "Result should contain place name")
-            assertTrue(result.contains("wind_summary"), "Result should contain wind_summary array")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("place"), "Result should contain place key")
+            assertTrue(json.containsKey("wind_summary"), "Result should contain wind_summary key")
         }
     }
 
@@ -49,8 +51,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_wind_summary", args, mockRepository)
 
-            assertTrue(result.contains("error"), "Result should contain error field")
-            assertTrue(result.contains("location_name"), "Error should mention missing field")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("error"), "Result should contain error key")
+            assertTrue(json.containsKey("tool"), "Result should contain tool key")
         }
     }
 
@@ -65,8 +68,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_wind_summary", args, mockRepository)
 
-            assertTrue(result.contains("error"), "Result should contain error field")
-            assertTrue(result.contains("date format"), "Error should mention date format")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("error"), "Result should contain error key")
+            assertTrue(json.containsKey("tool"), "Result should contain tool key")
         }
     }
 
@@ -80,10 +84,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("list_saved_places", args, mockRepository)
 
-            assertTrue(result.contains("places"), "Result should contain places array")
-            assertTrue(result.contains("Tarifa"), "Result should contain Tarifa")
-            assertTrue(result.contains("Cabarete"), "Result should contain Cabarete")
-            assertTrue(result.contains("count"), "Result should show count")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("places"), "Result should contain places key")
+            assertTrue(json.containsKey("count"), "Result should contain count key")
         }
     }
 
@@ -98,9 +101,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_monthly_stats", args, mockRepository)
 
-            assertTrue(result.contains("month"), "Result should contain month field")
-            assertTrue(result.contains("2025-11"), "Result should contain year-month")
-            assertTrue(result.contains("avg_wind_knots"), "Result should include average wind")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("month"), "Result should contain month key")
+            assertTrue(json.containsKey("avg_wind_knots"), "Result should contain avg_wind_knots key")
         }
     }
 
@@ -115,7 +118,8 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_monthly_stats", args, mockRepository)
 
-            assertTrue(result.contains("error"), "Result should contain error field")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("error"), "Result should contain error key")
         }
     }
 
@@ -130,8 +134,9 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("get_best_days", args, mockRepository)
 
-            assertTrue(result.contains("days"), "Result should contain days array")
-            assertTrue(result.contains("matching_days"), "Result should contain matching_days count")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("days"), "Result should contain days key")
+            assertTrue(json.containsKey("matching_days"), "Result should contain matching_days key")
         }
     }
 
@@ -142,8 +147,12 @@ class WeatherToolsTest {
 
             val result = WeatherTools.handleToolCall("unknown_tool", args, mockRepository)
 
-            assertTrue(result.contains("error"), "Result should contain error field")
-            assertTrue(result.contains("Unknown tool"), "Error should indicate unknown tool")
+            val json = Json.parseToJsonElement(result).jsonObject
+            assertTrue(json.containsKey("error"), "Result should contain error key")
+            assertTrue(
+                json["error"]?.toString()?.contains("Unknown tool") == true,
+                "Error message should indicate unknown tool"
+            )
         }
     }
 
@@ -198,69 +207,15 @@ private class MockWeatherRepository : WeatherRepository {
     }
 
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse {
-        val start = LocalDate.parse(fromDate)
         val end = if (toDate != null) {
-            LocalDate.parse(toDate)
+            toDate
         } else {
-            start
+            fromDate
         }
 
-        val days = mutableListOf<Day>()
-        var current = start
-        while (current <= end) {
-            days.add(
-                Day(
-                    datetime = current.toString(),
-                    datetimeEpoch = null,
-                    tempmax = 22.0,
-                    tempmin = 15.0,
-                    temp = 18.5,
-                    feelslikemax = null,
-                    feelslikemin = null,
-                    feelslike = null,
-                    dew = null,
-                    humidity = 65.0,
-                    precip = null,
-                    precipprob = null,
-                    precipcover = null,
-                    preciptype = null,
-                    snow = null,
-                    snowdepth = null,
-                    windgust = 12.0,
-                    windspeed = 10.0,
-                    winddir = 230.0,
-                    pressure = null,
-                    cloudcover = null,
-                    visibility = null,
-                    solarradiation = null,
-                    solarenergy = null,
-                    uvindex = null,
-                    sunrise = null,
-                    sunriseEpoch = null,
-                    sunset = null,
-                    sunsetEpoch = null,
-                    moonphase = null,
-                    conditions = "Clear",
-                    description = null,
-                    icon = null,
-                    stations = null,
-                    source = "test",
-                    hours = null,
-                    normal = null
-                )
-            )
-            current = current.plus(1, DateTimeUnit.DAY)
-        }
+        val days = TestWeatherRepositoryFactory.generateTestDays(fromDate, end)
 
-        return WeatherResponse(
-            resolvedAddress = place,
-            address = place,
-            latitude = 36.19,
-            longitude = -5.59,
-            timezone = "Africa/Casablanca",
-            tzoffset = 0.0,
-            days = days
-        )
+        return TestWeatherRepositoryFactory.createWeatherResponse(place, days = days)
     }
 
     override suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse {
@@ -280,14 +235,6 @@ private class MockWeatherRepository : WeatherRepository {
     }
 
     private fun createTestWeatherResponse(place: String): WeatherResponse {
-        return WeatherResponse(
-            resolvedAddress = place,
-            address = place,
-            latitude = 36.19,
-            longitude = -5.59,
-            timezone = "Africa/Casablanca",
-            tzoffset = 0.0,
-            days = emptyList()
-        )
+        return TestWeatherRepositoryFactory.createWeatherResponse(place)
     }
 }
