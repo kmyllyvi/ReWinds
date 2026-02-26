@@ -7,6 +7,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlinx.datetime.minus
+import kotlin.time.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
@@ -128,29 +132,49 @@ class WeatherRepositoryImpl(
         return "$lat%2C$lon"
     }
 
+    private fun truncateToYesterday(toDate: String): String {
+        try {
+            val requestedDate = LocalDate.parse(toDate)
+            val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+            val yesterday = today.minus(1, DateTimeUnit.DAY)
+            return if (requestedDate > yesterday) {
+                Log.d("WeatherRepository - Truncating toDate from $toDate to $yesterday (only historical data allowed)")
+                yesterday.toString()
+            } else {
+                toDate
+            }
+        } catch (e: Exception) {
+            Log.e("Error parsing toDate: $toDate", e)
+            return toDate
+        }
+    }
+
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse {
         Log.d("WeatherRepository, getDaysRange for: $place, from: $fromDate, to: $toDate")
 
         if (toDate == null) { // Fetching a single day
+            // Prevent fetching future/forecast data - only allow up to yesterday
+            val truncatedFromDate = truncateToYesterday(fromDate)
             val existingPlaceData = database.getSavedPlaceFull(place) // Get WeatherResponse for the place
-            val dayFromDb = existingPlaceData?.days?.find { it.datetime == fromDate }
+            val dayFromDb = existingPlaceData?.days?.find { it.datetime == truncatedFromDate }
 
             if (dayFromDb != null) {
-                Log.d("WeatherRepository - found existing single day data in DB: $place date: $fromDate")
+                Log.d("WeatherRepository - found existing single day data in DB: $place date: $truncatedFromDate")
                 return existingPlaceData.copy(days = listOf(dayFromDb)) // Return WeatherResponse with only that day
             } else {
-                Log.d("Fetching single day from network: $place, $fromDate")
+                Log.d("Fetching single day from network: $place, $truncatedFromDate")
                 val locationString = resolveLocationString(place, existingPlaceData)
-                val networkResponse = fetchWeatherFromNetwork(locationString, fromDate, null)
+                val networkResponse = fetchWeatherFromNetwork(locationString, truncatedFromDate, null)
                 val correctedResponse = networkResponse.copy(resolvedAddress = place, address = place)
                 database.saveWeatherResponse(correctedResponse)
                 return correctedResponse
             }
         } else { // Fetching a date range
-            val targetDates = generateDateList(fromDate, toDate)
+            val truncatedToDate = truncateToYesterday(toDate)
+            val targetDates = generateDateList(fromDate, truncatedToDate)
 
             if (targetDates.isEmpty()) {
-                Log.d("WeatherRepository - targetDates list is empty for range $fromDate to $toDate. Returning empty response.")
+                Log.d("WeatherRepository - targetDates list is empty for range $fromDate to $truncatedToDate. Returning empty response.")
                 val existingPlaceInfo = database.getSavedPlaceFull(place) // To get address, lat, lon for empty response shell
                 return WeatherResponse( // Return a valid WeatherResponse shell with no days
                     queryCost = 0,
@@ -173,7 +197,7 @@ class WeatherRepositoryImpl(
                     try {
                         val dayDate = LocalDate.parse(day.datetime)
                         val from = LocalDate.parse(fromDate)
-                        val to = LocalDate.parse(toDate)
+                        val to = LocalDate.parse(truncatedToDate)
                         dayDate in from..to // Check if dayDate is in the range
                     } catch (e: Exception) {
                         false // If date parsing fails for a stored day, exclude it
@@ -188,7 +212,7 @@ class WeatherRepositoryImpl(
 
             if (missingDates.isEmpty()) {
                 // All data is already in the database
-                Log.d("WeatherRepository - Full range $fromDate to $toDate found in DB for $place.")
+                Log.d("WeatherRepository - Full range $fromDate to $truncatedToDate found in DB for $place.")
                 val daysInDbWithinDateRange = existingPlaceData?.days?.filter { day ->
                     targetDates.contains(day.datetime)
                 }
