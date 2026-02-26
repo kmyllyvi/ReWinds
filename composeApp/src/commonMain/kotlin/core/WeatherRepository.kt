@@ -120,6 +120,14 @@ class WeatherRepositoryImpl(
         return gaps
     }
 
+    private fun resolveLocationString(place: String, existingData: WeatherResponse?): String {
+        if (existingData == null) return place
+        val lat = existingData.latitude
+        val lon = existingData.longitude
+        if (lat == 0.0 && lon == 0.0) return place
+        return "$lat%2C$lon"
+    }
+
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse {
         Log.d("WeatherRepository, getDaysRange for: $place, from: $fromDate, to: $toDate")
 
@@ -132,9 +140,11 @@ class WeatherRepositoryImpl(
                 return existingPlaceData.copy(days = listOf(dayFromDb)) // Return WeatherResponse with only that day
             } else {
                 Log.d("Fetching single day from network: $place, $fromDate")
-                val networkResponse = fetchWeatherFromNetwork(place, fromDate, null)
-                database.saveWeatherResponse(networkResponse) // Save and merge
-                return networkResponse
+                val locationString = resolveLocationString(place, existingPlaceData)
+                val networkResponse = fetchWeatherFromNetwork(locationString, fromDate, null)
+                val correctedResponse = networkResponse.copy(resolvedAddress = place, address = place)
+                database.saveWeatherResponse(correctedResponse)
+                return correctedResponse
             }
         } else { // Fetching a date range
             val targetDates = generateDateList(fromDate, toDate)
@@ -187,14 +197,16 @@ class WeatherRepositoryImpl(
 
             // Step 3: Calculate consecutive date gaps
             val dateGaps = calculateDateGaps(missingDates)
+            val locationString = resolveLocationString(place, existingPlaceData)
             Log.d("WeatherRepository - Found ${missingDates.size} missing days in ${dateGaps.size} gap(s) for $place. Fetching gaps...")
 
             // Step 4: Fetch each gap from the network
             for (gap in dateGaps) {
                 try {
                     Log.d("WeatherRepository - Fetching gap: ${gap.startDate} to ${gap.endDate}")
-                    val gapResponse = fetchWeatherFromNetwork(place, gap.startDate, gap.endDate)
-                    database.saveWeatherResponse(gapResponse) // Save and merge each gap
+                    val gapResponse = fetchWeatherFromNetwork(locationString, gap.startDate, gap.endDate)
+                    val correctedGapResponse = gapResponse.copy(resolvedAddress = place, address = place)
+                    database.saveWeatherResponse(correctedGapResponse)
                 } catch (e: Exception) {
                     Log.e("Failed to fetch gap ${gap.startDate} to ${gap.endDate} for $place", e)
                     // Continue with other gaps even if one fails
