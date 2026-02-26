@@ -232,7 +232,7 @@ object WeatherTools {
 
         if (weatherResponse.days.isNullOrEmpty()) {
             return buildJsonObject {
-                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("place", weatherResponse.resolvedAddress)
                 put("date_range", "$startDate to $endDate")
                 putJsonArray("wind_summary") {}
                 put("note", "No data available for this date range")
@@ -259,7 +259,7 @@ object WeatherTools {
         }
 
         buildJsonObject {
-            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("place", weatherResponse.resolvedAddress)
             put("date_range", "$startDate to $endDate")
             put("days_count", windSummary.size)
             putJsonArray("wind_summary") {
@@ -318,7 +318,7 @@ object WeatherTools {
 
         if (weatherResponse.days.isNullOrEmpty()) {
             return buildJsonObject {
-                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("place", weatherResponse.resolvedAddress)
                 put("month", "$year-$monthStr")
                 put("note", "No data available for this month")
             }.toString()
@@ -330,7 +330,7 @@ object WeatherTools {
         val precipDays = days.count { it.precip != null && it.precip > 0 }
 
         val stats = buildJsonObject {
-            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("place", weatherResponse.resolvedAddress)
             put("month", "$year-$monthStr")
             put("days_with_data", days.size)
             if (windSpeeds.isNotEmpty()) {
@@ -384,7 +384,7 @@ object WeatherTools {
 
         if (weatherResponse.days.isNullOrEmpty()) {
             return buildJsonObject {
-                put("place", weatherResponse.resolvedAddress ?: locationName)
+                put("place", weatherResponse.resolvedAddress)
                 put("date_range", "$startDate to $endDate")
                 put("matching_days", 0)
                 putJsonArray("days") {}
@@ -420,7 +420,7 @@ object WeatherTools {
         }
 
         buildJsonObject {
-            put("place", weatherResponse.resolvedAddress ?: locationName)
+            put("place", weatherResponse.resolvedAddress)
             put("date_range", "$startDate to $endDate")
             put("matching_days", matchingDays.size)
             putJsonArray("days") {
