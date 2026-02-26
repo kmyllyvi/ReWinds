@@ -13,6 +13,14 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.math.round
+
+// Multiplatform-compatible number formatter (String.format not available on iOS)
+private fun Double.roundTo(decimals: Int): Double {
+    var multiplier = 1.0
+    repeat(decimals) { multiplier *= 10 }
+    return round(this * multiplier) / multiplier
+}
 
 /**
  * Sealed class representing a tool available to Claude.
@@ -236,10 +244,10 @@ object WeatherTools {
                 put("date", day.datetime)
                 // Convert m/s to knots (1 m/s ≈ 1.944 knots)
                 if (day.windspeed != null) {
-                    put("avg_wind_knots", String.format("%.1f", day.windspeed * 1.944).toDouble())
+                    put("avg_wind_knots", (day.windspeed * 1.944).roundTo(1))
                 }
                 if (day.windgust != null) {
-                    put("max_gust_knots", String.format("%.1f", day.windgust * 1.944).toDouble())
+                    put("max_gust_knots", (day.windgust * 1.944).roundTo(1))
                 }
                 // Simple heuristic: sustained wind is between 15-25 knots
                 val avgWindKnots = day.windspeed?.let { it * 1.944 } ?: 0.0
@@ -326,13 +334,13 @@ object WeatherTools {
             put("month", "$year-$monthStr")
             put("days_with_data", days.size)
             if (windSpeeds.isNotEmpty()) {
-                put("avg_wind_knots", String.format("%.1f", windSpeeds.average()).toDouble())
-                put("min_wind_knots", String.format("%.1f", windSpeeds.minOrNull() ?: 0).toDouble())
-                put("max_wind_knots", String.format("%.1f", windSpeeds.maxOrNull() ?: 0).toDouble())
+                put("avg_wind_knots", windSpeeds.average().roundTo(1))
+                put("min_wind_knots", (windSpeeds.minOrNull() ?: 0.0).roundTo(1))
+                put("max_wind_knots", (windSpeeds.maxOrNull() ?: 0.0).roundTo(1))
             }
             if (gusts.isNotEmpty()) {
-                put("avg_gust_knots", String.format("%.1f", gusts.average()).toDouble())
-                put("max_gust_knots", String.format("%.1f", gusts.maxOrNull() ?: 0).toDouble())
+                put("avg_gust_knots", gusts.average().roundTo(1))
+                put("max_gust_knots", (gusts.maxOrNull() ?: 0.0).roundTo(1))
             }
             put("rainy_days", precipDays)
         }
@@ -401,10 +409,10 @@ object WeatherTools {
             buildJsonObject {
                 put("date", day.datetime)
                 if (day.windspeed != null) {
-                    put("avg_wind_knots", String.format("%.1f", day.windspeed * 1.944).toDouble())
+                    put("avg_wind_knots", (day.windspeed * 1.944).roundTo(1))
                 }
                 if (day.windgust != null) {
-                    put("max_gust_knots", String.format("%.1f", day.windgust * 1.944).toDouble())
+                    put("max_gust_knots", (day.windgust * 1.944).roundTo(1))
                 }
                 if (day.conditions != null) put("conditions", day.conditions)
                 if (day.precip != null && day.precip > 0) put("precip_mm", day.precip)
