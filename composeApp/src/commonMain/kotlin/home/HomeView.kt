@@ -200,7 +200,8 @@ private fun HomeHeader(onSettingsClick: () -> Unit, showDebug: Boolean) {
                 Text(
                     "ReWinds",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             Button(

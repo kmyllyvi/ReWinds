@@ -1,8 +1,10 @@
 package home
 
+import core.Database
 import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.WeatherRepository
+import core.WeatherResponse
 import home.HomeViewModel
 import home.PlaceDisplayData
 import kotlin.test.AfterTest
@@ -38,6 +40,30 @@ class MockWeatherRepository : WeatherRepository {
     override suspend fun deletePlace(name: String) {}
 }
 
+/**
+ * Mock implementation of Database for testing
+ */
+class MockDatabase : Database {
+    private val savedPlaces = mutableMapOf<String, WeatherResponse>()
+
+    override suspend fun getAllSavedPlaces(): List<String> = savedPlaces.keys.toList()
+
+    override suspend fun getSavedPlaceFull(place: String): WeatherResponse? = savedPlaces[place]
+
+    override suspend fun saveWeatherResponse(response: WeatherResponse) {
+        savedPlaces[response.resolvedAddress] = response
+    }
+
+    override suspend fun getWeatherDataFor(placeName: String, date: String): WeatherResponse? = null
+
+    override suspend fun deletePlace(placeName: String) {
+        savedPlaces.remove(placeName)
+    }
+
+    override suspend fun cleanupForecastDays() {
+        // No-op for testing
+    }
+}
 
 /**
  * Unit tests for HomeViewModel to verify app logic and state management
@@ -48,6 +74,7 @@ class HomeViewModelTest {
 
     private lateinit var viewModel: HomeViewModel
     private lateinit var weatherRepository: MockWeatherRepository
+    private lateinit var database: MockDatabase
     private val testDispatcher = StandardTestDispatcher()
 
     @BeforeTest
@@ -57,11 +84,12 @@ class HomeViewModelTest {
 
         // Create mock implementations for testing
         weatherRepository = MockWeatherRepository()
+        database = MockDatabase()
 
         // Initialize ViewModel with mock dependencies
         // Using real DatabaseExportImport since it's final and can't be mocked;
         // these tests don't exercise export/import functionality
-        viewModel = HomeViewModel(weatherRepository, DatabaseExportImport())
+        viewModel = HomeViewModel(weatherRepository, DatabaseExportImport(), database)
     }
 
     @AfterTest

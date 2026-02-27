@@ -139,7 +139,8 @@ fun PlaceSummaryView(
                     currentPlaceName,
                     style = MaterialTheme.typography.headlineSmall,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
