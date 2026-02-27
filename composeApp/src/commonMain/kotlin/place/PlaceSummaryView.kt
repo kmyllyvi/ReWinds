@@ -80,6 +80,14 @@ internal fun parseMonth(dateString: String?): Int? {
     return dateString?.split("-")?.getOrNull(1)?.toIntOrNull()
 }
 
+// Helper to get days in month (accounting for leap years)
+internal fun getDaysInMonth(month: Int, year: Int): Int {
+    return when (month) {
+        2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28 // Leap year
+        4, 6, 9, 11 -> 30
+        else -> 31
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -308,8 +316,22 @@ private fun MonthCardForGrid(
 ) {
     val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     val monthName = monthNames.getOrElse(month - 1) { "M$month" }
-    val hasData = missingDaysCount == 0
-    val backgroundColor = if (hasData) Color(0xFFe2f2ce) else Color(0xFFF0F0F0)
+
+    // Calculate total days in month and present days
+    val totalDaysInMonth = getDaysInMonth(month, year)
+    val presentDaysCount = totalDaysInMonth - missingDaysCount
+
+    // Determine data status
+    val isFullyLoaded = missingDaysCount == 0
+    val isPartiallyLoaded = missingDaysCount > 0 && presentDaysCount > 0
+    val hasNoData = presentDaysCount == 0
+
+    // Color based on completion status
+    val backgroundColor = when {
+        isFullyLoaded -> Color(0xFFe2f2ce) // Light green - fully loaded
+        isPartiallyLoaded -> Color(0xFFf5e6cc) // Light tan/orange - partially loaded
+        else -> Color(0xFFF0F0F0) // Light gray - no data
+    }
 
     Box(
         modifier = modifier
@@ -317,10 +339,12 @@ private fun MonthCardForGrid(
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable {
-                if (hasData) {
-                    onMonthSelected()
-                } else {
+                if (hasNoData) {
+                    // No data at all - prompt to download
                     onPromptForMissingDays()
+                } else {
+                    // Has some data (full or partial) - show the data
+                    onMonthSelected()
                 }
             }
             .padding(16.dp)
@@ -333,7 +357,7 @@ private fun MonthCardForGrid(
             )
             Spacer(modifier = Modifier.height(4.dp))
 
-            if (hasData && temperature != null) {
+            if (isFullyLoaded && temperature != null) {
                 val tempStr = kotlin.math.round(temperature * 10) / 10.0
                 Text("Temp: $tempStr°C", style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(2.dp))
@@ -341,7 +365,7 @@ private fun MonthCardForGrid(
                 Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    if (missingDaysCount > 0) "Missing data" else "No data",
+                    "$presentDaysCount/$totalDaysInMonth days",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
