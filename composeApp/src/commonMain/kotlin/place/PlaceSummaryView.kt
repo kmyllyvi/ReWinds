@@ -365,7 +365,7 @@ private fun MonthCardForGrid(
                 Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    "$presentDaysCount/$totalDaysInMonth days",
+                    if (hasNoData) "No stored days" else "$presentDaysCount/$totalDaysInMonth days",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
