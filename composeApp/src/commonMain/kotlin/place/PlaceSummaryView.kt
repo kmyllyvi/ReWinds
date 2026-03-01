@@ -129,7 +129,10 @@ fun PlaceSummaryView(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                IconButton(onClick = onBackClick) {
+                IconButton(onClick = {
+                    vm.refreshData()
+                    onBackClick()
+                }) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",

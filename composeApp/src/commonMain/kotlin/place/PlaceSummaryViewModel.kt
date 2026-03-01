@@ -86,6 +86,10 @@ class PlaceSummaryViewModel(
         }
     }
 
+    fun refreshData() {
+        loadWeatherData()
+    }
+
     private fun loadWeatherData() {
         viewModelScope.launch {
             try {
