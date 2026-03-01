@@ -20,6 +20,9 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import kotlinx.datetime.minus
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 sealed interface WeatherSummaryUiState {
     object Loading : WeatherSummaryUiState
@@ -191,21 +194,9 @@ class PlaceSummaryViewModel(
             }
 
             try {
-                Log.d("Attempting to download full month data for $year-$month for place: $placeName")
-
-                val firstDayOfMonth = LocalDate(year, month, 1)
-                val lastDayOfMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
-
-                val startDateString = firstDayOfMonth.toString()
-                val endDateString = lastDayOfMonth.toString()
-
-                Log.d("Calculated date range for download: $startDateString to $endDateString")
-
-                weatherRepository.getDaysRange(placeName, startDateString, endDateString)
-
-                Log.d("Successfully called getDaysRange for $year-$month. Reloading weather data...")
+                weatherRepository.downloadFullMonth(placeName, year, month)
+                Log.d("Successfully downloaded full month data for $year-$month. Reloading weather data...")
                 loadWeatherData()
-
             } catch (e: Exception) {
                 Log.e("Error downloading full month data for $year-$month", e)
                 _uiState.value = WeatherSummaryUiState.Error(

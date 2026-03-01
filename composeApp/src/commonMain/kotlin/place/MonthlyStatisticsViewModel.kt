@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
 
 // CalculatedStats data class remains the same
 data class CalculatedStats(
@@ -44,6 +46,8 @@ class MonthlyStatisticsViewModel(
     private val _dailySummaries = MutableStateFlow<List<DayWeatherSummary>>(emptyList())
     val dailySummaries: StateFlow<List<DayWeatherSummary>> = _dailySummaries.asStateFlow()
 
+    private val _isDownloading = MutableStateFlow(false)
+    val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
 
     init {
         // Log or print the retrieved arguments to verify
@@ -190,5 +194,33 @@ class MonthlyStatisticsViewModel(
             kiteableDaysCount = kiteableDaysCount, // Set the new count
             totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
         )
+    }
+
+    fun downloadFullMonth() {
+        viewModelScope.launch {
+            try {
+                _isDownloading.value = true
+                weatherRepository.downloadFullMonth(placeName, currentYear, currentMonth)
+                Log.d("Successfully downloaded full month. Reloading statistics...")
+                loadStatistics()
+            } catch (e: Exception) {
+                Log.e("Error downloading full month data", e)
+            } finally {
+                _isDownloading.value = false
+            }
+        }
+    }
+
+    fun getMissingDaysCount(dailySummaries: List<DayWeatherSummary>): Int {
+        val totalDaysInMonth = getDaysInMonth(currentMonth, currentYear)
+        return maxOf(0, totalDaysInMonth - dailySummaries.size)
+    }
+
+    private fun getDaysInMonth(month: Int, year: Int): Int {
+        return when (month) {
+            2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+            4, 6, 9, 11 -> 30
+            else -> 31
+        }
     }
 }

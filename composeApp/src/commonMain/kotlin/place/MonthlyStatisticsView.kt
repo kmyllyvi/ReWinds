@@ -1,14 +1,18 @@
 package place
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -52,6 +56,7 @@ fun MonthlyStatisticsView(
 ) {
     val statistics by vm.statistics.collectAsState()
     val dailySummaries by vm.dailySummaries.collectAsState()
+    val isDownloading by vm.isDownloading.collectAsState()
 
     key(year, month) {
         // Reload data when month or year changes
@@ -85,6 +90,33 @@ fun MonthlyStatisticsView(
                     item {
                         Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        // Show download button if data is incomplete
+                        val missingDaysCount = vm.getMissingDaysCount(dailySummaries)
+                        if (missingDaysCount > 0) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { vm.downloadFullMonth() },
+                                    enabled = !isDownloading
+                                ) {
+                                    if (isDownloading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .width(16.dp)
+                                                .height(16.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text(if (isDownloading) "Downloading..." else "Download $missingDaysCount missing day${if (missingDaysCount > 1) "s" else ""}")
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
 
                         if (currentStats.numberOfDaysWithData > 0) {
                             // Display Kiteable Days count prominently

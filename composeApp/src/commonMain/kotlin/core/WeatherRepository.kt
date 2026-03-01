@@ -37,6 +37,7 @@ interface WeatherRepository {
     suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse
     suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse
     suspend fun deletePlace(placeName: String)
+    suspend fun downloadFullMonth(place: String, year: Int, month: Int): WeatherResponse
 
     // new search
     suspend fun searchForLocations(query: String): List<GeoSearchResult>
@@ -260,6 +261,20 @@ class WeatherRepositoryImpl(
         withContext(Dispatchers.IO) {
             database.deletePlace(placeName)
         }
+    }
+
+    override suspend fun downloadFullMonth(place: String, year: Int, month: Int): WeatherResponse {
+        Log.d("Downloading full month data for $year-$month for place: $place")
+
+        val firstDayOfMonth = LocalDate(year, month, 1)
+        val lastDayOfMonth = firstDayOfMonth.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
+
+        val startDateString = firstDayOfMonth.toString()
+        val endDateString = lastDayOfMonth.toString()
+
+        Log.d("Calculated date range for download: $startDateString to $endDateString")
+
+        return getDaysRange(place, startDateString, endDateString)
     }
 
     // Fetch number of previous days
