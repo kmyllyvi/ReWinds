@@ -1,5 +1,6 @@
 package ai
 
+import core.AppConstants
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -145,9 +146,9 @@ data class AnthropicTool(
 @Serializable
 data class AnthropicRequest(
     @SerialName("model")
-    val model: String = "claude-3-5-sonnet-20241022",
+    val model: String = AppConstants.ANTHROPIC_MODEL,
     @SerialName("max_tokens")
-    val maxTokens: Int = 1024,
+    val maxTokens: Int = AppConstants.ANTHROPIC_MAX_TOKENS,
     @SerialName("system")
     val system: String,
     @SerialName("tools")

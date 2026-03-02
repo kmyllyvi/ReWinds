@@ -1,5 +1,6 @@
 package ai
 
+import core.AppConstants
 import core.Log
 import core.WeatherRepository
 import kotlinx.serialization.json.JsonObject
@@ -35,12 +36,7 @@ class AiRepository(
     // Maintain conversation history for the session
     private val conversationHistory = mutableListOf<ConversationMessage>()
 
-    private val systemPrompt = """
-        You are a wind sports assistant for the ReWinds app. You help kitesurfers and windsurfers
-        analyse historical weather data for their saved locations. Be concise and focus on
-        wind-relevant insights. When asked about conditions, always consider wind speed,
-        gusts, and sustained wind together.
-    """.trimIndent()
+    private val systemPrompt = AppConstants.ANTHROPIC_SYSTEM_PROMPT
 
     /**
      * Sends a user message and orchestrates the agentic loop until a final response is obtained.
@@ -67,8 +63,8 @@ class AiRepository(
             turnCount++
             Log.d("AiRepository: turn $turnCount")
 
-            if (turnCount > 20) {
-                Log.d("AiRepository: max turns (20) reached, stopping loop")
+            if (turnCount > AppConstants.ANTHROPIC_MAX_TURNS) {
+                Log.d("AiRepository: max turns (${AppConstants.ANTHROPIC_MAX_TURNS}) reached, stopping loop")
                 return AiMessageResult(
                     responseText = "Error: Conversation took too many turns. Please try again.",
                     toolCallsMade = toolsCalled,
