@@ -1,3 +1,7 @@
+import ai.AiRepository
+import ai.AnthropicClient
+import ai.ChatViewModel
+import ai.WeatherTools
 import com.km.rewinds.db.AppDatabase
 import core.*
 import home.HomeViewModel
@@ -25,12 +29,18 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // Database Export/Import (platform-specific implementation)
     single<DatabaseExportImport> { DatabaseExportImport() }
 
+    // AI/Chat components
+    single { AnthropicClient(apiKey = getAnthropicApiKey(), enableLogs = enableNetworkLogs) }
+    single { WeatherTools }
+    single { AiRepository(get(), get(), get()) } // AnthropicClient, WeatherTools, WeatherRepository
+
     // ViewModels
     viewModelOf(::AppViewModel)
     // Navigator is created in Router.kt composable, not through DI
     viewModelOf(::HomeViewModel)
     viewModelOf(::PlaceSummaryViewModel)
     viewModelOf(::MonthlyStatisticsViewModel)
+    viewModelOf(::ChatViewModel)
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {

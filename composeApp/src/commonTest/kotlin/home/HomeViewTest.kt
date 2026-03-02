@@ -38,6 +38,9 @@ class MockWeatherRepository : WeatherRepository {
         return core.WeatherResponse(resolvedAddress = place.name, address = place.name, queryCost = 0, latitude = place.latitude, longitude = place.longitude, timezone = "", tzoffset = 0.0, days = emptyList())
     }
     override suspend fun deletePlace(name: String) {}
+    override suspend fun downloadFullMonth(place: String, year: Int, month: Int): core.WeatherResponse {
+        return core.WeatherResponse(resolvedAddress = "", address = "", queryCost = 0, latitude = 0.0, longitude = 0.0, timezone = "", tzoffset = 0.0, days = emptyList())
+    }
 }
 
 /**

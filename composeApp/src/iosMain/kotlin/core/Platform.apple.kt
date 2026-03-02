@@ -34,3 +34,15 @@ actual class DatabaseDriverFactory {
 
 actual fun isAndroid(): Boolean = false
 actual fun isIOS(): Boolean = true
+
+actual fun getAnthropicApiKey(): String {
+    // On iOS, the API key should be provided via Info.plist or at runtime
+    // For MVP, this is a placeholder that must be configured before use
+    // In production, this should load from a secure configuration mechanism
+
+    // TODO: Configure with actual API key mechanism for iOS
+    throw IllegalStateException(
+        "ANTHROPIC_API_KEY not configured. " +
+        "On iOS, configure the API key in the app's configuration (Info.plist or BuildConfig)."
+    )
+}

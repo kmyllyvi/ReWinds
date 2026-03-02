@@ -105,13 +105,13 @@ class HomeViewModel(
     init {
         loadSavedPlaces()
 
-        // Cleanup any forecast data on app startup (keep only historical data up to yesterday)
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                database.cleanupForecastDays()
-            } catch (e: Exception) {
-                Log.e("Failed to cleanup forecast days", e)
-            }
+            // Cleanup any forecast data on app startup (keep only historical data up to yesterday)
+//            try {
+//                database.cleanupForecastDays()
+//            } catch (e: Exception) {
+//                Log.e("Failed to cleanup forecast days", e)
+//            }
         }
 
         viewModelScope.launch {

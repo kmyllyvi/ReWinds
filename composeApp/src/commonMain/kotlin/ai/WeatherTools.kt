@@ -232,14 +232,14 @@ object WeatherTools {
 
         if (weatherResponse.days.isNullOrEmpty()) {
             return buildJsonObject {
-                put("place", weatherResponse.resolvedAddress)
+
                 put("date_range", "$startDate to $endDate")
                 putJsonArray("wind_summary") {}
                 put("note", "No data available for this date range")
             }.toString()
         }
 
-        val windSummary = weatherResponse.days!!.map { day ->
+        val windSummary = weatherResponse.days.map { day ->
             buildJsonObject {
                 put("date", day.datetime)
                 // Convert m/s to knots (1 m/s ≈ 1.944 knots)
