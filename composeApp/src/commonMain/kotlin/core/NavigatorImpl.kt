@@ -19,6 +19,10 @@ class NavigatorImpl(
         backStack.add(MonthlyStatisticsRoute(placeName, year, month))
     }
 
+    override fun navigateToChat() {
+        backStack.add(ChatRoute)
+    }
+
     override fun navigateBack() {
         if (backStack.size > 1) {
             backStack.removeAt(backStack.size - 1)

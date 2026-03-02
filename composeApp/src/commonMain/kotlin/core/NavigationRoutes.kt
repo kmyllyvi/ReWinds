@@ -17,3 +17,6 @@ data class MonthlyStatisticsRoute(
     val year: Int,
     val month: Int
 ) : NavRoute
+
+@Serializable
+data object ChatRoute : NavRoute

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -81,8 +82,8 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // Header with title and settings icon
-        HomeHeader(onSettingsClick = { vm.toggleDebugMenu() }, showDebug = uiState.showDebugMenu)
+        // Header with title and action buttons
+        HomeHeader(onSettingsClick = { vm.toggleDebugMenu() }, onChatClick = { navigator.navigateToChat() }, showDebug = uiState.showDebugMenu)
 
         // Scrollable content
         LazyColumn(
@@ -174,7 +175,7 @@ private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, o
 }
 
 @Composable
-private fun HomeHeader(onSettingsClick: () -> Unit, showDebug: Boolean) {
+private fun HomeHeader(onSettingsClick: () -> Unit, onChatClick: () -> Unit, showDebug: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,14 +205,32 @@ private fun HomeHeader(onSettingsClick: () -> Unit, showDebug: Boolean) {
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            Button(
-                onClick = {},
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.padding(start = 8.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Login", color = MaterialTheme.colorScheme.onPrimary)
+                Button(
+                    onClick = onChatClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Chat,
+                        contentDescription = "Chat",
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Chat", color = MaterialTheme.colorScheme.onPrimary)
+                }
+                Button(
+                    onClick = {},
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text("Login", color = MaterialTheme.colorScheme.onPrimary)
+                }
             }
         }
     }

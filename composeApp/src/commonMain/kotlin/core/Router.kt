@@ -3,6 +3,7 @@ package core
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import ai.ChatView
 import home.HomeView
 import place.MonthlyStatisticsView
 import place.PlaceSummaryView
@@ -38,6 +39,9 @@ fun Navigation() {
                 month = currentRoute.month,
                 onBackClick = { navigator.navigateBack() }
             )
+        }
+        is ChatRoute -> {
+            ChatView(navigator = navigator)
         }
     }
 }
