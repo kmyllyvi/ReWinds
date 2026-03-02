@@ -40,9 +40,9 @@ actual fun getAnthropicApiKey(): String {
     // For MVP, this is a placeholder that must be configured before use
     // In production, this should load from a secure configuration mechanism
 
-    // TODO: Configure with actual API key mechanism for iOS
-    throw IllegalStateException(
-        "ANTHROPIC_API_KEY not configured. " +
-        "On iOS, configure the API key in the app's configuration (Info.plist or BuildConfig)."
-    )
+    // Development fallback: return a placeholder key
+    // NOTE: This will fail at runtime when calling Anthropic API unless a real key is set
+    // TODO: Configure with actual API key mechanism for iOS (Info.plist, BuildConfig, or secure storage)
+    Log.d("Platform: ANTHROPIC_API_KEY not configured on iOS, using placeholder for development")
+    return "sk-placeholder-dev-key-not-configured"
 }
