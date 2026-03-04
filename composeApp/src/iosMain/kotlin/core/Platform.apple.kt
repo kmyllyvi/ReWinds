@@ -37,30 +37,18 @@ actual fun isAndroid(): Boolean = false
 actual fun isIOS(): Boolean = true
 
 actual fun getAnthropicApiKey(): String {
-    // First check if key was set at runtime (via ApiKeyManager)
-    val runtimeKey = ApiKeyManager.getApiKey()
-    if (runtimeKey.isNotBlank() && runtimeKey.startsWith("sk-ant-")) {
-        Log.d("Platform: Using API key from ApiKeyManager")
-        return runtimeKey
-    }
-
-    // Otherwise use placeholder (will be loaded from Keychain at app startup)
+    // For iOS development: Using placeholder key
+    // Keychain integration planned for future release
     Log.d("Platform: Using placeholder API key for development on iOS")
     return "sk-placeholder-dev-key-not-configured"
 }
 
 actual fun saveApiKeyPlatform(key: String) {
-    // Save to ApiKeyManager for immediate use
-    ApiKeyManager.setApiKey(key)
-    // Then save to Keychain via Swift callback
-    KeychainBridge.saveKey(key)
-    Log.d("Platform: API key saved to Keychain")
+    // TODO: Implement Keychain save when framework bindings are stable
+    Log.d("Platform: saveApiKeyPlatform not yet implemented on iOS")
 }
 
 actual fun deleteApiKeyPlatform() {
-    // Clear from ApiKeyManager
-    ApiKeyManager.setApiKey("")
-    // Clear from Keychain via Swift callback
-    KeychainBridge.deleteKey()
-    Log.d("Platform: API key deleted from Keychain")
+    // TODO: Implement Keychain delete when framework bindings are stable
+    Log.d("Platform: deleteApiKeyPlatform not yet implemented on iOS")
 }
