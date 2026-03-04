@@ -14,6 +14,12 @@ expect fun isIOS(): Boolean
 // Anthropic API Key - must be provided by platform-specific implementations
 expect fun getAnthropicApiKey(): String
 
+// Save API key to platform-specific storage (Keychain on iOS, no-op on Android)
+expect fun saveApiKeyPlatform(key: String)
+
+// Delete API key from platform-specific storage
+expect fun deleteApiKeyPlatform()
+
 // Check if a valid API key is configured (not placeholder)
 fun isAnthropicApiKeyConfigured(): Boolean {
     val key = getAnthropicApiKey()

@@ -20,3 +20,6 @@ data class MonthlyStatisticsRoute(
 
 @Serializable
 data object ChatRoute : NavRoute
+
+@Serializable
+data object SettingsRoute : NavRoute

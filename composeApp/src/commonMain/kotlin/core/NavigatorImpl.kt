@@ -23,6 +23,10 @@ class NavigatorImpl(
         backStack.add(ChatRoute)
     }
 
+    override fun navigateToSettings() {
+        backStack.add(SettingsRoute)
+    }
+
     override fun navigateBack() {
         if (backStack.size > 1) {
             backStack.removeAt(backStack.size - 1)

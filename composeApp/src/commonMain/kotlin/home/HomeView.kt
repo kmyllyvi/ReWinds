@@ -83,7 +83,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             .fillMaxSize()
     ) {
         // Header with title and action buttons
-        HomeHeader(onSettingsClick = { vm.toggleDebugMenu() }, onChatClick = { navigator.navigateToChat() }, showDebug = uiState.showDebugMenu)
+        HomeHeader(onSettingsClick = { navigator.navigateToSettings() }, onChatClick = { navigator.navigateToChat() }, showDebug = uiState.showDebugMenu)
 
         // Scrollable content
         LazyColumn(
@@ -209,6 +209,13 @@ private fun HomeHeader(onSettingsClick: () -> Unit, onChatClick: () -> Unit, sho
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Button(
                     onClick = onChatClick,
                     colors = ButtonDefaults.buttonColors(

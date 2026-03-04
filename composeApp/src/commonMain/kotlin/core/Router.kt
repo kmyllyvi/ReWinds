@@ -7,6 +7,7 @@ import ai.ChatView
 import home.HomeView
 import place.MonthlyStatisticsView
 import place.PlaceSummaryView
+import settings.SettingsView
 
 @Composable
 fun Navigation() {
@@ -42,6 +43,9 @@ fun Navigation() {
         }
         is ChatRoute -> {
             ChatView(navigator = navigator)
+        }
+        is SettingsRoute -> {
+            SettingsView(navigator = navigator)
         }
     }
 }

@@ -6,6 +6,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.addJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -196,15 +198,22 @@ class AnthropicModelsTest {
 
     @Test
     fun testAnthropicMessageStructure() {
+        val contentJson = buildJsonObject {
+            putJsonArray("content") {
+                addJsonObject {
+                    put("type", "text")
+                    put("text", "Hello")
+                }
+            }
+        }
+
         val message = AnthropicMessage(
             role = "user",
-            content = listOf(
-                AnthropicContent.Text(text = "Hello")
-            )
+            content = contentJson["content"]!!
         )
 
         assertEquals("user", message.role)
-        assertEquals(1, message.content.size)
+        assertEquals(1, message.content.jsonArray.size)
     }
 
     @Test

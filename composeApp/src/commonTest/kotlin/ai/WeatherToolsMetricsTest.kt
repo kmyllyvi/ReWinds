@@ -142,6 +142,15 @@ class WeatherToolsMetricsTest {
 
         override suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse =
             getDaysRange(place.name, "2026-02-26", "2026-02-27")
+
+        override suspend fun checkDataAvailability(
+            place: String,
+            fromDate: String,
+            toDate: String
+        ): core.DataAvailabilityStatus {
+            // Mock: always return Available for testing
+            return core.DataAvailabilityStatus.Available
+        }
     }
 
     // ========== Valid Request Tests ==========

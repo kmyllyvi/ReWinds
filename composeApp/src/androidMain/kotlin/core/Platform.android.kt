@@ -51,3 +51,14 @@ actual fun getAnthropicApiKey(): String {
     Log.d("Platform: ANTHROPIC_API_KEY not configured, using placeholder for development")
     return "sk-placeholder-dev-key-not-configured"
 }
+
+actual fun saveApiKeyPlatform(key: String) {
+    // No-op on Android: uses BuildConfig at build time
+    // If we wanted to support runtime key saving on Android, we could use SharedPreferences
+    Log.d("Platform: saveApiKeyPlatform is no-op on Android (use gradle.properties)")
+}
+
+actual fun deleteApiKeyPlatform() {
+    // No-op on Android
+    Log.d("Platform: deleteApiKeyPlatform is no-op on Android")
+}

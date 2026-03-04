@@ -41,6 +41,9 @@ class MockWeatherRepository : WeatherRepository {
     override suspend fun downloadFullMonth(place: String, year: Int, month: Int): core.WeatherResponse {
         return core.WeatherResponse(resolvedAddress = "", address = "", queryCost = 0, latitude = 0.0, longitude = 0.0, timezone = "", tzoffset = 0.0, days = emptyList())
     }
+    override suspend fun checkDataAvailability(place: String, fromDate: String, toDate: String): core.DataAvailabilityStatus {
+        return core.DataAvailabilityStatus.Available
+    }
 }
 
 /**
