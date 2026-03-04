@@ -9,14 +9,38 @@ All development files and rules under "/docs" folder. Start with README!
 ## Quick Start
 
 ### Build Commands
+
+#### Android
 ```bash
-# Android only
+# Android only (recommended for Android work)
 ./gradlew buildAndroidOnly
+```
 
-# iOS Simulator (development)
-./gradlew :composeApp:linkPodReleaseFrameworkIosSimulatorArm64
+#### iOS
+```bash
+# ⚠️ IMPORTANT: Use Xcode for iOS builds, NOT Gradle
+# The Gradle iOS tasks (linkPodReleaseFrameworkIosSimulatorArm64, etc.) are unreliable
+# They only compile Kotlin → Framework, without full Xcode integration
 
-# Full build (requires more memory)
+# Option 1: Use Xcode GUI (EASIEST)
+open iosApp/iosApp.xcworkspace
+# Then cmd+R to build and run on simulator
+
+# Option 2: Use xcodebuild CLI
+xcodebuild -workspace iosApp/iosApp.xcworkspace \
+  -scheme iosApp \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -derivedDataPath build
+
+# Option 3: If you only need the Kotlin framework compiled (rare):
+./gradlew :composeApp:iosSimulatorArm64MainKlibrary
+# But you'll still need Xcode to build the actual app
+```
+
+#### Both Platforms
+```bash
+# Full Gradle build (slow, for CI only)
 ./gradlew build --no-daemon
 ```
 
@@ -81,27 +105,35 @@ iosApp/
 ## Current Status
 
 ### ✅ Working
-- iOS simulator builds with sqlite3 support ✅
-- Android builds normally ✅
-- Cocoapods integration for native dependencies ✅
+- iOS simulator builds with Xcode (use workspace, not Gradle) ✅
+- Android builds and runs via Gradle ✅
+- CocoaPods integration for native dependencies (sqlite3) ✅
 - C interop for sqlite3 headers ✅
-- **NEW**: Database export/import feature fully working on BOTH iOS and Android ✅
-- All 32+ tests passing on both platforms ✅
+- Database export/import feature fully working on BOTH iOS and Android ✅
+- AI Chat with flexible metrics querying (visibility, humidity, temperature, etc.) ✅
+- Three-layer permission flow for AI data fetching ✅
+- **NEW**: iOS Keychain-based API key storage with Settings UI ✅
+- All 32+ tests passing ✅
 
 ### ⚠️ Known Issues
+- Gradle iOS build tasks unreliable (use Xcode instead)
 - Device ARM64 builds OOM (needs 8GB+ or architectural changes)
 - XCFramework builds have KLIB resolver conflicts
 
 ## Development Notes
 See `docs/DEVELOPMENT.md` for detailed session logs and technical decisions.
+See `docs/IMPLEMENTATION_NOTES_*.md` for feature-specific implementation details.
 
 ## Session Tracking
-- **Latest Session**: Feb 19, 2026 - iOS runtime fixes + code quality + export/import restored
-- **Latest Commit**: 49b591f - Comprehensive testing strategy added
+- **Latest Session**: March 4, 2026 - iOS Keychain integration + Flexible AI metrics + Permission flow
+- **Latest Commits**:
+  - `7c301e7` - docs: Add comprehensive implementation notes for iOS Keychain feature
+  - `8e7ea87` - Feature: Implement iOS Keychain-based API key storage with Settings screen
 - **Status**:
-  - ✅ iOS Koin double initialization FIXED
-  - ✅ Code quality improvements implemented (MV* pattern, defensive coding)
-  - ✅ All tests passing (32/32 on Android, iOS tests compiling)
-  - ✅ **Database export/import fully restored and working on iOS!**
-  - ✅ Gradle heap: 8GB with proven stability
-  - ✅ Ready for production on both platforms
+  - ✅ Flexible metrics querying working (50+ metric aliases)
+  - ✅ Three-layer permission system for AI API calls implemented
+  - ✅ iOS Keychain secure storage with Settings UI complete
+  - ✅ Users can enter API key once, persists across restarts
+  - ✅ Build workflow clarified: Use Xcode for iOS (not Gradle)
+  - ✅ All tests passing
+  - ✅ Ready for app store distribution
