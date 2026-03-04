@@ -2,6 +2,7 @@ package ai
 
 import core.WeatherRepository
 import core.Log
+import core.Day
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -9,6 +10,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.putJsonArray
@@ -158,6 +160,61 @@ sealed class Tool {
             }
         }
     }
+
+    /**
+     * get_weather_metrics: Fetch ANY weather metric(s) for a location over a date range.
+     * Flexible tool that accepts metric names and returns the requested data.
+     */
+    object GetWeatherMetrics : Tool() {
+        override val name = "get_weather_metrics"
+        override val description =
+            """Retrieve any weather metric(s) for a location over a date range.
+            |
+            |Available metrics (use friendly names):
+            |• Temperature: temperature, temp_max, temp_min, feels_like, dew_point
+            |• Humidity & Rain: humidity, rainfall, rain_probability, snow
+            |• Wind: wind_speed, wind_gust, wind_direction
+            |• Atmosphere: visibility, cloud_cover, pressure
+            |• Solar: uv_index, solar_energy, solar_radiation
+            |• Conditions: conditions, description
+            |• Other: sunrise, sunset, moon_phase
+            |
+            |Examples: ["temperature", "visibility"], ["wind_speed", "humidity", "rainfall"]
+            """
+
+        override val inputSchema: JsonObject = buildJsonObject {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("location_name") {
+                    put("type", "string")
+                    put("description", "Name of the saved place")
+                }
+                putJsonObject("start_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+                putJsonObject("end_date") {
+                    put("type", "string")
+                    put("description", "ISO date YYYY-MM-DD")
+                }
+                putJsonObject("metrics") {
+                    put("type", "array")
+                    putJsonObject("items") {
+                        put("type", "string")
+                    }
+                    put("description",
+                        "List of metrics to retrieve. Use friendly names like 'temperature', " +
+                        "'visibility', 'humidity', 'rainfall', 'wind_speed', etc.")
+                }
+            }
+            putJsonArray("required") {
+                add(JsonPrimitive("location_name"))
+                add(JsonPrimitive("start_date"))
+                add(JsonPrimitive("end_date"))
+                add(JsonPrimitive("metrics"))
+            }
+        }
+    }
 }
 
 /**
@@ -170,6 +227,7 @@ object WeatherTools {
      * These schemas are passed to Claude API in requests.
      */
     fun allToolSchemas(): List<Tool> = listOf(
+        Tool.GetWeatherMetrics,  // New: flexible metric-based queries
         Tool.GetWindSummary,
         Tool.ListSavedPlaces,
         Tool.GetMonthlyStats,
@@ -191,6 +249,7 @@ object WeatherTools {
         Log.d("WeatherTools: handling tool call '$toolName' with args: $args")
 
         when (toolName) {
+            "get_weather_metrics" -> handleGetWeatherMetrics(args, repo)
             "get_wind_summary" -> handleGetWindSummary(args, repo)
             "list_saved_places" -> handleListSavedPlaces(repo)
             "get_monthly_stats" -> handleGetMonthlyStats(args, repo)
@@ -288,6 +347,130 @@ object WeatherTools {
     } catch (e: Exception) {
         Log.e("handleListSavedPlaces failed", e)
         buildErrorJson("Failed to list saved places: ${e.message}", "list_saved_places")
+    }
+
+    /**
+     * Get any weather metric(s) for a location over a date range.
+     * Flexible tool that fetches requested metrics and returns formatted data.
+     */
+    private suspend fun handleGetWeatherMetrics(
+        args: JsonObject,
+        repo: WeatherRepository
+    ): String = try {
+        val locationName = args["location_name"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: location_name", "get_weather_metrics")
+        val startDate = args["start_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: start_date", "get_weather_metrics")
+        val endDate = args["end_date"]?.jsonPrimitive?.content
+            ?: return buildErrorJson("Missing required field: end_date", "get_weather_metrics")
+
+        val metricsElement = args["metrics"]
+            ?: return buildErrorJson("Missing required field: metrics (array)", "get_weather_metrics")
+
+        val metricsList = try {
+            metricsElement.jsonArray.map { it.jsonPrimitive.content }
+        } catch (e: Exception) {
+            return buildErrorJson("Invalid metrics field: must be an array of strings", "get_weather_metrics")
+        }
+
+        if (metricsList.isEmpty()) {
+            return buildErrorJson("metrics array cannot be empty", "get_weather_metrics")
+        }
+
+        // Validate date format
+        try {
+            LocalDate.parse(startDate)
+            LocalDate.parse(endDate)
+        } catch (e: Exception) {
+            return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_weather_metrics")
+        }
+
+        val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
+
+        if (weatherResponse.days.isNullOrEmpty()) {
+            return buildJsonObject {
+                put("place", weatherResponse.resolvedAddress)
+                put("date_range", "$startDate to $endDate")
+                put("metrics_requested", metricsList.size)
+                put("note", "No data available for this date range")
+                putJsonArray("data") {}
+            }.toString()
+        }
+
+        // Transform days to include only requested metrics
+        val results = weatherResponse.days!!.map { day ->
+            buildJsonObject {
+                put("date", day.datetime)
+
+                // Add each requested metric
+                for (friendlyMetricName in metricsList) {
+                    val fieldName = MetricMapper.mapMetricName(friendlyMetricName)
+                    val value: Any? = when (fieldName) {
+                        "datetime" -> day.datetime
+                        "datetimeEpoch" -> day.datetimeEpoch
+                        "tempmax" -> day.tempmax
+                        "tempmin" -> day.tempmin
+                        "temp" -> day.temp
+                        "feelslikemax" -> day.feelslikemax
+                        "feelslikemin" -> day.feelslikemin
+                        "feelslike" -> day.feelslike
+                        "dew" -> day.dew
+                        "humidity" -> day.humidity
+                        "precip" -> day.precip
+                        "precipprob" -> day.precipprob
+                        "precipcover" -> day.precipcover
+                        "preciptype" -> day.preciptype
+                        "snow" -> day.snow
+                        "snowdepth" -> day.snowdepth
+                        "windgust" -> day.windgust
+                        "windspeed" -> day.windspeed
+                        "winddir" -> day.winddir
+                        "pressure" -> day.pressure
+                        "cloudcover" -> day.cloudcover
+                        "visibility" -> day.visibility
+                        "solarradiation" -> day.solarradiation
+                        "solarenergy" -> day.solarenergy
+                        "uvindex" -> day.uvindex
+                        "sunrise" -> day.sunrise
+                        "sunriseEpoch" -> day.sunriseEpoch
+                        "sunset" -> day.sunset
+                        "sunsetEpoch" -> day.sunsetEpoch
+                        "moonphase" -> day.moonphase
+                        "conditions" -> day.conditions
+                        "description" -> day.description
+                        "icon" -> day.icon
+                        "source" -> day.source
+                        else -> null
+                    }
+
+                    if (value != null) {
+                        val formattedValue = MetricMapper.formatValue(fieldName, value)
+                        val units = MetricMapper.getUnits(fieldName)
+                        val displayKey = if (units.isNotEmpty()) {
+                            "${friendlyMetricName} (${units})"
+                        } else {
+                            friendlyMetricName
+                        }
+                        put(displayKey, JsonPrimitive(formattedValue.toString()))
+                    }
+                }
+            }
+        }
+
+        buildJsonObject {
+            put("place", weatherResponse.resolvedAddress)
+            put("date_range", "$startDate to $endDate")
+            put("days_with_data", results.size)
+            putJsonArray("metrics_requested") {
+                metricsList.forEach { add(JsonPrimitive(it)) }
+            }
+            putJsonArray("data") {
+                results.forEach { add(it) }
+            }
+        }.toString()
+    } catch (e: Exception) {
+        Log.e("handleGetWeatherMetrics failed", e)
+        buildErrorJson("Failed to fetch weather metrics: ${e.message}", "get_weather_metrics")
     }
 
     /**
