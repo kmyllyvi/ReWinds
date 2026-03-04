@@ -93,7 +93,7 @@ class AiRepository(
             val assistantContent = mutableListOf<AnthropicContent>()
             var hasToolUse = false
 
-            for (contentBlock in response.content) {
+            for (contentBlock in response.getContentBlocks()) {
                 when (contentBlock) {
                     is ContentBlock.Text -> {
                         Log.d("AiRepository: received text response: ${contentBlock.text.take(100)}...")
@@ -237,9 +237,20 @@ class AiRepository(
      */
     private fun buildAnthropicRequest(): AnthropicRequest {
         val messages = conversationHistory.map { msg ->
+            // Build content as a JSON array
+            val contentArray = kotlinx.serialization.json.buildJsonArray {
+                msg.content.forEach { content ->
+                    when (content) {
+                        is AnthropicContent.Text -> add(AnthropicContentSerializer.serializeToJson(content))
+                        is AnthropicContent.ToolUse -> add(AnthropicContentSerializer.serializeToJson(content))
+                        is AnthropicContent.ToolResult -> add(AnthropicContentSerializer.serializeToJson(content))
+                    }
+                }
+            }
+
             AnthropicMessage(
                 role = msg.role,
-                content = msg.content
+                content = contentArray
             )
         }
 
@@ -252,7 +263,7 @@ class AiRepository(
         }
 
         return AnthropicRequest(
-            model = "claude-3-5-sonnet-20241022",
+            model = AppConstants.ANTHROPIC_MODEL,
             maxTokens = 1024,
             system = systemPrompt,
             tools = tools,

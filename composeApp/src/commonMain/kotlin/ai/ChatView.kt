@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -106,6 +108,34 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             onInputChange = vm::onInputTextChange,
             onSendClick = { vm.sendMessage(uiState.inputText) },
             isLoading = uiState.isLoading
+        )
+    }
+
+    // API Key Missing Dialog
+    if (uiState.showApiKeyMissingDialog) {
+        AlertDialog(
+            onDismissRequest = { vm.onApiKeyDialogDismissed() },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = "Warning",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("API Key Not Configured") },
+            text = {
+                Text(
+                    "To use the AI Chat feature, you need to set your Anthropic API key. " +
+                    "Run the app with:\n\n" +
+                    "export ANTHROPIC_API_KEY=sk-ant-<your-key>\n\n" +
+                    "Then restart the app."
+                )
+            },
+            confirmButton = {
+                Button(onClick = { vm.onApiKeyDialogDismissed() }) {
+                    Text("OK")
+                }
+            }
         )
     }
 }

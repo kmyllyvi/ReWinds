@@ -10,12 +10,11 @@ object AppConstants {
     // ============================================
     /**
      * Claude model to use for the AI chat feature.
-     * Latest: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5
-     * Current: claude-sonnet-4-5 (good balance of capability and cost)
+     * claude-haiku-4-5-20241022 (fastest & cheapest - $1 input / $5 output per 1M tokens)
      *
      * See: https://docs.anthropic.com/en/docs/about/models/latest-models
      */
-    const val ANTHROPIC_MODEL = "claude-sonnet-4-5-20250514"
+    const val ANTHROPIC_MODEL = "claude-haiku-4-5"
 
     /**
      * Anthropic API version header.

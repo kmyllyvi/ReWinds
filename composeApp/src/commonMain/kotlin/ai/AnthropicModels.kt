@@ -32,8 +32,8 @@ enum class StopReason {
 
 /**
  * Sealed class representing different types of content blocks in messages.
+ * Used only for deserialization from API responses (no polymorphic serialization needed).
  */
-@Serializable
 sealed class ContentBlock {
     /**
      * Text content from Claude.
@@ -85,14 +85,14 @@ data class AnthropicMessage(
     @SerialName("role")
     val role: String, // "user" or "assistant"
     @SerialName("content")
-    val content: List<AnthropicContent>
+    val content: JsonElement  // Raw JSON array
 )
 
 /**
  * Content within an AnthropicMessage.
  * Can be text or a tool use/result reference.
+ * Uses a custom serializer to avoid polymorphism discriminator conflicts.
  */
-@Serializable
 sealed class AnthropicContent {
     @Serializable
     data class Text(
@@ -128,6 +128,38 @@ sealed class AnthropicContent {
 }
 
 /**
+ * Custom serializer for AnthropicContent to serialize subclasses correctly without discriminator conflicts.
+ */
+object AnthropicContentSerializer {
+    fun serializeToJson(content: AnthropicContent): JsonObject {
+        return when (content) {
+            is AnthropicContent.Text -> {
+                kotlinx.serialization.json.buildJsonObject {
+                    put("type", kotlinx.serialization.json.JsonPrimitive("text"))
+                    put("text", kotlinx.serialization.json.JsonPrimitive(content.text))
+                }
+            }
+            is AnthropicContent.ToolUse -> {
+                kotlinx.serialization.json.buildJsonObject {
+                    put("type", kotlinx.serialization.json.JsonPrimitive("tool_use"))
+                    put("id", kotlinx.serialization.json.JsonPrimitive(content.id))
+                    put("name", kotlinx.serialization.json.JsonPrimitive(content.name))
+                    put("input", content.input)
+                }
+            }
+            is AnthropicContent.ToolResult -> {
+                kotlinx.serialization.json.buildJsonObject {
+                    put("type", kotlinx.serialization.json.JsonPrimitive("tool_result"))
+                    put("tool_use_id", kotlinx.serialization.json.JsonPrimitive(content.toolUseId))
+                    put("content", kotlinx.serialization.json.JsonPrimitive(content.content))
+                    put("is_error", kotlinx.serialization.json.JsonPrimitive(content.isError))
+                }
+            }
+        }
+    }
+}
+
+/**
  * Tool definition as expected by the Anthropic API.
  */
 @Serializable
@@ -159,16 +191,26 @@ data class AnthropicRequest(
 
 /**
  * Response from the Anthropic API.
+ * Content is stored as JsonElement and deserialized manually using ContentBlockDeserializer.
  */
 @Serializable
 data class AnthropicResponse(
     @SerialName("content")
-    val content: List<ContentBlock>,
+    val content: List<JsonElement>,
     @SerialName("stop_reason")
     val stopReason: String,
     @SerialName("usage")
     val usage: Usage? = null
-)
+) {
+    /**
+     * Get deserialized content blocks from raw JSON elements.
+     */
+    fun getContentBlocks(): List<ContentBlock> {
+        return content.mapNotNull { element ->
+            if (element is JsonObject) ContentBlockDeserializer.deserializeFromJson(element) else null
+        }
+    }
+}
 
 /**
  * Token usage information from the API response.

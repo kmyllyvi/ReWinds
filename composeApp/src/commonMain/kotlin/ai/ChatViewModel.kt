@@ -3,6 +3,7 @@ package ai
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import core.Log
+import core.isAnthropicApiKeyConfigured
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +46,8 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val inputText: String = ""
+    val inputText: String = "",
+    val showApiKeyMissingDialog: Boolean = false
 )
 
 /**
@@ -70,6 +72,13 @@ class ChatViewModel(
         val trimmedInput = userInput.trim()
         if (trimmedInput.isBlank()) {
             Log.d("ChatViewModel: ignoring blank user input")
+            return
+        }
+
+        // Check if API key is configured
+        if (!isAnthropicApiKeyConfigured()) {
+            Log.d("ChatViewModel: API key not configured, showing dialog")
+            _uiState.update { it.copy(showApiKeyMissingDialog = true) }
             return
         }
 
@@ -129,6 +138,13 @@ class ChatViewModel(
      */
     fun onErrorDismissed() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * Called when the API key missing dialog is dismissed.
+     */
+    fun onApiKeyDialogDismissed() {
+        _uiState.update { it.copy(showApiKeyMissingDialog = false) }
     }
 
     /**

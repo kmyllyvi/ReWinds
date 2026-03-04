@@ -11,6 +11,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
 
 /**
  * Ktor HTTP client for communicating with the Anthropic API.
@@ -29,23 +30,31 @@ class AnthropicClient(
      * @throws Exception if the API call fails.
      */
     suspend fun sendMessage(request: AnthropicRequest): AnthropicResponse = try {
-        Log.d("AnthropicClient: sending message with ${request.messages.size} messages and ${request.tools.size} tools")
+        Log.d("AnthropicClient: sending message with ${request.messages.size} messages, maxTokens=${request.maxTokens}")
 
         val response = client.post("https://api.anthropic.com/v1/messages") {
             header("x-api-key", apiKey)
             header("anthropic-version", "2023-06-01")
             contentType(ContentType.Application.Json)
-            setBody(request)
+            setBody(request)  // Let Ktor handle serialization with ContentNegotiation
         }
 
         Log.d("AnthropicClient: received response with status ${response.status}")
+
+        // Check for error status codes
+        if (response.status.value !in 200..299) {
+            val errorBody = response.bodyAsText()
+            Log.e("AnthropicClient: API error (${response.status}): $errorBody")
+            throw AnthropicException("Anthropic API error ${response.status}: $errorBody")
+        }
+
         response.body()
     } catch (e: ClientRequestException) {
         val errorBody = e.response.bodyAsText()
-        Log.e("AnthropicClient: API Client Error: $errorBody", e)
-        throw AnthropicException("Anthropic API error: ${e.response.status}", e)
+        Log.e("AnthropicClient: API Client Error (${e.response.status}): $errorBody", e)
+        throw AnthropicException("Anthropic API error: ${e.response.status} - $errorBody", e)
     } catch (e: Exception) {
-        Log.e("AnthropicClient: Generic error during message send", e)
+        Log.e("AnthropicClient: Generic error during message send: ${e.message}", e)
         throw AnthropicException("Failed to communicate with Anthropic API: ${e.message}", e)
     }
 }

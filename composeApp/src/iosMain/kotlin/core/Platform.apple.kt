@@ -16,6 +16,7 @@ actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
+                encodeDefaults = true  // Important: serialize fields even if they have default values
             })
         }
         if (enableNetworkLogs) {
@@ -36,13 +37,10 @@ actual fun isAndroid(): Boolean = false
 actual fun isIOS(): Boolean = true
 
 actual fun getAnthropicApiKey(): String {
-    // On iOS, the API key should be provided via Info.plist or at runtime
-    // For MVP, this is a placeholder that must be configured before use
-    // In production, this should load from a secure configuration mechanism
+    // For iOS development: Set the key directly here for testing
+    // In production, this should use Keychain for secure storage
 
-    // Development fallback: return a placeholder key
-    // NOTE: This will fail at runtime when calling Anthropic API unless a real key is set
-    // TODO: Configure with actual API key mechanism for iOS (Info.plist, BuildConfig, or secure storage)
-    Log.d("Platform: ANTHROPIC_API_KEY not configured on iOS, using placeholder for development")
+    // TODO: Replace with actual key for testing, or implement Keychain integration
+    Log.d("Platform: Using placeholder API key for development on iOS")
     return "sk-placeholder-dev-key-not-configured"
 }

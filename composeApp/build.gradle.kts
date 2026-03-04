@@ -178,8 +178,21 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            // Pass API key from gradle.properties to system property
+            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString() ?: ""
+            if (apiKey.isNotEmpty()) {
+                // Store in BuildConfig for access at runtime
+                buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
+            }
+        }
         getByName("release") {
             isMinifyEnabled = false
+            // Pass API key from gradle.properties to system property
+            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString() ?: ""
+            if (apiKey.isNotEmpty()) {
+                buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
+            }
         }
     }
     compileOptions {
@@ -188,6 +201,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     dependencies {
         debugImplementation(compose.uiTooling)

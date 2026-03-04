@@ -3,6 +3,7 @@ package core
 import android.content.Context
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.km.rewinds.BuildConfig
 import com.km.rewinds.db.AppDatabase
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -17,6 +18,7 @@ actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
+                encodeDefaults = true  // Important: serialize fields even if they have default values
             })
         }
         if (enableNetworkLogs) {
@@ -37,16 +39,15 @@ actual fun isAndroid(): Boolean = true
 actual fun isIOS(): Boolean = false
 
 actual fun getAnthropicApiKey(): String {
-    // For MVP, try to get from environment variable
-    // In production, this should load from BuildConfig or secure storage
-    val apiKey = System.getenv("ANTHROPIC_API_KEY")
-    if (apiKey != null && apiKey.isNotBlank()) {
+    // Try to get from BuildConfig (set at build time from gradle.properties)
+    val apiKey = BuildConfig.ANTHROPIC_API_KEY
+    if (apiKey.isNotBlank() && !apiKey.contains("placeholder")) {
         return apiKey
     }
 
     // Development fallback: return a placeholder key
     // NOTE: This will fail at runtime when calling Anthropic API unless a real key is set
-    // To use the chat feature, set: export ANTHROPIC_API_KEY=your_actual_key
-    Log.d("Platform: ANTHROPIC_API_KEY not set, using placeholder for development")
+    // To use the chat feature, set ANTHROPIC_API_KEY in gradle.properties
+    Log.d("Platform: ANTHROPIC_API_KEY not configured, using placeholder for development")
     return "sk-placeholder-dev-key-not-configured"
 }
