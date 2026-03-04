@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
@@ -241,6 +242,8 @@ fun ChatInputArea(
     onSendClick: () -> Unit,
     isLoading: Boolean
 ) {
+    val focusManager = LocalFocusManager.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,18 +263,21 @@ fun ChatInputArea(
             enabled = !isLoading
         )
 
-        Button(
-            onClick = onSendClick,
+        IconButton(
+            onClick = {
+                onSendClick()
+                // Dismiss keyboard after sending
+                focusManager.clearFocus()
+            },
             enabled = inputText.trim().isNotEmpty() && !isLoading,
             modifier = Modifier
-                .padding(top = 4.dp)
+                .padding(bottom = 4.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,
-                contentDescription = "Send",
-                modifier = Modifier.padding(end = 4.dp)
+                contentDescription = "Send message",
+                tint = MaterialTheme.colorScheme.primary
             )
-            Text("Send")
         }
     }
 }
