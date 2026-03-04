@@ -3,6 +3,7 @@ package ai
 import core.WeatherRepository
 import core.Log
 import core.Day
+import core.DataAvailabilityStatus
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -383,6 +384,29 @@ object WeatherTools {
             LocalDate.parse(endDate)
         } catch (e: Exception) {
             return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_weather_metrics")
+        }
+
+        // Check if data is available before fetching
+        val dataStatus = repo.checkDataAvailability(locationName, startDate, endDate)
+
+        // If data is not fully available, ask user for permission before fetching
+        if (dataStatus != DataAvailabilityStatus.Available) {
+            Log.d("WeatherTools: Data not fully available for $locationName ($dataStatus). Asking user permission.")
+            return buildJsonObject {
+                put("status", "permission_required")
+                put("type", "fetch_permission")
+                put("message",
+                    "I need to fetch weather data for $locationName from $startDate to $endDate. " +
+                    "This will make an API call. Please type 'yes' or 'ok' to proceed."
+                )
+                put("location", locationName)
+                put("start_date", startDate)
+                put("end_date", endDate)
+                putJsonArray("metrics") {
+                    metricsList.forEach { add(JsonPrimitive(it)) }
+                }
+                put("data_status", dataStatus.toString())
+            }.toString()
         }
 
         val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)

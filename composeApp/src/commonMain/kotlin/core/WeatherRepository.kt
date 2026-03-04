@@ -42,6 +42,17 @@ interface WeatherRepository {
     // new search
     suspend fun searchForLocations(query: String): List<GeoSearchResult>
     suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse
+
+    /**
+     * Check if data is available for a location and date range without fetching.
+     * Useful for determining if new API calls are needed before querying.
+     * @return DataAvailabilityStatus: Available, Partial, or Missing
+     */
+    suspend fun checkDataAvailability(
+        place: String,
+        fromDate: String,
+        toDate: String
+    ): DataAvailabilityStatus
 }
 
 class WeatherRepositoryImpl(
@@ -344,6 +355,60 @@ class WeatherRepositoryImpl(
             }
             // Re-throw the exception after logging it
             throw e
+        }
+    }
+
+    override suspend fun checkDataAvailability(
+        place: String,
+        fromDate: String,
+        toDate: String
+    ): DataAvailabilityStatus {
+        try {
+            val targetDates = generateDateList(fromDate, toDate)
+
+            if (targetDates.isEmpty()) {
+                return DataAvailabilityStatus.Missing
+            }
+
+            val existingPlaceData = database.getSavedPlaceFull(place)
+
+            if (existingPlaceData == null) {
+                Log.d("checkDataAvailability: No data at all for $place")
+                return DataAvailabilityStatus.Missing
+            }
+
+            // Check which dates are in the database
+            val foundDatesInDb: Set<String> = if (existingPlaceData.days != null) {
+                existingPlaceData.days!!
+                    .filter { day ->
+                        try {
+                            val dayDate = LocalDate.parse(day.datetime)
+                            val from = LocalDate.parse(fromDate)
+                            val to = LocalDate.parse(toDate)
+                            dayDate in from..to
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                    .map { it.datetime }
+                    .toSet()
+            } else {
+                emptySet()
+            }
+
+            val presentDaysCount = foundDatesInDb.size
+            val requestedDaysCount = targetDates.size
+
+            Log.d("checkDataAvailability: $place has $presentDaysCount/$requestedDaysCount days from $fromDate to $toDate")
+
+            return when {
+                presentDaysCount == requestedDaysCount -> DataAvailabilityStatus.Available
+                presentDaysCount > 0 -> DataAvailabilityStatus.Partial
+                else -> DataAvailabilityStatus.Missing
+            }
+        } catch (e: Exception) {
+            Log.e("checkDataAvailability failed for $place", e)
+            return DataAvailabilityStatus.Missing
         }
     }
 }
