@@ -217,19 +217,10 @@ private fun HomeHeader(onSettingsClick: () -> Unit, onChatClick: () -> Unit, sho
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Chat,
-                        contentDescription = "Chat",
+                        contentDescription = "AI Chat",
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    Text("Chat", color = MaterialTheme.colorScheme.onPrimary)
-                }
-                Button(
-                    onClick = {},
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Text("Login", color = MaterialTheme.colorScheme.onPrimary)
+                    Text("", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
