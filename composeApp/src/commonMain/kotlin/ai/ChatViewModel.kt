@@ -66,7 +66,8 @@ data class ChatUiState(
  * Manages conversation state and delegates to AiRepository for AI logic.
  */
 class ChatViewModel(
-    private val aiRepository: AiRepository
+    private val aiRepository: AiRepository,
+    private val weatherRepository: core.WeatherRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -258,8 +259,30 @@ class ChatViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Send confirmation to AI to proceed with fetch and query
-                val message = "Proceed with fetching weather data for ${pending.location} from ${pending.startDate} to ${pending.endDate} and then answer my original question."
+                // STEP 1: Actually fetch the data from the API before asking Claude to retry
+                Log.d("ChatViewModel: Fetching data for ${pending.location} from ${pending.startDate} to ${pending.endDate}")
+
+                try {
+                    weatherRepository.getDaysRange(
+                        pending.location,
+                        pending.startDate,
+                        pending.endDate
+                    )
+                    Log.d("ChatViewModel: Data fetch completed successfully")
+                } catch (e: Exception) {
+                    Log.e("ChatViewModel: Failed to fetch data", e)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Failed to fetch weather data: ${e.message}",
+                            pendingDataFetch = null
+                        )
+                    }
+                    return@launch
+                }
+
+                // STEP 2: Now that data is fetched, ask Claude to retry the original query
+                val message = "I've fetched the weather data. Now please answer my original question about ${pending.location} from ${pending.startDate} to ${pending.endDate}."
                 val result = aiRepository.sendMessage(message)
 
                 // Add assistant response
@@ -282,7 +305,7 @@ class ChatViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = "Error fetching data: ${e.message}",
+                        error = "Error: ${e.message}",
                         pendingDataFetch = null
                     )
                 }
