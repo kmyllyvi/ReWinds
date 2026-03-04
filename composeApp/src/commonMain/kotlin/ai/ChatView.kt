@@ -53,7 +53,6 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header with back button and title
         ChatHeader(onBackClick = { navigator.navigateBack() })
@@ -146,7 +145,6 @@ fun ChatHeader(onBackClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
