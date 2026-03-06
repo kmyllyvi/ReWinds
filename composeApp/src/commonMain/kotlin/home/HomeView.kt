@@ -82,6 +82,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(top = 12.dp)
     ) {
         // Header with title and action buttons
         AppHeader(

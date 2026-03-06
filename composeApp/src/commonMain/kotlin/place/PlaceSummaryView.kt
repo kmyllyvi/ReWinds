@@ -115,7 +115,11 @@ fun PlaceSummaryView(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 12.dp)
+    ) {
         // Header
         AppHeader(
             title = currentPlaceName,

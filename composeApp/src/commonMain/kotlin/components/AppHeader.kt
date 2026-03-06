@@ -41,11 +41,7 @@ fun AppHeader(
     showLogo: Boolean = false,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp)  // Safe area top margin (notch, status bar)
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
         // Header content with padding
         Row(
             modifier = Modifier
