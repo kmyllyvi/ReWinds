@@ -62,7 +62,7 @@ class WeatherRepositoryImpl(
 ) :  WeatherRepository {
     private val visualcrossingUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
     private val apiKey = "***REMOVED***"
-    private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours"
+    private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours&include=stations"
 
     init {
         Log.d("init WeatherRepository")
