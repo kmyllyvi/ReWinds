@@ -118,7 +118,6 @@ fun PlaceSummaryView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (isIOS()) 0.dp else 12.dp)
     ) {
         // Header
         AppHeader(

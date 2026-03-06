@@ -61,11 +61,7 @@ fun MonthlyStatisticsView(
             vm.reloadStatistics(year = year, month = month)
         }
 
-        androidx.compose.foundation.layout.Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = if (isIOS()) 0.dp else 12.dp)
-        ) {
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
             AppHeader(
                 title = "$placeName - ${monthName(month)} $year Stats",
                 onBackClick = onBackClick

@@ -54,7 +54,6 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (isIOS()) 0.dp else 12.dp)
     ) {
         // Header with back button and title
         AppHeader(
