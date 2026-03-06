@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
  *
  * Layout: Split header with left content and right content areas
  * Background: Uses system background for seamless integration
+ * Divider: Always stays at the bottom of header content, regardless of padding
  */
 @Composable
 fun AppHeader(
@@ -97,7 +98,7 @@ fun AppHeader(
             }
         }
 
-        // Fade divider: gray fading to white (edge-to-edge, no padding)
+        // Fade divider: Always stuck at the bottom of header, edge-to-edge
         Box(
             modifier = Modifier
                 .fillMaxWidth()
