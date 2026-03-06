@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import core.isIOS
 
 /**
  * Reusable app header component used across all screens.
@@ -46,7 +47,7 @@ fun AppHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, top = 20.dp, end = 12.dp, bottom = 14.dp),
+                .padding(start = 12.dp, top = if (isIOS()) 10.dp else 20.dp, end = 12.dp, bottom = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
