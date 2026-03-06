@@ -10,12 +10,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Surface
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewState
+import core.Log
 
 @Composable
 fun StationMapModal(
@@ -32,6 +34,15 @@ fun StationMapModal(
     
     // Create WebView state
     val webViewState = rememberWebViewState(url = safeHtmlUri)
+    
+    // Log map opening with coordinates
+    LaunchedEffect(Unit) {
+        Log.d("=== STATION MAP MODAL OPENED ===")
+        Log.d("Place: $placeName")
+        Log.d("Latitude: $lat")
+        Log.d("Longitude: $lon")
+        Log.d("=====================================")
+    }
     
     Surface(
         modifier = Modifier

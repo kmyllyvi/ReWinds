@@ -100,6 +100,18 @@ class PlaceSummaryViewModel(
 
                 if (loadedData != null) {
                     weatherData = loadedData
+                    
+                    // Debug: Log all stations from Visual Crossing
+                    if (loadedData.stations != null && loadedData.stations.isNotEmpty()) {
+                        Log.d("🗺️ Visual Crossing Stations found: ${loadedData.stations.size}")
+                        loadedData.stations.forEach { (id, station) ->
+                            Log.d("  Station: ${station.name ?: "Unknown"} (ID: $id)")
+                            Log.d("    Lat: ${station.latitude}, Lon: ${station.longitude}")
+                            Log.d("    Distance: ${station.distance}km, Quality: ${station.quality}")
+                        }
+                    } else {
+                        Log.d("⚠️  No stations found in response - using geosearch coordinates")
+                    }
                     Log.d("Loaded ${weatherData?.days?.count()} days for $placeName")
 
                     val newStoredDays = loadedData.days?.toDayWeatherSummaryList() ?: emptyList()
