@@ -35,6 +35,7 @@ import core.Navigator
 import core.deleteApiKeyPlatform
 import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
+import components.AppHeader
 
 @Composable
 fun SettingsView(navigator: Navigator) {
@@ -48,32 +49,10 @@ fun SettingsView(navigator: Navigator) {
             .fillMaxSize()
     ) {
         // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                IconButton(onClick = { navigator.navigateBack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Text(
-                    text = "Settings",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-        }
+        AppHeader(
+            title = "Settings",
+            onBackClick = { navigator.navigateBack() }
+        )
 
         // Content
         Column(

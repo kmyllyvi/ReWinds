@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import components.PlaceButton
+import components.AppHeader
 import core.GeoSearchResult
 import core.isAndroid
 import core.Navigator
@@ -83,7 +84,32 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             .fillMaxSize()
     ) {
         // Header with title and action buttons
-        HomeHeader(onSettingsClick = { navigator.navigateToSettings() }, onChatClick = { navigator.navigateToChat() }, showDebug = uiState.showDebugMenu)
+        AppHeader(
+            title = "ReWinds",
+            showLogo = true,
+            rightContent = {
+                IconButton(onClick = { navigator.navigateToSettings() }) {
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Button(
+                    onClick = { navigator.navigateToChat() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(
+                        Icons.Filled.Chat,
+                        contentDescription = "AI Chat",
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Chat")
+                }
+            }
+        )
 
         // Scrollable content
         LazyColumn(
@@ -175,65 +201,6 @@ private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, o
 }
 
 @Composable
-private fun HomeHeader(onSettingsClick: () -> Unit, onChatClick: () -> Unit, showDebug: Boolean) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            // .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Filled.Air,
-                    contentDescription = "ReWinds",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    "ReWinds",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Button(
-                    onClick = onChatClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Chat,
-                        contentDescription = "AI Chat",
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    Text("", color = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun SearchWithSuggestions(
     searchText: String,

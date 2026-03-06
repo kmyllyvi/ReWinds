@@ -52,6 +52,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import place.components.YearSelector
+import components.AppHeader
 import kotlin.time.ExperimentalTime
 
 // Define this outside or in a shared file if MonthSelector needs it directly
@@ -115,53 +116,28 @@ fun PlaceSummaryView(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Custom Header - Monthly view design
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Back arrow + Place name
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
-                IconButton(onClick = {
-                    vm.refreshData()
-                    onBackClick()
-                }) {
+        // Header
+        AppHeader(
+            title = currentPlaceName,
+            onBackClick = {
+                vm.refreshData()
+                onBackClick()
+            },
+            rightContent = {
+                IconButton(
+                    onClick = {},
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        Icons.Filled.Info,
+                        contentDescription = "Info",
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-                Text(
-                    currentPlaceName,
-                    style = MaterialTheme.typography.headlineSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
             }
-
-            // Info button
-            IconButton(
-                onClick = {},
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(
-                    Icons.Filled.Info,
-                    contentDescription = "Info",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+        )
 
         // Content
         when (val state = uiState) {

@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
+import components.AppHeader
 
 @Composable
 fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
@@ -55,7 +56,10 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             .fillMaxSize()
     ) {
         // Header with back button and title
-        ChatHeader(onBackClick = { navigator.navigateBack() })
+        AppHeader(
+            title = "Chat",
+            onBackClick = { navigator.navigateBack() }
+        )
 
         // Messages area
         LazyColumn(
@@ -137,36 +141,6 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
                 }
             }
         )
-    }
-}
-
-@Composable
-fun ChatHeader(onBackClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Text(
-                text = "Chat",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
     }
 }
 

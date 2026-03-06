@@ -14,14 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,6 +33,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import place.components.DaySummaryRow
 import kotlin.math.roundToInt
+import components.AppHeader
 
 // Helper function to format temperature consistently
 private fun formatTemperature(value: Double?): String {
@@ -43,7 +41,6 @@ private fun formatTemperature(value: Double?): String {
     return "${(value * 10).roundToInt() / 10.0}°C"
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonthlyStatisticsView(
     placeName: String,
@@ -64,24 +61,16 @@ fun MonthlyStatisticsView(
             vm.reloadStatistics(year = year, month = month)
         }
 
-        Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("$placeName - ${monthName(month)} $year Stats") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
+        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+            AppHeader(
+                title = "$placeName - ${monthName(month)} $year Stats",
+                onBackClick = onBackClick
             )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
+            Box(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize()
+            ) {
             val currentStats = statistics
             if (currentStats == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -157,6 +146,5 @@ fun MonthlyStatisticsView(
                 }
             }
         }
-    }
     }
 }
