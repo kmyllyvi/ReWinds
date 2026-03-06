@@ -62,7 +62,7 @@ class WeatherRepositoryImpl(
 ) :  WeatherRepository {
     private val visualcrossingUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
     private val apiKey = "***REMOVED***"
-    private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours&include=stations"
+    private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours"
 
     init {
         Log.d("init WeatherRepository")
@@ -358,6 +358,28 @@ class WeatherRepositoryImpl(
         }
     }
 
+
+    /**
+     * Verify a place exists on Visual Crossing and fetch its weather station(s).
+     * Called once when a new place is first searched.
+     * 
+     * @param place The place name to verify
+     * @return WeatherResponse with station data, or null if place not found
+     */
+    suspend fun verifyPlaceAndGetStations(place: String): WeatherResponse? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Request a single day with stations to verify place and get station coords
+                val url = "$visualcrossingUrl$place/today?unitGroup=metric&key=$apiKey&contentType=json&include=hours&include=stations"
+                val response = doRequest(url)
+                Log.d("verifyPlaceAndGetStations - SUCCESS: Found ${"$"}{response.stations?.size ?: 0} stations")
+                response
+            } catch (e: Exception) {
+                Log.e("verifyPlaceAndGetStations - FAILED for place: $place", e)
+                null
+            }
+        }
+    }
     override suspend fun checkDataAvailability(
         place: String,
         fromDate: String,
