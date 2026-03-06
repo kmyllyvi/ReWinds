@@ -107,8 +107,8 @@ class PlaceSummaryViewModel(
                     val newState = WeatherSummaryUiState.Success(
                         placeName = placeName,
                         storedDays = newStoredDays,
-                        latitude = loadedData.latitude,
-                        longitude = loadedData.longitude
+                        latitude = loadedData.stations?.values?.firstOrNull()?.latitude ?: loadedData.latitude,
+                        longitude = loadedData.stations?.values?.firstOrNull()?.longitude ?: loadedData.longitude
                     )
                     _uiState.value = newState
                     // Update monthly average temperatures
