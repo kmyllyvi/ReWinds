@@ -64,7 +64,7 @@ fun MonthlyStatisticsView(
         androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 12.dp)
+                .padding(top = if (isIOS()) 0.dp else 12.dp)
         ) {
             AppHeader(
                 title = "$placeName - ${monthName(month)} $year Stats",

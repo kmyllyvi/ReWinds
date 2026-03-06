@@ -46,7 +46,7 @@ fun AppHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 14.dp),
+                .padding(start = 12.dp, top = 20.dp, end = 12.dp, bottom = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

@@ -47,7 +47,7 @@ fun SettingsView(navigator: Navigator) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 12.dp)
+            .padding(top = if (isIOS()) 0.dp else 12.dp)
     ) {
         // Header
         AppHeader(
