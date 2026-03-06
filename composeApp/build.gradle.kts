@@ -91,6 +91,8 @@ kotlin {
             // navigation compose
             implementation(libs.navigation.compose)
 
+            // WebView for map embedding
+            implementation("io.github.kevinnzou:compose-webview-multiplatform:1.9.40")
             // other
             implementation(libs.kotlinx.datetime)
         }

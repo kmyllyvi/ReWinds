@@ -29,6 +29,8 @@ sealed interface WeatherSummaryUiState {
     data class Success(
         val placeName: String,
         val storedDays: List<DayWeatherSummary>,
+        val latitude: Double? = null,
+        val longitude: Double? = null,
         val currentPlaceDescription: String? = null,
         val isDownloadingMonth: Boolean = false
     ) : WeatherSummaryUiState
@@ -104,7 +106,9 @@ class PlaceSummaryViewModel(
 
                     val newState = WeatherSummaryUiState.Success(
                         placeName = placeName,
-                        storedDays = newStoredDays
+                        storedDays = newStoredDays,
+                        latitude = loadedData.latitude,
+                        longitude = loadedData.longitude
                     )
                     _uiState.value = newState
                     // Update monthly average temperatures

@@ -100,6 +100,7 @@ fun PlaceSummaryView(
 ) {
     val uiState by vm.uiState.collectAsState()
     val currentPlaceName = vm.placeName // Access it directly
+    var showMapModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -128,7 +129,7 @@ fun PlaceSummaryView(
             },
             rightContent = {
                 IconButton(
-                    onClick = {},
+                    onClick = { showMapModal = true },
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.primary)
@@ -162,6 +163,19 @@ fun PlaceSummaryView(
                     errorState = state
                 )
             }
+        }
+    }
+
+    // Show map modal when latitude/longitude are available
+    if (showMapModal && uiState is WeatherSummaryUiState.Success) {
+        val success = uiState as WeatherSummaryUiState.Success
+        if (success.latitude != null && success.longitude != null) {
+            StationMapModal(
+                lat = success.latitude,
+                lon = success.longitude,
+                placeName = currentPlaceName,
+                onDismiss = { showMapModal = false }
+            )
         }
     }
 }
