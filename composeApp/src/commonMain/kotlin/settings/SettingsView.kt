@@ -60,7 +60,7 @@ fun SettingsView(navigator: Navigator) {
                 .fillMaxWidth()
                 .weight(1f)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
+                .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Title

@@ -42,11 +42,11 @@ fun AppHeader(
     rightContent: @Composable (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        // Header content with padding (top margin for safe area)
+        // Header content with padding
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, top = 22.dp, end = 12.dp, bottom = 14.dp),
+                .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

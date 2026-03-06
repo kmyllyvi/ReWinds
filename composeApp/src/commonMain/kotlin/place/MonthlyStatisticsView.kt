@@ -68,7 +68,7 @@ fun MonthlyStatisticsView(
             )
             Box(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp)
                     .fillMaxSize()
             ) {
                 val currentStats = statistics
