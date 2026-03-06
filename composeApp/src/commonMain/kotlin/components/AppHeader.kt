@@ -41,10 +41,11 @@ fun AppHeader(
     rightContent: @Composable (() -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
+        // Header content with padding
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = 12.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -96,7 +97,7 @@ fun AppHeader(
             }
         }
 
-        // Fade divider: gray fading to white
+        // Fade divider: gray fading to white (edge-to-edge, no padding)
         Box(
             modifier = Modifier
                 .fillMaxWidth()

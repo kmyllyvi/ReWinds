@@ -148,7 +148,7 @@ fun PlaceSummaryView(
                 SuccessStateView(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 12.dp),
                     successState = state,
                     viewModel = vm
                 )

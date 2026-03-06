@@ -106,7 +106,6 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                         contentDescription = "AI Chat",
                         modifier = Modifier.padding(end = 4.dp)
                     )
-                    Text("Chat")
                 }
             }
         )
@@ -136,7 +135,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                         "Saved Locations",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                     )
                 }
 
@@ -201,7 +200,6 @@ private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, o
 }
 
 @Composable
-@Composable
 private fun SearchWithSuggestions(
     searchText: String,
     onSearchTextChange: (String) -> Unit,
@@ -209,7 +207,7 @@ private fun SearchWithSuggestions(
     suggestions: List<GeoSearchResult>,
     onSuggestionSelected: (GeoSearchResult) -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         // Search field with iOS-style rounded corners
         OutlinedTextField(
             value = searchText,
@@ -281,7 +279,7 @@ private fun PlaceCell(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -332,7 +330,7 @@ private fun DebugMenuSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .padding(horizontal = 12.dp, vertical = 16.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(8.dp)

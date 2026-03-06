@@ -67,7 +67,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             reverseLayout = false
         ) {

@@ -34,7 +34,7 @@ fun PlaceButton(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -48,7 +48,7 @@ fun PlaceButton(
                     text = "$dayCount ${if (dayCount == 1) "day" else "days"}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
 //            IconButton(onClick = { onDelete(text) }) {

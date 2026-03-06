@@ -71,77 +71,120 @@ fun MonthlyStatisticsView(
                     .padding(16.dp)
                     .fillMaxSize()
             ) {
-            val currentStats = statistics
-            if (currentStats == null) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item {
-                        Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Show download button if data is incomplete
-                        val missingDaysCount = vm.getMissingDaysCount(dailySummaries)
-                        if (missingDaysCount > 0) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = { vm.downloadFullMonth() },
-                                    enabled = !isDownloading
-                                ) {
-                                    if (isDownloading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier
-                                                .width(16.dp)
-                                                .height(16.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                    }
-                                    Text(if (isDownloading) "Downloading..." else "Download $missingDaysCount missing day${if (missingDaysCount > 1) "s" else ""}")
-                                }
-                            }
+                val currentStats = statistics
+                if (currentStats == null) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        item {
+                            Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
                             Spacer(modifier = Modifier.height(16.dp))
-                        }
 
-                        if (currentStats.numberOfDaysWithData > 0) {
-                            // Display Kiteable Days count prominently
-                            Text(
-                                text = "Kiteable Days: ${currentStats.kiteableDaysCount}",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            // Show download button if data is incomplete
+                            val missingDaysCount = vm.getMissingDaysCount(dailySummaries)
+                            if (missingDaysCount > 0) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                                        8.dp
+                                    )
+                                ) {
+                                    Button(
+                                        onClick = { vm.downloadFullMonth() },
+                                        enabled = !isDownloading
+                                    ) {
+                                        if (isDownloading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier
+                                                    .width(16.dp)
+                                                    .height(16.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        Text(if (isDownloading) "Downloading..." else "Download $missingDaysCount missing day${if (missingDaysCount > 1) "s" else ""}")
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            if (currentStats.numberOfDaysWithData > 0) {
+                                // Display Kiteable Days count prominently
+                                Text(
+                                    text = "Kiteable Days: ${currentStats.kiteableDaysCount}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                HorizontalDivider()
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Text("General Stats", style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text("Days with data: ${currentStats.numberOfDaysWithData}")
+                                currentStats.averageMinTemp?.let {
+                                    Text(
+                                        "Average Min Temp: ${
+                                            formatTemperature(
+                                                it
+                                            )
+                                        }"
+                                    )
+                                }
+                                currentStats.averageMaxTemp?.let {
+                                    Text(
+                                        "Average Max Temp: ${
+                                            formatTemperature(
+                                                it
+                                            )
+                                        }"
+                                    )
+                                }
+                                currentStats.overallAverageTemp?.let {
+                                    Text(
+                                        "Overall Average Temp: ${
+                                            formatTemperature(
+                                                it
+                                            )
+                                        }"
+                                    )
+                                }
+                                currentStats.absoluteMinTemp?.let {
+                                    Text(
+                                        "Coldest Day: ${
+                                            formatTemperature(
+                                                it
+                                            )
+                                        } (on ${currentStats.coldestDate})"
+                                    )
+                                }
+                                currentStats.absoluteMaxTemp?.let {
+                                    Text(
+                                        "Hottest Day: ${
+                                            formatTemperature(
+                                                it
+                                            )
+                                        } (on ${currentStats.hottestDate})"
+                                    )
+                                }
+                                currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²") }
+                            } else {
+                                Text("No detailed weather data available for calculations in this month, or data is still loading.")
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text("General Stats", style = MaterialTheme.typography.titleMedium)
+                            Text("Daily Breakdown", style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
-
-                            Text("Days with data: ${currentStats.numberOfDaysWithData}")
-                            currentStats.averageMinTemp?.let { Text("Average Min Temp: ${formatTemperature(it)}") }
-                            currentStats.averageMaxTemp?.let { Text("Average Max Temp: ${formatTemperature(it)}") }
-                            currentStats.overallAverageTemp?.let { Text("Overall Average Temp: ${formatTemperature(it)}") }
-                            currentStats.absoluteMinTemp?.let { Text("Coldest Day: ${formatTemperature(it)} (on ${currentStats.coldestDate})") }
-                            currentStats.absoluteMaxTemp?.let { Text("Hottest Day: ${formatTemperature(it)} (on ${currentStats.hottestDate})") }
-                            currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²") }
-                        } else {
-                            Text("No detailed weather data available for calculations in this month, or data is still loading.")
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text("Daily Breakdown", style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    items(dailySummaries) { daySummary ->
-                        DaySummaryRow(daySummary)
+                        items(dailySummaries) { daySummary ->
+                            DaySummaryRow(daySummary)
+                        }
                     }
                 }
             }
