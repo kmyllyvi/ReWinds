@@ -26,23 +26,27 @@ fun AppContent(viewModel: AppViewModel = koinViewModel()) {
     AppTheme {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = if (showContent) Arrangement.Top else Arrangement.Center
         ) {
             // Animate the button OUT when showContent = true
             AnimatedVisibility(visible = !showContent) {
-                Button(
-                    onClick = { viewModel.setShowContent(true) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Let’s go!", style = MaterialTheme.typography.titleLarge)
+                    Button(
+                        onClick = { viewModel.setShowContent(true) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Let’s go!", style = MaterialTheme.typography.titleLarge)
+                    }
                 }
             }
 
