@@ -27,11 +27,11 @@ fun StationMapModal(
     // Create the HTML for the map
     val htmlContent = generateMapHtml(lat, lon, placeName)
     
-    // Use simple URL encoding for HTML content (works cross-platform)
-    val htmlUri = "data:text/html," + htmlContent.urlEncode()
+    // Create a safe data URI for iOS
+    val safeHtmlUri = createSafeDataUri(htmlContent)
     
-    // Create WebView state with the data URL
-    val webViewState = rememberWebViewState(url = htmlUri)
+    // Create WebView state
+    val webViewState = rememberWebViewState(url = safeHtmlUri)
     
     Surface(
         modifier = Modifier
@@ -68,46 +68,69 @@ fun StationMapModal(
 }
 
 private fun generateMapHtml(lat: Double, lon: Double, placeName: String): String {
-    return """<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script><style>body,html,#map{margin:0;padding:0;height:100%;width:100%;}<\/style><\/head><body><div id="map"><\/div><script>var map = L.map('map').setView([$lat, $lon], 13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OpenStreetMap contributors',maxZoom: 19}).addTo(map);L.marker([$lat, $lon]).addTo(map).bindPopup('$placeName').openPopup();<\/script><\/body><\/html>"""
+    return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                * { margin: 0; padding: 0; }
+                html, body, #map { width: 100%; height: 100%; }
+                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                (function() {
+                    var map = L.map('map').setView([$lat, $lon], 13);
+                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap',
+                        maxZoom: 19
+                    }).addTo(map);
+                    L.marker([$lat, $lon]).addTo(map).bindPopup('$placeName').openPopup();
+                })();
+            </script>
+        </body>
+        </html>
+    """.trimIndent()
 }
 
-// Simple URL encoding that works cross-platform
-private fun String.urlEncode(): String {
-    val chars = StringBuilder()
-    for (c in this) {
-        when {
-            c == ' ' -> chars.append("%20")
-            c == '"' -> chars.append("%22")
-            c == '\'' -> chars.append("%27")
-            c == '\n' -> chars.append("%0A")
-            c == '\r' -> chars.append("%0D")
-            c == '\t' -> chars.append("%09")
-            c == '(' -> chars.append("%28")
-            c == ')' -> chars.append("%29")
-            c == '<' -> chars.append("%3C")
-            c == '>' -> chars.append("%3E")
-            c == '#' -> chars.append("%23")
-            c == '$' -> chars.append("%24")
-            c == '%' -> chars.append("%25")
-            c == '&' -> chars.append("%26")
-            c == '=' -> chars.append("%3D")
-            c == '?' -> chars.append("%3F")
-            c == '@' -> chars.append("%40")
-            c == '{' -> chars.append("%7B")
-            c == '}' -> chars.append("%7D")
-            c == '[' -> chars.append("%5B")
-            c == ']' -> chars.append("%5D")
-            c == '/' -> chars.append("%2F")
-            c == ':' -> chars.append("%3A")
-            c == ';' -> chars.append("%3B")
-            c == ',' -> chars.append("%2C")
-            c == '+' -> chars.append("%2B")
-            c == '\\' -> chars.append("%5C")
-            c == '`' -> chars.append("%60")
-            c == '~' -> chars.append("%7E")
-            c == '^' -> chars.append("%5E")
-            else -> chars.append(c)
-        }
+// Create a data URI that works on iOS by using semicolon-separated base64 encoding
+private fun createSafeDataUri(html: String): String {
+    // For iOS compatibility, use simple base64 encoding without special characters
+    val base64Html = htmlToBase64(html)
+    return "data:text/html;base64,$base64Html"
+}
+
+// Simple base64 encoder using only standard characters
+private fun htmlToBase64(html: String): String {
+    val base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    val bytes = html.map { it.code.toByte() }.toByteArray()
+    val result = StringBuilder()
+    var i = 0
+    
+    while (i < bytes.size) {
+        val b1 = bytes[i++].toInt() and 0xFF
+        val b2 = if (i < bytes.size) bytes[i++].toInt() and 0xFF else 0
+        val b3 = if (i < bytes.size) bytes[i++].toInt() and 0xFF else 0
+        
+        val hasSecond = i - 1 < bytes.size
+        val hasThird = i < bytes.size
+        
+        val c1 = b1 shr 2
+        val c2 = ((b1 and 0x3) shl 4) or (b2 shr 4)
+        val c3 = ((b2 and 0xF) shl 2) or (b3 shr 6)
+        val c4 = b3 and 0x3F
+        
+        result.append(base64Alphabet[c1])
+        result.append(base64Alphabet[c2])
+        result.append(if (hasSecond) base64Alphabet[c3] else '=')
+        result.append(if (hasThird) base64Alphabet[c4] else '=')
     }
-    return chars.toString()
+    
+    return result.toString()
 }
