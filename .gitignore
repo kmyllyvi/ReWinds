@@ -21,3 +21,4 @@ Pods/
 
 # Secrets - don't commit real API keys
 # If you add real keys to gradle.properties, use: git update-index --assume-unchanged gradle.properties
+iosApp/Config.local.xcconfig

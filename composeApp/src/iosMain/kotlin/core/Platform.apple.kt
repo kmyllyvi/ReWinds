@@ -10,6 +10,8 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import core.ApiKeyManager
+import core.KeychainBridge
 
 actual fun httpClient(enableNetworkLogs: Boolean): HttpClient {
     return HttpClient(Darwin) {
@@ -37,18 +39,22 @@ actual fun isAndroid(): Boolean = false
 actual fun isIOS(): Boolean = true
 
 actual fun getAnthropicApiKey(): String {
-    // For iOS development: Using placeholder key
-    // Keychain integration planned for future release
-    Log.d("Platform: Using placeholder API key for development on iOS")
-    return "sk-placeholder-dev-key-not-configured"
+    val key = ApiKeyManager.getApiKey()
+    if (key.isEmpty()) {
+        Log.d("Platform: Using placeholder API key for development on iOS")
+        return "sk-placeholder-dev-key-not-configured"
+    }
+    return key
 }
 
 actual fun saveApiKeyPlatform(key: String) {
-    // TODO: Implement Keychain save when framework bindings are stable
-    Log.d("Platform: saveApiKeyPlatform not yet implemented on iOS")
+    ApiKeyManager.setApiKey(key)
+    KeychainBridge.saveKey(key)
+    Log.d("Platform: API key saved to Keychain")
 }
 
 actual fun deleteApiKeyPlatform() {
-    // TODO: Implement Keychain delete when framework bindings are stable
-    Log.d("Platform: deleteApiKeyPlatform not yet implemented on iOS")
+    ApiKeyManager.setApiKey("")
+    KeychainBridge.deleteKey()
+    Log.d("Platform: API key deleted from Keychain")
 }

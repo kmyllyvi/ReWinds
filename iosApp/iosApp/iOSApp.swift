@@ -12,9 +12,27 @@ import ComposeApp // This exposes the whole Kotlin code!
 struct iOSApp: App {
 
     init() {
-        // TODO: Keychain integration
-        // For now, using placeholder API key from Platform.apple.kt
-        // Keychain feature can be enabled once framework bindings are stable
+        // Priority 1: Use API key from build config (Info.plist) if available
+        if let buildConfigKey = Bundle.main.infoDictionary?["ANTHROPIC_API_KEY"] as? String,
+           !buildConfigKey.isEmpty && buildConfigKey != "sk-ant-" && !buildConfigKey.contains("$") {
+            print("✓ Using API key from build configuration")
+            IosKeychainKt.setApiKeyFromKeychain(key: buildConfigKey)
+        }
+        // Priority 2: Load from Keychain
+        else if let savedKey = KeychainHelper.shared.load() {
+            print("✓ Using API key from Keychain")
+            IosKeychainKt.setApiKeyFromKeychain(key: savedKey)
+        }
+
+        // Register KeychainBridge callbacks for saving/deleting API keys
+        IosKeychainKt.registerKeychainCallbacks(
+            onSave: { key in
+                _ = KeychainHelper.shared.save(key)
+            },
+            onDelete: {
+                _ = KeychainHelper.shared.delete()
+            }
+        )
 
         // Initialize Koin and database
         // call Kotlin (koin init) see https://insert-koin.io/docs/quickstart/kmp/
