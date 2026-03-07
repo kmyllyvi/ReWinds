@@ -2,6 +2,8 @@ package ai
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ import components.AppHeader
 fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
+    val focusManager = LocalFocusManager.current
 
     // Scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {
@@ -61,13 +64,19 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             onBackClick = { navigator.navigateBack() }
         )
 
-        // Messages area
+        // Messages area with keyboard dismissal on click
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .clickable(
+                    indication = null,
+                    interactionSource = MutableInteractionSource()
+                ) {
+                    focusManager.clearFocus()
+                },
             verticalArrangement = Arrangement.spacedBy(8.dp),
             reverseLayout = false
         ) {
