@@ -70,7 +70,14 @@ class ChatViewModel(
     private val weatherRepository: core.WeatherRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ChatUiState())
+    private val _uiState = MutableStateFlow(ChatUiState(
+        messages = listOf(
+            ChatMessage(
+                role = MessageRole.ASSISTANT,
+                content = "Let's talk about the weather!"
+            )
+        )
+    ))
     /**
      * The current UI state.
      */
@@ -219,7 +226,16 @@ class ChatViewModel(
      */
     fun clearChat() {
         aiRepository.clearHistory()
-        _uiState.update { ChatUiState() }
+        _uiState.update {
+            ChatUiState(
+                messages = listOf(
+                    ChatMessage(
+                        role = MessageRole.ASSISTANT,
+                        content = "Let's talk about the weather!"
+                    )
+                )
+            )
+        }
         Log.d("ChatViewModel: chat cleared")
     }
 
