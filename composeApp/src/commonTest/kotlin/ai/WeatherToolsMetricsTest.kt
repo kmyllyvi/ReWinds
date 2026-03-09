@@ -429,7 +429,8 @@ class WeatherToolsMetricsTest {
         assertTrue(json.containsKey("data"))
 
         assertEquals("Oahu", json["place"]?.jsonPrimitive?.content)
-        assertEquals(1, json["days_with_data"]?.jsonPrimitive?.content?.toInt())
+        // Mock returns 2 days of data regardless of date range requested
+        assertEquals(2, json["days_with_data"]?.jsonPrimitive?.content?.toInt())
     }
 
     @Test

@@ -90,11 +90,12 @@ class AiRepositoryTest {
         val tools = WeatherTools
         val schemas = tools.allToolSchemas()
 
-        assertEquals(4, schemas.size)
-        assertEquals("get_wind_summary", schemas[0].name)
-        assertEquals("list_saved_places", schemas[1].name)
-        assertEquals("get_monthly_stats", schemas[2].name)
-        assertEquals("get_best_days", schemas[3].name)
+        assertEquals(5, schemas.size)
+        assertEquals("get_weather_metrics", schemas[0].name)
+        assertEquals("get_wind_summary", schemas[1].name)
+        assertEquals("list_saved_places", schemas[2].name)
+        assertEquals("get_monthly_stats", schemas[3].name)
+        assertEquals("get_best_days", schemas[4].name)
     }
 
     @Test
