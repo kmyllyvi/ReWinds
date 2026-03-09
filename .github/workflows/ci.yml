@@ -22,65 +22,141 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
-      - name: Run Android tests
-        run: ./gradlew buildAndroidOnly -x test --no-daemon
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Build Android (Debug)
+        run: ./gradlew :composeApp:assembleDebug -PincludeAllTargets=false --no-daemon --stacktrace
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon
+        run: ./gradlew :composeApp:testDebugUnitTest -PincludeAllTargets=false --no-daemon --stacktrace
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-test-results
-          path: composeApp/build/reports/tests/
+          path: |
+            composeApp/build/reports/tests/
+            composeApp/build/test-results/
+          retention-days: 14
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: composeApp/build/outputs/apk/debug/*.apk
+          retention-days: 14
 
   ios:
     name: iOS Tests
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
       - name: Set up Ruby for CocoaPods
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.0
+          ruby-version: '3.3'
           bundler-cache: true
+
+      - name: Cache CocoaPods specs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cocoapods
+          key: cocoapods-${{ hashFiles('iosApp/Podfile.lock') }}
+          restore-keys: |
+            cocoapods-
 
       - name: Install CocoaPods dependencies
         run: cd iosApp && pod install --repo-update
 
-      - name: Build iOS app (simulator)
+      - name: Select latest available iPhone simulator
         run: |
+          SIMULATOR_UDID=$(xcrun simctl list devices available --json \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          devices = data.get('devices', {})
+          iphones = []
+          for runtime, devs in devices.items():
+              if 'iOS' in runtime:
+                  for d in devs:
+                      if d.get('isAvailable') and 'iPhone' in d.get('name', ''):
+                          iphones.append((runtime, d))
+          iphones.sort(key=lambda x: x[0], reverse=True)
+          if iphones:
+              print(iphones[0][1]['udid'])
+          else:
+              raise SystemExit('No available iPhone simulator found')
+          ")
+          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+          echo "Selected simulator UDID: $SIMULATOR_UDID"
+          xcrun simctl list devices | grep "$SIMULATOR_UDID"
+
+      - name: Build and test iOS (simulator)
+        run: |
+          set -o pipefail
+          mkdir -p TestResults
           xcodebuild \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
-            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -resultBundlePath TestResults.xcresult \
             -derivedDataPath build \
-            -verbose
+            test \
+            2>&1 | tee xcodebuild.log | xcpretty --report junit --output TestResults/ios-test-results.xml
+          BUILD_STATUS=${PIPESTATUS[0]}
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "=== BUILD/TEST FAILED (exit $BUILD_STATUS) ==="
+            tail -200 xcodebuild.log
+            exit $BUILD_STATUS
+          fi
 
-      - name: Run iOS unit tests
-        run: |
-          xcodebuild \
-            -workspace iosApp/iosApp.xcworkspace \
-            -scheme iosApp \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -derivedDataPath build \
-            -verbose \
-            test
-
-      - name: Upload iOS build artifacts
+      - name: Upload test results (xcresult bundle)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build-output
-          path: build/
-          retention-days: 5
+          name: ios-test-results-xcresult
+          path: TestResults.xcresult
+          retention-days: 14
+
+      - name: Upload test results (JUnit XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results-junit
+          path: TestResults/ios-test-results.xml
+          retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log
+          path: xcodebuild.log
+          retention-days: 7
