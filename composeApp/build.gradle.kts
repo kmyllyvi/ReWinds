@@ -181,20 +181,18 @@ android {
     }
     buildTypes {
         getByName("debug") {
-            // Pass API key from gradle.properties to system property
-            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString() ?: ""
-            if (apiKey.isNotEmpty()) {
-                // Store in BuildConfig for access at runtime
-                buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
-            }
+            // Pass API key from gradle.properties or CI environment to BuildConfig.
+            // Always emit the field so Platform.android.kt can reference it; empty means
+            // the runtime code will fall back to the placeholder.
+            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString()
+                ?: System.getenv("ANTHROPIC_API_KEY") ?: ""
+            buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
         }
         getByName("release") {
             isMinifyEnabled = false
-            // Pass API key from gradle.properties to system property
-            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString() ?: ""
-            if (apiKey.isNotEmpty()) {
-                buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
-            }
+            val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString()
+                ?: System.getenv("ANTHROPIC_API_KEY") ?: ""
+            buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
         }
     }
     compileOptions {

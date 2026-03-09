@@ -91,6 +91,9 @@ jobs:
           restore-keys: |
             cocoapods-
 
+      - name: Generate dummy Kotlin framework (required before pod install)
+        run: ./gradlew :composeApp:generateDummyFramework --no-daemon
+
       - name: Install CocoaPods dependencies
         run: cd iosApp && pod install --repo-update
 
