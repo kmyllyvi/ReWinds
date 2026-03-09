@@ -97,6 +97,9 @@ jobs:
       - name: Install CocoaPods dependencies
         run: cd iosApp && pod install --repo-update
 
+      - name: Install xcpretty
+        run: gem install xcpretty --no-document
+
       - name: Select latest available iPhone simulator
         run: |
           SIMULATOR_UDID=$(xcrun simctl list devices available --json \
