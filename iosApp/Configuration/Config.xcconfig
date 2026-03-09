@@ -1,4 +1,4 @@
-#include "Config.local.xcconfig"
+#include? "Config.local.xcconfig"
 
 TEAM_ID=
 BUNDLE_ID=com.km.rewinds
