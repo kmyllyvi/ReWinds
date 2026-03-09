@@ -55,7 +55,7 @@ jobs:
           retention-days: 14
 
   ios:
-    name: iOS Tests
+    name: iOS Build
     runs-on: macos-latest
     timeout-minutes: 90
 
@@ -123,40 +123,32 @@ jobs:
           echo "Selected simulator UDID: $SIMULATOR_UDID"
           xcrun simctl list devices | grep "$SIMULATOR_UDID"
 
-      - name: Build and test iOS (simulator)
+      - name: Build iOS app (simulator)
+        # The iOS app has no XCTest targets; Kotlin unit tests run via the Android/JVM
+        # job using Gradle. This step verifies the iOS app compiles successfully.
         run: |
           set -o pipefail
-          mkdir -p TestResults
           xcodebuild \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
-            -resultBundlePath TestResults.xcresult \
             -derivedDataPath build \
-            test \
-            2>&1 | tee xcodebuild.log | xcpretty --report junit --output TestResults/ios-test-results.xml
+            build \
+            2>&1 | tee xcodebuild.log | xcpretty
           BUILD_STATUS=${PIPESTATUS[0]}
           if [ $BUILD_STATUS -ne 0 ]; then
-            echo "=== BUILD/TEST FAILED (exit $BUILD_STATUS) ==="
+            echo "=== BUILD FAILED (exit $BUILD_STATUS) ==="
             tail -200 xcodebuild.log
             exit $BUILD_STATUS
           fi
 
-      - name: Upload test results (xcresult bundle)
-        if: always()
+      - name: Upload iOS build artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-test-results-xcresult
-          path: TestResults.xcresult
-          retention-days: 14
-
-      - name: Upload test results (JUnit XML)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-test-results-junit
-          path: TestResults/ios-test-results.xml
+          name: ios-build-output
+          path: build/Build/Products/Debug-iphonesimulator/
           retention-days: 14
 
       - name: Upload build log on failure
