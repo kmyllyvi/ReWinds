@@ -42,12 +42,14 @@ fun AppHeader(
     showLogo: Boolean = false,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
+    // TOP MARGIN adjustment for iOS
+    val topMargin = if (isIOS()) 0.dp else 35.dp
     Column(modifier = modifier.fillMaxWidth()) {
         // Header content with padding
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, top = if (isIOS()) 10.dp else 20.dp, end = 12.dp, bottom = 14.dp),
+                .padding(start = 12.dp, top = topMargin, end = 12.dp, bottom = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
