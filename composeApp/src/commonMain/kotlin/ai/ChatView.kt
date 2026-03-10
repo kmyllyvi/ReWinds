@@ -65,6 +65,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
         )
 
         // Messages area with keyboard dismissal on click
+        // Use Bottom alignment so header/content don't move up when keyboard appears
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
@@ -77,7 +78,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
                 ) {
                     focusManager.clearFocus()
                 },
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
             reverseLayout = false
         ) {
             items(
