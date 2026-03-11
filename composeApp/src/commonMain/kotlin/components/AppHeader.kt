@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.imePadding
 import core.isIOS
 
 /**
@@ -44,7 +45,8 @@ fun AppHeader(
 ) {
     // TOP MARGIN adjustment for iOS
     val topMargin = if (isIOS()) 0.dp else 35.dp
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Use imePadding to keep header pinned when keyboard appears
+    Column(modifier = modifier.fillMaxWidth().imePadding()) {
         // Header content with padding
         Row(
             modifier = Modifier
