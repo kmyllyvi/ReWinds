@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.imePadding
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
@@ -56,9 +55,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .imePadding()
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
