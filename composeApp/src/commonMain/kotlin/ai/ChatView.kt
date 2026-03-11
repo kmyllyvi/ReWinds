@@ -56,9 +56,10 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Top
     ) {
-        // Header with back button and title
+        // Header with back button and title - pinned to top with Arrangement.Top
         AppHeader(
             title = "Chat",
             onBackClick = { navigator.navigateBack() }
