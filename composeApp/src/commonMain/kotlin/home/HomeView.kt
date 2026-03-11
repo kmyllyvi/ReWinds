@@ -3,6 +3,7 @@ package home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import components.PlaceButton
@@ -51,6 +53,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val searchText by vm.searchText.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -110,11 +113,17 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             }
         )
 
-        // Scrollable content
+        // Scrollable content with keyboard dismissal on click
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .clickable(
+                    indication = null,
+                    interactionSource = MutableInteractionSource()
+                ) {
+                    focusManager.clearFocus()
+                },
                 contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             // Search section
@@ -124,7 +133,10 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     onSearchTextChange = vm::onSearchTextChange,
                     isSearching = uiState.isSearching,
                     suggestions = uiState.searchResults,
-                    onSuggestionSelected = vm::onSearchResultSelected
+                    onSuggestionSelected = {
+                        vm.onSearchResultSelected(it)
+                        focusManager.clearFocus()
+                    }
                 )
             }
 
