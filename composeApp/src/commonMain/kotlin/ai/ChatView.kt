@@ -54,75 +54,78 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Top
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Header with back button and title - pinned to top with Arrangement.Top
-        AppHeader(
-            title = "Chat",
-            onBackClick = { navigator.navigateBack() }
-        )
-
-        // Messages area with keyboard dismissal on click
-        // Use Bottom alignment so header/content don't move up when keyboard appears
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .clickable(
-                    indication = null,
-                    interactionSource = MutableInteractionSource()
-                ) {
-                    focusManager.clearFocus()
-                },
-            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
-            reverseLayout = false
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            items(
-                items = uiState.messages,
-                key = { message -> message.id }
-            ) { message ->
-                ChatMessageBubble(message)
-            }
-
-            // Loading indicator
-            if (uiState.isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
+            // Messages area with keyboard dismissal on click
+            // Use Bottom alignment so content doesn't move up when keyboard appears
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = MutableInteractionSource()
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        focusManager.clearFocus()
+                    },
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+                reverseLayout = false
+            ) {
+                items(
+                    items = uiState.messages,
+                    key = { message -> message.id }
+                ) { message ->
+                    ChatMessageBubble(message)
+                }
+
+                // Loading indicator
+                if (uiState.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Error message display
-        AnimatedVisibility(visible = uiState.error != null) {
-            uiState.error?.let { errorMessage ->
-                ErrorMessageBox(
-                    error = errorMessage,
-                    onDismiss = vm::onErrorDismissed
-                )
+            // Error message display
+            AnimatedVisibility(visible = uiState.error != null) {
+                uiState.error?.let { errorMessage ->
+                    ErrorMessageBox(
+                        error = errorMessage,
+                        onDismiss = vm::onErrorDismissed
+                    )
+                }
             }
+
+            // Input area
+            ChatInputArea(
+                inputText = uiState.inputText,
+                onInputChange = vm::onInputTextChange,
+                onSendClick = { vm.sendMessage(uiState.inputText) },
+                isLoading = uiState.isLoading
+            )
         }
 
-        // Input area
-        ChatInputArea(
-            inputText = uiState.inputText,
-            onInputChange = vm::onInputTextChange,
-            onSendClick = { vm.sendMessage(uiState.inputText) },
-            isLoading = uiState.isLoading
+        // Header positioned at top - stays fixed above all other content
+        AppHeader(
+            title = "Chat",
+            onBackClick = { navigator.navigateBack() },
+            modifier = Modifier.align(Alignment.TopCenter)
         )
     }
 
