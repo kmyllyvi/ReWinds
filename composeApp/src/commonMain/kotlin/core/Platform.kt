@@ -26,3 +26,12 @@ fun isAnthropicApiKeyConfigured(): Boolean {
     Log.d("Platform: API key check - length=${key.length}, starts_with_sk_ant=${key.startsWith("sk-ant-")}, has_placeholder=${key.contains("placeholder")}")
     return key.isNotBlank() && !key.contains("placeholder") && key.startsWith("sk-ant-")
 }
+
+// Visual Crossing API Key - must be provided by platform-specific implementations
+expect fun getVisualCrossingApiKey(): String
+
+// Save Visual Crossing API key to platform-specific storage (Keychain on iOS, no-op on Android)
+expect fun saveWeatherApiKeyPlatform(key: String)
+
+// Delete Visual Crossing API key from platform-specific storage
+expect fun deleteWeatherApiKeyPlatform()

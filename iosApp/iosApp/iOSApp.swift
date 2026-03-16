@@ -34,6 +34,22 @@ struct iOSApp: App {
             }
         )
 
+        // Load Visual Crossing API key
+        if let vcKey = KeychainHelper.shared.loadWeatherKey(), !vcKey.isEmpty {
+            print("✓ Using Weather API key from Keychain")
+            IosWeatherKeychainKt.setWeatherApiKeyFromKeychain(key: vcKey)
+        }
+
+        // Register weather key callbacks for saving/deleting
+        IosWeatherKeychainKt.registerWeatherKeychainCallbacks(
+            onSave: { key in
+                _ = KeychainHelper.shared.saveWeatherKey(key)
+            },
+            onDelete: {
+                _ = KeychainHelper.shared.deleteWeatherKey()
+            }
+        )
+
         // Initialize Koin and database
         // call Kotlin (koin init) see https://insert-koin.io/docs/quickstart/kmp/
         // So DI.kt file becomes "DIKt"

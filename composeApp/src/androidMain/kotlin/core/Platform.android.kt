@@ -62,3 +62,28 @@ actual fun deleteApiKeyPlatform() {
     // No-op on Android
     Log.d("Platform: deleteApiKeyPlatform is no-op on Android")
 }
+
+actual fun getVisualCrossingApiKey(): String {
+    // Try to get from BuildConfig (set at build time from gradle.properties)
+    val apiKey = BuildConfig.VISUAL_CROSSING_API_KEY
+    if (apiKey.isNotBlank() && !apiKey.contains("placeholder")) {
+        return apiKey
+    }
+
+    // Development fallback: return a placeholder key
+    // NOTE: This will fail at runtime when calling Visual Crossing API unless a real key is set
+    // To use the weather feature, set VISUAL_CROSSING_API_KEY in gradle.properties
+    Log.d("Platform: VISUAL_CROSSING_API_KEY not configured, using placeholder for development")
+    return "placeholder-weather-key-not-configured"
+}
+
+actual fun saveWeatherApiKeyPlatform(key: String) {
+    // No-op on Android: uses BuildConfig at build time
+    // If we wanted to support runtime key saving on Android, we could use SharedPreferences
+    Log.d("Platform: saveWeatherApiKeyPlatform is no-op on Android (use gradle.properties)")
+}
+
+actual fun deleteWeatherApiKeyPlatform() {
+    // No-op on Android
+    Log.d("Platform: deleteWeatherApiKeyPlatform is no-op on Android")
+}

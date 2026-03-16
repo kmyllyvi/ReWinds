@@ -31,30 +31,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import core.ApiKeyManager
+import core.WeatherApiKeyManager
 import core.Navigator
 import core.deleteApiKeyPlatform
+import core.deleteWeatherApiKeyPlatform
 import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
+import core.saveWeatherApiKeyPlatform
 import components.AppHeader
 
 @Composable
 fun SettingsView(navigator: Navigator) {
     val scrollState = rememberScrollState()
-    var apiKey by remember { mutableStateOf("") }
-    var showSuccessMessage by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var anthropicApiKey by remember { mutableStateOf("") }
+    var weatherApiKey by remember { mutableStateOf("") }
+    var showSuccessMessage by remember { mutableStateOf("") }
+    var showDeleteConfirm by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
-        // Header
         AppHeader(
             title = "Settings",
             onBackClick = { navigator.navigateBack() }
         )
 
-        // Content
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -63,21 +65,19 @@ fun SettingsView(navigator: Navigator) {
                 .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
+            // Anthropic API Key Section
             Text(
                 text = "Anthropic API Key",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Description
             Text(
                 text = "Enter your Anthropic API key to use the AI Chat feature. Your key will be securely stored locally on your device.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Status indicator
             if (isAnthropicApiKeyConfigured()) {
                 Box(
                     modifier = Modifier
@@ -112,8 +112,7 @@ fun SettingsView(navigator: Navigator) {
                 }
             }
 
-            // Success message
-            if (showSuccessMessage) {
+            if (showSuccessMessage == "anthropic") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -131,10 +130,9 @@ fun SettingsView(navigator: Navigator) {
                 }
             }
 
-            // API Key input field
             OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
+                value = anthropicApiKey,
+                onValueChange = { anthropicApiKey = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("sk-ant-...") },
                 label = { Text("API Key") },
@@ -143,63 +141,181 @@ fun SettingsView(navigator: Navigator) {
                 maxLines = 3
             )
 
-            // Instructions
             Text(
                 text = "Get your API key from: https://console.anthropic.com/account/keys",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
 
-        // Action buttons
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            TextButton(
-                onClick = {
-                    showDeleteConfirm = true
-                },
-                modifier = Modifier.weight(1f),
-                enabled = isAnthropicApiKeyConfigured()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Delete")
+                TextButton(
+                    onClick = { showDeleteConfirm = "anthropic" },
+                    modifier = Modifier.weight(1f),
+                    enabled = isAnthropicApiKeyConfigured()
+                ) {
+                    Text("Delete")
+                }
+
+                Button(
+                    onClick = {
+                        if (anthropicApiKey.isNotBlank()) {
+                            saveApiKeyPlatform(anthropicApiKey)
+                            ApiKeyManager.setApiKey(anthropicApiKey)
+                            showSuccessMessage = "anthropic"
+                            anthropicApiKey = ""
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Save Key")
+                }
             }
 
-            Button(
-                onClick = {
-                    if (apiKey.isNotBlank()) {
-                        saveApiKeyPlatform(apiKey)
-                        ApiKeyManager.setApiKey(apiKey)
-                        showSuccessMessage = true
-                        apiKey = ""
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+            // Visual Crossing API Key Section
+            Text(
+                text = "Visual Crossing API Key",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Text(
+                text = "Enter your Visual Crossing API key to enable weather data queries. Your key will be securely stored locally on your device.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (WeatherApiKeyManager.hasValidKey()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "✓ API key is configured",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "⚠ API key not configured",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+
+            if (showSuccessMessage == "weather") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "✓ API key saved successfully",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = weatherApiKey,
+                onValueChange = { weatherApiKey = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("XXXXXXXXXXXXXXXXXXXXXXXXX") },
+                label = { Text("API Key") },
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = false,
+                maxLines = 3
+            )
+
+            Text(
+                text = "Get your API key from: https://www.visualcrossing.com/",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Save Key")
+                TextButton(
+                    onClick = { showDeleteConfirm = "weather" },
+                    modifier = Modifier.weight(1f),
+                    enabled = WeatherApiKeyManager.hasValidKey()
+                ) {
+                    Text("Delete")
+                }
+
+                Button(
+                    onClick = {
+                        if (weatherApiKey.isNotBlank()) {
+                            saveWeatherApiKeyPlatform(weatherApiKey)
+                            WeatherApiKeyManager.setApiKey(weatherApiKey)
+                            showSuccessMessage = "weather"
+                            weatherApiKey = ""
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Save Key")
+                }
             }
         }
     }
 
     // Delete confirmation dialog
-    if (showDeleteConfirm) {
+    if (showDeleteConfirm.isNotBlank()) {
+        val (keyType, onConfirmDelete) = when (showDeleteConfirm) {
+            "anthropic" -> "Anthropic API Key" to {
+                deleteApiKeyPlatform()
+                ApiKeyManager.setApiKey("")
+            }
+            "weather" -> "Visual Crossing API Key" to {
+                deleteWeatherApiKeyPlatform()
+                WeatherApiKeyManager.setApiKey("")
+            }
+            else -> "" to {}
+        }
+
         androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete API Key?") },
-            text = { Text("This will remove your stored API key. You can add it again later from settings.") },
+            onDismissRequest = { showDeleteConfirm = "" },
+            title = { Text("Delete $keyType?") },
+            text = { Text("This will remove your stored $keyType. You can add it again later from settings.") },
             confirmButton = {
                 Button(
                     onClick = {
-                        deleteApiKeyPlatform()
-                        ApiKeyManager.setApiKey("")
-                        showDeleteConfirm = false
-                        showSuccessMessage = false
+                        onConfirmDelete()
+                        showDeleteConfirm = ""
+                        showSuccessMessage = ""
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
@@ -209,7 +325,7 @@ fun SettingsView(navigator: Navigator) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = { showDeleteConfirm = "" }) {
                     Text("Cancel")
                 }
             }

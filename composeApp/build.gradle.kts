@@ -187,12 +187,18 @@ android {
             val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString()
                 ?: System.getenv("ANTHROPIC_API_KEY") ?: ""
             buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
+            val weatherKey = rootProject.findProperty("VISUAL_CROSSING_API_KEY")?.toString()
+                ?: System.getenv("VISUAL_CROSSING_API_KEY") ?: ""
+            buildConfigField("String", "VISUAL_CROSSING_API_KEY", "\"$weatherKey\"")
         }
         getByName("release") {
             isMinifyEnabled = false
             val apiKey = rootProject.findProperty("ANTHROPIC_API_KEY")?.toString()
                 ?: System.getenv("ANTHROPIC_API_KEY") ?: ""
             buildConfigField("String", "ANTHROPIC_API_KEY", "\"$apiKey\"")
+            val weatherKey = rootProject.findProperty("VISUAL_CROSSING_API_KEY")?.toString()
+                ?: System.getenv("VISUAL_CROSSING_API_KEY") ?: ""
+            buildConfigField("String", "VISUAL_CROSSING_API_KEY", "\"$weatherKey\"")
         }
     }
     compileOptions {

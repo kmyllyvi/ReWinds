@@ -58,3 +58,24 @@ actual fun deleteApiKeyPlatform() {
     KeychainBridge.deleteKey()
     Log.d("Platform: API key deleted from Keychain")
 }
+
+actual fun getVisualCrossingApiKey(): String {
+    val key = WeatherApiKeyManager.getApiKey()
+    if (key.isEmpty()) {
+        Log.d("Platform: Using placeholder Weather API key for development on iOS")
+        return "placeholder-weather-key-not-configured"
+    }
+    return key
+}
+
+actual fun saveWeatherApiKeyPlatform(key: String) {
+    WeatherApiKeyManager.setApiKey(key)
+    WeatherKeychainBridge.saveKey(key)
+    Log.d("Platform: Weather API key saved to Keychain")
+}
+
+actual fun deleteWeatherApiKeyPlatform() {
+    WeatherApiKeyManager.setApiKey("")
+    WeatherKeychainBridge.deleteKey()
+    Log.d("Platform: Weather API key deleted from Keychain")
+}

@@ -83,4 +83,84 @@ class KeychainHelper {
             return false
         }
     }
+
+    private let weatherAccount = "visual_crossing_api_key"
+
+    /// Save Visual Crossing API key to Keychain
+    func saveWeatherKey(_ key: String) -> Bool {
+        let data = key.data(using: .utf8)!
+
+        // Check if key already exists
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: weatherAccount
+        ]
+
+        // Delete existing key if it exists
+        SecItemDelete(query as CFDictionary)
+
+        // Add new key
+        let attributes: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: weatherAccount,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        ]
+
+        let status = SecItemAdd(attributes as CFDictionary, nil)
+
+        if status == errSecSuccess {
+            print("✓ Weather API key saved to Keychain")
+            return true
+        } else {
+            print("✗ Failed to save Weather API key to Keychain (status: \(status))")
+            return false
+        }
+    }
+
+    /// Load Visual Crossing API key from Keychain
+    func loadWeatherKey() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: weatherAccount,
+            kSecReturnData as String: true
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        if status == errSecSuccess, let data = result as? Data, let key = String(data: data, encoding: .utf8) {
+            print("✓ Weather API key loaded from Keychain")
+            return key
+        } else if status == errSecItemNotFound {
+            print("ℹ No Weather API key found in Keychain")
+            return nil
+        } else {
+            print("✗ Failed to load Weather API key from Keychain (status: \(status))")
+            return nil
+        }
+    }
+
+    /// Delete Visual Crossing API key from Keychain
+    func deleteWeatherKey() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: weatherAccount
+        ]
+
+        let status = SecItemDelete(query as CFDictionary)
+
+        if status == errSecSuccess || status == errSecItemNotFound {
+            print("✓ Weather API key deleted from Keychain")
+            return true
+        } else {
+            print("✗ Failed to delete Weather API key from Keychain (status: \(status))")
+            return false
+        }
+    }
+
 }
