@@ -253,81 +253,22 @@ android {
 
 tasks.register("coverageReport") {
     group = "verification"
-    description = "Display test coverage information"
-    doLast {
-        println("""
-            
-            ============================================
-            Code Coverage Report  
-            ============================================
-            Total Tests: 137
-            Pass Rate: 100%
-            Failures: 0
-            Errors: 0
-            
-            Coverage data available in:
-            - build/outputs/unit_test_code_coverage/
-            - build/test-results/
-            ============================================
-            
-        """.trimIndent())
-    }
-}
-
-// ============================================
-// JaCoCo Code Coverage (KIM-115)
-// ============================================
-
-plugins.withId("org.gradle.jacoco") {
-    jacoco {
-        toolVersion = "0.8.11"
-    }
-}
-
-android {
-    buildTypes.all {
-        enableUnitTestCoverage = true
-    }
-}
-
-// Generate HTML coverage report from execution data
-tasks.register("jacocoReport") {
-    group = "verification"
-    description = "Generate JaCoCo HTML coverage report"
+    description = "Generate detailed code coverage report with percentages"
     dependsOn("testDebugUnitTest")
-    
+
     doLast {
-        // Use JaCoCo CLI to generate HTML report
-        val execFile = file("build/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-        val classesDir = file("build/intermediates/classes/debug")
-        val sourceDir = file("src/commonMain/kotlin")
-        val reportDir = file("build/reports/jacoco/html")
-        
-        if (execFile.exists() && classesDir.exists()) {
-            reportDir.mkdirs()
-            
-            // Copy exec file for processing
-            copy {
-                from(execFile)
-                into(buildDir)
-                rename { "coverage.exec" }
+        val scriptPath = "${project.rootProject.projectDir}/generate_coverage_metrics.py"
+        val scriptFile = File(scriptPath)
+        if (scriptFile.exists()) {
+            exec {
+                commandLine("python3", scriptFile.absolutePath)
+                workingDir(project.rootProject.projectDir)
             }
-            
-            println("\n" + "=".repeat(60))
-            println("JaCoCo Coverage Report")
-            println("=".repeat(60))
-            println("✓ Execution data: ${execFile.absolutePath}")
-            println("✓ Classes: ${classesDir.absolutePath}")
-            println("✓ Sources: ${sourceDir.absolutePath}")
-            println("\nHTML Report will be available in:")
-            println("  build/reports/jacoco/html/index.html")
-            println("\nCoverage data collected from:")
-            println("  - 137 unit tests")
-            println("  - All test suites passing")
-            println("=".repeat(60) + "\n")
+            println("\n✅ Coverage report generated!")
+            println("   Open: docs/coverage/detailed.html")
         } else {
-            println("⚠ Coverage execution data not found.")
-            println("  Run: ./gradlew :composeApp:testDebugUnitTest")
+            println("⚠ generate_coverage_metrics.py not found")
+            println("   Expected at: $scriptPath")
         }
     }
 }
