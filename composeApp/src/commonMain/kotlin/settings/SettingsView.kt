@@ -39,6 +39,9 @@ import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
 import core.saveWeatherApiKeyPlatform
 import components.AppHeader
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun SettingsView(navigator: Navigator) {
@@ -53,7 +56,7 @@ fun SettingsView(navigator: Navigator) {
             .fillMaxSize()
     ) {
         AppHeader(
-            title = "Settings",
+            title = stringResource(Res.string.settings_title),
             onBackClick = { navigator.navigateBack() }
         )
 
@@ -67,13 +70,13 @@ fun SettingsView(navigator: Navigator) {
         ) {
             // Anthropic API Key Section
             Text(
-                text = "Anthropic API Key",
+                text = stringResource(Res.string.anthropic_key_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                text = "Enter your Anthropic API key to use the AI Chat feature. Your key will be securely stored locally on your device.",
+                text = stringResource(Res.string.anthropic_key_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -89,7 +92,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "✓ API key is configured",
+                        text = stringResource(Res.string.api_key_configured),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -105,7 +108,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "⚠ API key not configured",
+                        text = stringResource(Res.string.api_key_not_configured_status),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -123,7 +126,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "✓ API key saved successfully",
+                        text = stringResource(Res.string.api_key_saved),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -134,15 +137,15 @@ fun SettingsView(navigator: Navigator) {
                 value = anthropicApiKey,
                 onValueChange = { anthropicApiKey = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("sk-ant-...") },
-                label = { Text("API Key") },
+                placeholder = { Text(stringResource(Res.string.api_key_placeholder)) },
+                label = { Text(stringResource(Res.string.api_key_field_label)) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = false,
                 maxLines = 3
             )
 
             Text(
-                text = "Get your API key from: https://console.anthropic.com/account/keys",
+                text = stringResource(Res.string.anthropic_api_url),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -156,7 +159,7 @@ fun SettingsView(navigator: Navigator) {
                     modifier = Modifier.weight(1f),
                     enabled = isAnthropicApiKeyConfigured()
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.delete))
                 }
 
                 Button(
@@ -173,20 +176,20 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Save Key")
+                    Text(stringResource(Res.string.save_key))
                 }
             }
 
             // Visual Crossing API Key Section
             Text(
-                text = "Visual Crossing API Key",
+                text = stringResource(Res.string.visual_crossing_key_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
             Text(
-                text = "Enter your Visual Crossing API key to enable weather data queries. Your key will be securely stored locally on your device.",
+                text = stringResource(Res.string.visual_crossing_key_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -202,7 +205,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "✓ API key is configured",
+                        text = stringResource(Res.string.api_key_configured),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -218,7 +221,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "⚠ API key not configured",
+                        text = stringResource(Res.string.api_key_not_configured_status),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -236,7 +239,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = "✓ API key saved successfully",
+                        text = stringResource(Res.string.api_key_saved),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -247,15 +250,15 @@ fun SettingsView(navigator: Navigator) {
                 value = weatherApiKey,
                 onValueChange = { weatherApiKey = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("XXXXXXXXXXXXXXXXXXXXXXXXX") },
-                label = { Text("API Key") },
+                placeholder = { Text(stringResource(Res.string.api_key_placeholder)) },
+                label = { Text(stringResource(Res.string.api_key_field_label)) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = false,
                 maxLines = 3
             )
 
             Text(
-                text = "Get your API key from: https://www.visualcrossing.com/",
+                text = stringResource(Res.string.visual_crossing_api_url),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -269,7 +272,7 @@ fun SettingsView(navigator: Navigator) {
                     modifier = Modifier.weight(1f),
                     enabled = WeatherApiKeyManager.hasValidKey()
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.delete))
                 }
 
                 Button(
@@ -286,7 +289,7 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Save Key")
+                    Text(stringResource(Res.string.save_key))
                 }
             }
         }
@@ -295,11 +298,11 @@ fun SettingsView(navigator: Navigator) {
     // Delete confirmation dialog
     if (showDeleteConfirm.isNotBlank()) {
         val (keyType, onConfirmDelete) = when (showDeleteConfirm) {
-            "anthropic" -> "Anthropic API Key" to {
+            "anthropic" -> stringResource(Res.string.anthropic_key_title) to {
                 deleteApiKeyPlatform()
                 ApiKeyManager.setApiKey("")
             }
-            "weather" -> "Visual Crossing API Key" to {
+            "weather" -> stringResource(Res.string.visual_crossing_key_title) to {
                 deleteWeatherApiKeyPlatform()
                 WeatherApiKeyManager.setApiKey("")
             }
@@ -308,8 +311,8 @@ fun SettingsView(navigator: Navigator) {
 
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showDeleteConfirm = "" },
-            title = { Text("Delete $keyType?") },
-            text = { Text("This will remove your stored $keyType. You can add it again later from settings.") },
+            title = { Text(stringResource(Res.string.delete_key_title, keyType)) },
+            text = { Text(stringResource(Res.string.delete_key_message, keyType)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -321,12 +324,12 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(Res.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = "" }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             }
         )

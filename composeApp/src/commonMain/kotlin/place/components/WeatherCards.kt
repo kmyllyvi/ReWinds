@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import core.KiteSpotterConfig
 import place.DayWeatherSummary
 import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun StoredDaysList(storedDays: List<DayWeatherSummary>) {
@@ -72,7 +75,7 @@ fun DayWeatherSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = daySummary.date ?: "No date",
+                    text = daySummary.date ?: stringResource(Res.string.no_date),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
@@ -89,9 +92,9 @@ fun DayWeatherSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                InfoColumn("Max Temp", formatTemperature(daySummary.maxTemp))
-                InfoColumn("Avg Temp", formatTemperature(daySummary.avgTemp))
-                InfoColumn("Min Temp", formatTemperature(daySummary.minTemp))
+                InfoColumn(stringResource(Res.string.max_temp), formatTemperature(daySummary.maxTemp))
+                InfoColumn(stringResource(Res.string.avg_temp), formatTemperature(daySummary.avgTemp))
+                InfoColumn(stringResource(Res.string.min_temp), formatTemperature(daySummary.minTemp))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -101,10 +104,10 @@ fun DayWeatherSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround // Changed for better spacing
             ) {
-                InfoColumn("Avg Wind", formatWindSpeed(daySummary.avgWindSpeed))
+                InfoColumn(stringResource(Res.string.avg_wind), formatWindSpeed(daySummary.avgWindSpeed))
                 // Add the new Sustained Wind column
-                InfoColumn("Sust. Wind", formatWindSpeed(daySummary.sustainedWindSpeed))
-                InfoColumn("Max Wind", formatWindSpeed(daySummary.maxWindSpeed))
+                InfoColumn(stringResource(Res.string.sust_wind), formatWindSpeed(daySummary.sustainedWindSpeed))
+                InfoColumn(stringResource(Res.string.max_wind), formatWindSpeed(daySummary.maxWindSpeed))
             }
         }
     }

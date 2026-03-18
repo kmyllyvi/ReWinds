@@ -48,6 +48,10 @@ import core.GeoSearchResult
 import core.isAndroid
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
@@ -88,13 +92,13 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     ) {
         // Header with title and action buttons
         AppHeader(
-            title = "ReWinds",
+            title = stringResource(Res.string.app_title),
             showLogo = true,
             rightContent = {
                 IconButton(onClick = { navigator.navigateToSettings() }) {
                     Icon(
                         Icons.Filled.Settings,
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(Res.string.settings_icon_desc),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -106,7 +110,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 ) {
                     Icon(
                         Icons.Filled.Chat,
-                        contentDescription = "AI Chat",
+                        contentDescription = stringResource(Res.string.chat_icon_desc),
                         modifier = Modifier.padding(end = 4.dp)
                     )
                 }
@@ -144,7 +148,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             if (uiState.placeDisplayData.isNotEmpty()) {
                 item {
                     Text(
-                        "Saved Locations",
+                        stringResource(Res.string.saved_locations),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
@@ -182,11 +186,11 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
 private fun ErrorDialog(error: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("API Error") },
+        title = { Text(stringResource(Res.string.api_error)) },
         text = { Text(error) },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("OK")
+                Text(stringResource(Res.string.ok))
             }
         }
     )
@@ -196,16 +200,16 @@ private fun ErrorDialog(error: String, onDismiss: () -> Unit) {
 private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Place") },
-        text = { Text("Are you sure you want to delete '$placeName'? This action cannot be undone.") },
+        title = { Text(stringResource(Res.string.delete_place_title)) },
+        text = { Text(stringResource(Res.string.delete_place_message, placeName)) },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text("Delete")
+                Text(stringResource(Res.string.delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(Res.string.cancel))
             }
         }
     )
@@ -230,7 +234,7 @@ private fun SearchWithSuggestions(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(8.dp)
                 ),
-            placeholder = { Text("Search for new locations...") },
+            placeholder = { Text(stringResource(Res.string.search_placeholder)) },
             singleLine = true,
             shape = RoundedCornerShape(8.dp)
         )
@@ -313,7 +317,7 @@ private fun PlaceCell(
                 )
                 if (dayCount != null && dayCount > 0) {
                     Text(
-                        text = "$dayCount ${if (dayCount == 1) "day stored data" else "days stored data"}",
+                        text = pluralStringResource(Res.plurals.days_stored, dayCount, dayCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)

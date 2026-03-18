@@ -54,6 +54,10 @@ import org.koin.compose.viewmodel.koinViewModel
 import place.components.YearSelector
 import components.AppHeader
 import kotlin.time.ExperimentalTime
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 // Define this outside or in a shared file if MonthSelector needs it directly
 // For now, keeping it local to SuccessStateView and MonthSelector will use the map
@@ -136,7 +140,7 @@ fun PlaceSummaryView(
                 ) {
                     Icon(
                         Icons.Filled.Info,
-                        contentDescription = "Info",
+                        contentDescription = stringResource(Res.string.info_icon_desc),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -183,23 +187,32 @@ fun PlaceSummaryView(
 @Composable
 private fun DownloadMissingDaysDialog(
     showDialog: Boolean,
-    dialogText: String,
+    month: Int?,
+    year: Int?,
+    missingDaysCount: Int,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    if (showDialog) {
+    if (showDialog && month != null && year != null) {
+        val monthName = getMonthFullName(month)
+        val dialogText = if (missingDaysCount > 0) {
+            stringResource(Res.string.missing_days_message, monthName, year, missingDaysCount)
+        } else {
+            stringResource(Res.string.not_downloaded_message, monthName, year)
+        }
+
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text("Download full month?") },
+            title = { Text(stringResource(Res.string.download_full_month)) },
             text = { Text(dialogText) },
             confirmButton = {
                 Button(onClick = onConfirm) {
-                    Text("Download")
+                    Text(stringResource(Res.string.download))
                 }
             },
             dismissButton = {
                 Button(onClick = onDismissRequest) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.cancel))
                 }
             }
         )
@@ -312,8 +325,7 @@ private fun MonthCardForGrid(
     onMonthSelected: () -> Unit,
     onPromptForMissingDays: () -> Unit
 ) {
-    val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-    val monthName = monthNames.getOrElse(month - 1) { "M$month" }
+    val monthName = getMonthShortName(month)
 
     // Calculate total days in month and present days
     val totalDaysInMonth = getDaysInMonth(month, year)
@@ -357,13 +369,13 @@ private fun MonthCardForGrid(
 
             if (isFullyLoaded && temperature != null) {
                 val tempStr = kotlin.math.round(temperature * 10) / 10.0
-                Text("Temp: $tempStr°C", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(Res.string.temp_display, tempStr), style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(2.dp))
                 // TODO: Show kiteable days count when available
                 Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    if (hasNoData) "No stored days" else "$presentDaysCount/$totalDaysInMonth days",
+                    if (hasNoData) stringResource(Res.string.no_stored_days) else stringResource(Res.string.days_fraction, presentDaysCount, totalDaysInMonth),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -388,7 +400,7 @@ private fun SuccessStateView(
     var showMissingDaysDialog by remember { mutableStateOf(false) }
     var yearToDownloadForDialog by remember { mutableStateOf<Int?>(null) }
     var monthToDownloadForDialog by remember { mutableStateOf<Int?>(null) }
-    var missingDaysTextForDialog by remember { mutableStateOf("") }
+    var missingDaysCountForDialog by remember { mutableStateOf(0) }
 
     // This map holds MonthCompletionInfo (detailed)
     val detailedMonthCompletionStatusMap = remember(selectedYear, successState.storedDays) {
@@ -429,13 +441,7 @@ private fun SuccessStateView(
         onPromptForMissingDays = { yearArg, monthArg, missingDaysArg ->
             yearToDownloadForDialog = yearArg
             monthToDownloadForDialog = monthArg
-            val monthNames = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-            val monthName = monthNames.getOrElse(monthArg - 1) { "Month $monthArg" }
-            missingDaysTextForDialog = if (missingDaysArg > 0) {
-                "$monthName $yearArg is missing $missingDaysArg day${if (missingDaysArg > 1) "s" else ""}. Download missing data?"
-            } else {
-                "$monthName $yearArg is not yet downloaded. Download now?"
-            }
+            missingDaysCountForDialog = missingDaysArg
             showMissingDaysDialog = true
         },
         viewModel = viewModel
@@ -443,7 +449,9 @@ private fun SuccessStateView(
 
     DownloadMissingDaysDialog(
         showDialog = showMissingDaysDialog,
-        dialogText = missingDaysTextForDialog,
+        month = monthToDownloadForDialog,
+        year = yearToDownloadForDialog,
+        missingDaysCount = missingDaysCountForDialog,
         onDismissRequest = { showMissingDaysDialog = false },
         onConfirm = {
             if (yearToDownloadForDialog != null && monthToDownloadForDialog != null) {
@@ -465,7 +473,7 @@ fun LoadingStateView(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Loading weather summary...")
+        Text(stringResource(Res.string.loading_summary))
         CircularProgressIndicator(modifier = Modifier.padding(16.dp))
     }
 }
@@ -481,7 +489,7 @@ fun ErrorStateView(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Error:",
+            text = stringResource(Res.string.error_label),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -489,5 +497,43 @@ fun ErrorStateView(
             text = errorState.message, // Assuming Error state has a message
             color = MaterialTheme.colorScheme.error
         )
+    }
+}
+
+@Composable
+private fun getMonthShortName(month: Int): String {
+    return when (month) {
+        1 -> stringResource(Res.string.month_short_jan)
+        2 -> stringResource(Res.string.month_short_feb)
+        3 -> stringResource(Res.string.month_short_mar)
+        4 -> stringResource(Res.string.month_short_apr)
+        5 -> stringResource(Res.string.month_short_may)
+        6 -> stringResource(Res.string.month_short_jun)
+        7 -> stringResource(Res.string.month_short_jul)
+        8 -> stringResource(Res.string.month_short_aug)
+        9 -> stringResource(Res.string.month_short_sep)
+        10 -> stringResource(Res.string.month_short_oct)
+        11 -> stringResource(Res.string.month_short_nov)
+        12 -> stringResource(Res.string.month_short_dec)
+        else -> stringResource(Res.string.month_fallback_number, month)
+    }
+}
+
+@Composable
+private fun getMonthFullName(month: Int): String {
+    return when (month) {
+        1 -> stringResource(Res.string.month_january)
+        2 -> stringResource(Res.string.month_february)
+        3 -> stringResource(Res.string.month_march)
+        4 -> stringResource(Res.string.month_april)
+        5 -> stringResource(Res.string.month_may)
+        6 -> stringResource(Res.string.month_june)
+        7 -> stringResource(Res.string.month_july)
+        8 -> stringResource(Res.string.month_august)
+        9 -> stringResource(Res.string.month_september)
+        10 -> stringResource(Res.string.month_october)
+        11 -> stringResource(Res.string.month_november)
+        12 -> stringResource(Res.string.month_december)
+        else -> stringResource(Res.string.month_fallback_number, month)
     }
 }

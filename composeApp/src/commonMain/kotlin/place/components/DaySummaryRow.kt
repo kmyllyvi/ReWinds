@@ -29,6 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import place.DayWeatherSummary
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 /**
  * A composable that displays a summary of weather for a single day in a row format.
@@ -65,7 +68,7 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = if (expanded) "Collapse" else "Expand"
+                        contentDescription = if (expanded) stringResource(Res.string.collapse) else stringResource(Res.string.expand)
                     )
                 }
             }
@@ -74,10 +77,10 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = daySummary.description ?: "No details", style = MaterialTheme.typography.bodySmall)
+                    Text(text = daySummary.description ?: stringResource(Res.string.no_details), style = MaterialTheme.typography.bodySmall)
                     daySummary.solarenergy?.let {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "Solar Energy: $it", style = MaterialTheme.typography.bodySmall)
+                        Text(text = stringResource(Res.string.solar_energy, it), style = MaterialTheme.typography.bodySmall)
                     }
                     // --- START: Added Fog/Low Visibility Info ---
                     if (daySummary.isFoggy) {
@@ -85,12 +88,12 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Filled.VisibilityOff,
-                                contentDescription = "Low Visibility",
+                                contentDescription = stringResource(Res.string.low_visibility_desc),
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Low visibility for ${daySummary.foggyHours} hour(s)",
+                                text = stringResource(Res.string.low_visibility_hours, daySummary.foggyHours),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.secondary
                             )

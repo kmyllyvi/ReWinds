@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common/Shared Strings -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="downloading">Downloading...</string>
+    <string name="app_title">ReWinds</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="download">Download</string>
+
+    <!-- HomeView Strings -->
+    <string name="saved_locations">Saved Locations</string>
+    <string name="search_placeholder">Search for new locations...</string>
+    <string name="api_error">API Error</string>
+    <string name="delete_place_title">Delete Place</string>
+    <string name="delete_place_message">Are you sure you want to delete \'%1$s\'? This action cannot be undone.</string>
+    <string name="settings_icon_desc">Settings</string>
+    <string name="chat_icon_desc">AI Chat</string>
+
+    <!-- HomeView - Days stored (plurals) -->
+    <plurals name="days_stored">
+        <item quantity="one">%1$d day stored data</item>
+        <item quantity="other">%1$d days stored data</item>
+    </plurals>
+
+    <!-- ChatView Strings -->
+    <string name="chat_title">Chat</string>
+    <string name="message_placeholder">Type your message...</string>
+    <string name="send_message_desc">Send message</string>
+    <string name="api_key_not_configured">API Key Not Configured</string>
+    <string name="api_key_not_configured_message">To use the AI Chat feature, you need to set your Anthropic API key. Run the app with:\n\nexport ANTHROPIC_API_KEY=sk-ant-&lt;your-key&gt;\n\nThen restart the app.</string>
+    <string name="warning_icon_desc">Warning</string>
+
+    <!-- SettingsView Strings -->
+    <string name="settings_title">Settings</string>
+    <string name="anthropic_key_title">Anthropic API Key</string>
+    <string name="anthropic_key_description">Enter your Anthropic API key to use the AI Chat feature. Your key will be securely stored locally on your device.</string>
+    <string name="api_key_configured">✓ API key is configured</string>
+    <string name="api_key_not_configured_status">⚠ API key not configured</string>
+    <string name="api_key_saved">✓ API key saved successfully</string>
+    <string name="api_key_placeholder">sk-ant-...</string>
+    <string name="api_key_field_label">API Key</string>
+    <string name="anthropic_api_url">Get your API key from: https://console.anthropic.com/account/keys</string>
+    <string name="save_key">Save Key</string>
+    <string name="visual_crossing_key_title">Visual Crossing API Key</string>
+    <string name="visual_crossing_key_description">Enter your Visual Crossing API key to enable weather data queries. Your key will be securely stored locally on your device.</string>
+    <string name="visual_crossing_api_url">Get your API key from: https://www.visualcrossing.com/</string>
+    <string name="delete_key_title">Delete %1$s?</string>
+    <string name="delete_key_message">This will remove your stored %1$s. You can add it again later from settings.</string>
+
+    <!-- PlaceSummaryView Strings -->
+    <string name="info_icon_desc">Info</string>
+    <string name="download_full_month">Download full month?</string>
+    <string name="loading_summary">Loading weather summary...</string>
+    <string name="error_label">Error:</string>
+    <string name="no_stored_days">No stored days</string>
+    <string name="days_fraction">%1$d/%2$d days</string>
+    <string name="temp_display">Temp: %1$s°C</string>
+    <string name="missing_days_message">%1$s %2$d is missing %3$d day(s). Download missing data?</string>
+    <string name="not_downloaded_message">%1$s %2$d is not yet downloaded. Download now?</string>
+
+    <!-- Month Names - Short -->
+    <string name="month_short_jan">Jan</string>
+    <string name="month_short_feb">Feb</string>
+    <string name="month_short_mar">Mar</string>
+    <string name="month_short_apr">Apr</string>
+    <string name="month_short_may">May</string>
+    <string name="month_short_jun">Jun</string>
+    <string name="month_short_jul">Jul</string>
+    <string name="month_short_aug">Aug</string>
+    <string name="month_short_sep">Sep</string>
+    <string name="month_short_oct">Oct</string>
+    <string name="month_short_nov">Nov</string>
+    <string name="month_short_dec">Dec</string>
+
+    <!-- Month Names - Full -->
+    <string name="month_january">January</string>
+    <string name="month_february">February</string>
+    <string name="month_march">March</string>
+    <string name="month_april">April</string>
+    <string name="month_may">May</string>
+    <string name="month_june">June</string>
+    <string name="month_july">July</string>
+    <string name="month_august">August</string>
+    <string name="month_september">September</string>
+    <string name="month_october">October</string>
+    <string name="month_november">November</string>
+    <string name="month_december">December</string>
+
+    <!-- MonthlyStatisticsView Strings -->
+    <string name="monthly_summary">Monthly Summary</string>
+    <string name="kiteable_days">Kiteable Days: %1$d</string>
+    <string name="general_stats">General Stats</string>
+    <string name="daily_breakdown">Daily Breakdown</string>
+    <string name="days_with_data">Days with data: %1$s</string>
+    <string name="avg_min_temp">Average Min Temp: %1$s</string>
+    <string name="avg_max_temp">Average Max Temp: %1$s</string>
+    <string name="overall_avg_temp">Overall Average Temp: %1$s</string>
+    <string name="coldest_day">Coldest Day: %1$s (on %2$s)</string>
+    <string name="hottest_day">Hottest Day: %1$s (on %2$s)</string>
+    <string name="total_solar_energy">Total Solar Energy: %1$s kWh/m²</string>
+    <string name="no_weather_data">No detailed weather data available for calculations in this month, or data is still loading.</string>
+
+    <!-- MonthlyStatisticsView - Download missing days (plurals) -->
+    <plurals name="download_missing_days">
+        <item quantity="one">Download %1$d missing day</item>
+        <item quantity="other">Download %1$d missing days</item>
+    </plurals>
+
+    <!-- WeatherCards Strings -->
+    <string name="max_temp">Max Temp</string>
+    <string name="avg_temp">Avg Temp</string>
+    <string name="min_temp">Min Temp</string>
+    <string name="avg_wind">Avg Wind</string>
+    <string name="sust_wind">Sust. Wind</string>
+    <string name="max_wind">Max Wind</string>
+    <string name="no_date">No date</string>
+
+    <!-- DaySummaryRow Strings -->
+    <string name="no_details">No details</string>
+    <string name="solar_energy">Solar Energy: %1$s</string>
+    <string name="low_visibility_desc">Low Visibility</string>
+    <string name="low_visibility_hours">Low visibility for %1$d hour(s)</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
+
+    <!-- CalendarSelectors Strings -->
+    <string name="select_year">Select Year:</string>
+    <string name="select_month">Select Month:</string>
+    <string name="no_data_available">No data available.</string>
+    <string name="month_fallback_na">N/A</string>
+    <string name="month_fallback_number">Month %1$d</string>
+</resources>

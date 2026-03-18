@@ -34,6 +34,10 @@ import org.koin.core.parameter.parametersOf
 import place.components.DaySummaryRow
 import kotlin.math.roundToInt
 import components.AppHeader
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 // Helper function to format temperature consistently
 private fun formatTemperature(value: Double?): String {
@@ -77,7 +81,7 @@ fun MonthlyStatisticsView(
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item {
-                            Text("Monthly Summary", style = MaterialTheme.typography.headlineSmall)
+                            Text(stringResource(Res.string.monthly_summary), style = MaterialTheme.typography.headlineSmall)
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Show download button if data is incomplete
@@ -103,7 +107,7 @@ fun MonthlyStatisticsView(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                         }
-                                        Text(if (isDownloading) "Downloading..." else "Download $missingDaysCount missing day${if (missingDaysCount > 1) "s" else ""}")
+                                        Text(if (isDownloading) stringResource(Res.string.downloading) else pluralStringResource(Res.plurals.download_missing_days, missingDaysCount, missingDaysCount))
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -112,7 +116,7 @@ fun MonthlyStatisticsView(
                             if (currentStats.numberOfDaysWithData > 0) {
                                 // Display Kiteable Days count prominently
                                 Text(
-                                    text = "Kiteable Days: ${currentStats.kiteableDaysCount}",
+                                    text = stringResource(Res.string.kiteable_days, currentStats.kiteableDaysCount),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -120,70 +124,50 @@ fun MonthlyStatisticsView(
                                 HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                Text("General Stats", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(Res.string.general_stats), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                Text("Days with data: ${currentStats.numberOfDaysWithData}", color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(Res.string.days_with_data, currentStats.numberOfDaysWithData), color = MaterialTheme.colorScheme.onSurface)
                                 currentStats.averageMinTemp?.let {
                                     Text(
-                                        "Average Min Temp: ${
-                                            formatTemperature(
-                                                it
-                                            )
-                                        }",
+                                        stringResource(Res.string.avg_min_temp, formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.averageMaxTemp?.let {
                                     Text(
-                                        "Average Max Temp: ${
-                                            formatTemperature(
-                                                it
-                                            )
-                                        }",
+                                        stringResource(Res.string.avg_max_temp, formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.overallAverageTemp?.let {
                                     Text(
-                                        "Overall Average Temp: ${
-                                            formatTemperature(
-                                                it
-                                            )
-                                        }",
+                                        stringResource(Res.string.overall_avg_temp, formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMinTemp?.let {
                                     Text(
-                                        "Coldest Day: ${
-                                            formatTemperature(
-                                                it
-                                            )
-                                        } (on ${currentStats.coldestDate})",
+                                        stringResource(Res.string.coldest_day, formatTemperature(it), currentStats.coldestDate ?: ""),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMaxTemp?.let {
                                     Text(
-                                        "Hottest Day: ${
-                                            formatTemperature(
-                                                it
-                                            )
-                                        } (on ${currentStats.hottestDate})",
+                                        stringResource(Res.string.hottest_day, formatTemperature(it), currentStats.hottestDate ?: ""),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²", color = MaterialTheme.colorScheme.onSurface) }
+                                currentStats.totalSolarEnergy?.let { Text(stringResource(Res.string.total_solar_energy, "${it.roundToInt()}"), color = MaterialTheme.colorScheme.onSurface) }
                             } else {
-                                Text("No detailed weather data available for calculations in this month, or data is still loading.", color = MaterialTheme.colorScheme.onSurface)
+                                Text(stringResource(Res.string.no_weather_data), color = MaterialTheme.colorScheme.onSurface)
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text("Daily Breakdown", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(Res.string.daily_breakdown), style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 

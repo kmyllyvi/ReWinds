@@ -34,6 +34,9 @@ import components.monthPartiallyLoadedColor
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 
 // Basic helper, replace with kotlinx-datetime for accuracy
@@ -67,7 +70,7 @@ internal fun YearDropdownSelector(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            "Select Year:",
+            stringResource(Res.string.select_year),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -121,7 +124,7 @@ internal fun MonthSelector(
 ) {
     Column(modifier = modifier.padding(vertical = 8.dp).fillMaxWidth()) {
         Text(
-            "Select Month:",
+            stringResource(Res.string.select_month),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -284,7 +287,7 @@ internal fun MonthSelectorWithTemperature(
 
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
-            "Select Month:",
+            stringResource(Res.string.select_month),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -315,7 +318,7 @@ internal fun MonthSelectorWithTemperature(
 
                 MonthItemWithTemperature(
                     month = month,
-                    monthName = monthNames.getOrElse(month - 1) { "Month $month" },
+                    monthName = getMonthFullName(month),
                     isSelected = month == selectedMonth,
                     hasData = isFullyLoaded,
                     isPartiallyLoaded = isPartiallyLoaded,
@@ -388,12 +391,12 @@ internal fun YearSelector(
     modifier: Modifier = Modifier
 ) {
     if (availableYears.isEmpty()) {
-        Text("No data available.", modifier = modifier.padding(8.dp))
+        Text(stringResource(Res.string.no_data_available), modifier = modifier.padding(8.dp))
         return
     }
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
-            "Select Year:",
+            stringResource(Res.string.select_year),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -409,5 +412,24 @@ internal fun YearSelector(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getMonthFullName(month: Int): String {
+    return when (month) {
+        1 -> stringResource(Res.string.month_january)
+        2 -> stringResource(Res.string.month_february)
+        3 -> stringResource(Res.string.month_march)
+        4 -> stringResource(Res.string.month_april)
+        5 -> stringResource(Res.string.month_may)
+        6 -> stringResource(Res.string.month_june)
+        7 -> stringResource(Res.string.month_july)
+        8 -> stringResource(Res.string.month_august)
+        9 -> stringResource(Res.string.month_september)
+        10 -> stringResource(Res.string.month_october)
+        11 -> stringResource(Res.string.month_november)
+        12 -> stringResource(Res.string.month_december)
+        else -> stringResource(Res.string.month_fallback_number, month)
     }
 }

@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import core.isIOS
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 /**
  * Reusable app header component used across all screens.
@@ -67,7 +70,7 @@ fun AppHeader(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(Res.string.back),
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -75,7 +78,7 @@ fun AppHeader(
                     // Logo for home screen
                     Icon(
                         Icons.Filled.Air,
-                        contentDescription = "ReWinds",
+                        contentDescription = stringResource(Res.string.app_title),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 8.dp)
                     )

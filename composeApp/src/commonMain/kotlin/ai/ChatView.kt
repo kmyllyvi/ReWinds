@@ -41,6 +41,9 @@ import androidx.compose.foundation.layout.imePadding
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
+import org.jetbrains.compose.resources.stringResource
+import rewinds.composeapp.generated.resources.Res
+import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
@@ -126,7 +129,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
 
         // Header positioned at top - stays fixed above all other content
         AppHeader(
-            title = "Chat",
+            title = stringResource(Res.string.chat_title),
             onBackClick = { navigator.navigateBack() },
             modifier = Modifier.align(Alignment.TopCenter)
         )
@@ -139,22 +142,17 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             icon = {
                 Icon(
                     imageVector = Icons.Filled.Warning,
-                    contentDescription = "Warning",
+                    contentDescription = stringResource(Res.string.warning_icon_desc),
                     tint = MaterialTheme.colorScheme.error
                 )
             },
-            title = { Text("API Key Not Configured") },
+            title = { Text(stringResource(Res.string.api_key_not_configured)) },
             text = {
-                Text(
-                    "To use the AI Chat feature, you need to set your Anthropic API key. " +
-                    "Run the app with:\n\n" +
-                    "export ANTHROPIC_API_KEY=sk-ant-<your-key>\n\n" +
-                    "Then restart the app."
-                )
+                Text(stringResource(Res.string.api_key_not_configured_message))
             },
             confirmButton = {
                 Button(onClick = { vm.onApiKeyDialogDismissed() }) {
-                    Text("OK")
+                    Text(stringResource(Res.string.ok))
                 }
             }
         )
@@ -218,7 +216,7 @@ fun ErrorMessageBox(error: String, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
             TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+                Text(stringResource(Res.string.dismiss))
             }
         }
     }
@@ -245,7 +243,7 @@ fun ChatInputArea(
             onValueChange = onInputChange,
             modifier = Modifier
                 .weight(1f),
-            placeholder = { Text("Type your message...") },
+            placeholder = { Text(stringResource(Res.string.message_placeholder)) },
             singleLine = false,
             maxLines = 3,
             enabled = !isLoading
@@ -263,7 +261,7 @@ fun ChatInputArea(
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,
-                contentDescription = "Send message",
+                contentDescription = stringResource(Res.string.send_message_desc),
                 tint = MaterialTheme.colorScheme.primary
             )
         }
