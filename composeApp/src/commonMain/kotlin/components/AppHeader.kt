@@ -21,10 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import core.LocalAppStrings
 import core.isIOS
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 /**
  * Reusable app header component used across all screens.
@@ -45,6 +43,7 @@ fun AppHeader(
     showLogo: Boolean = false,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
+    val strings = LocalAppStrings.current
     // TOP MARGIN adjustment for iOS
     val topMargin = if (isIOS()) 0.dp else 35.dp
     Column(modifier = modifier.fillMaxWidth()) {
@@ -70,7 +69,7 @@ fun AppHeader(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.back),
+                            contentDescription = strings.back,
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
@@ -78,7 +77,7 @@ fun AppHeader(
                     // Logo for home screen
                     Icon(
                         Icons.Filled.Air,
-                        contentDescription = stringResource(Res.string.app_title),
+                        contentDescription = strings.appTitle,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 8.dp)
                     )

@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import core.ApiKeyManager
+import core.Language
+import core.LanguageManager
+import core.LocalAppStrings
 import core.WeatherApiKeyManager
 import core.Navigator
 import core.deleteApiKeyPlatform
@@ -39,13 +43,12 @@ import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
 import core.saveWeatherApiKeyPlatform
 import components.AppHeader
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun SettingsView(navigator: Navigator) {
     val scrollState = rememberScrollState()
+    val strings = LocalAppStrings.current
+    val language by LanguageManager.currentLanguage.collectAsState()
     var anthropicApiKey by remember { mutableStateOf("") }
     var weatherApiKey by remember { mutableStateOf("") }
     var showSuccessMessage by remember { mutableStateOf("") }
@@ -56,7 +59,7 @@ fun SettingsView(navigator: Navigator) {
             .fillMaxSize()
     ) {
         AppHeader(
-            title = stringResource(Res.string.settings_title),
+            title = strings.settingsTitle,
             onBackClick = { navigator.navigateBack() }
         )
 
@@ -68,15 +71,61 @@ fun SettingsView(navigator: Navigator) {
                 .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Anthropic API Key Section
+            // Language Section
             Text(
-                text = stringResource(Res.string.anthropic_key_title),
+                text = strings.languageTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { LanguageManager.setLanguage(Language.ENGLISH) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (language == Language.ENGLISH)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (language == Language.ENGLISH)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text("EN")
+                }
+                Button(
+                    onClick = { LanguageManager.setLanguage(Language.GERMAN) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (language == Language.GERMAN)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (language == Language.GERMAN)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text("DE")
+                }
+            }
+
+            // Anthropic API Key Section
             Text(
-                text = stringResource(Res.string.anthropic_key_description),
+                text = strings.anthropicKeyTitle,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Text(
+                text = strings.anthropicKeyDescription,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -92,7 +141,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_configured),
+                        text = strings.apiKeyConfigured,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -108,7 +157,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_not_configured_status),
+                        text = strings.apiKeyNotConfiguredStatus,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -126,7 +175,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_saved),
+                        text = strings.apiKeySaved,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -137,15 +186,15 @@ fun SettingsView(navigator: Navigator) {
                 value = anthropicApiKey,
                 onValueChange = { anthropicApiKey = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(Res.string.api_key_placeholder)) },
-                label = { Text(stringResource(Res.string.api_key_field_label)) },
+                placeholder = { Text(strings.apiKeyPlaceholder) },
+                label = { Text(strings.apiKeyFieldLabel) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = false,
                 maxLines = 3
             )
 
             Text(
-                text = stringResource(Res.string.anthropic_api_url),
+                text = strings.anthropicApiUrl,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -159,7 +208,7 @@ fun SettingsView(navigator: Navigator) {
                     modifier = Modifier.weight(1f),
                     enabled = isAnthropicApiKeyConfigured()
                 ) {
-                    Text(stringResource(Res.string.delete))
+                    Text(strings.delete)
                 }
 
                 Button(
@@ -176,20 +225,20 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(Res.string.save_key))
+                    Text(strings.saveKey)
                 }
             }
 
             // Visual Crossing API Key Section
             Text(
-                text = stringResource(Res.string.visual_crossing_key_title),
+                text = strings.visualCrossingKeyTitle,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
             Text(
-                text = stringResource(Res.string.visual_crossing_key_description),
+                text = strings.visualCrossingKeyDescription,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -205,7 +254,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_configured),
+                        text = strings.apiKeyConfigured,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -221,7 +270,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_not_configured_status),
+                        text = strings.apiKeyNotConfiguredStatus,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -239,7 +288,7 @@ fun SettingsView(navigator: Navigator) {
                         .padding(12.dp)
                 ) {
                     Text(
-                        text = stringResource(Res.string.api_key_saved),
+                        text = strings.apiKeySaved,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -250,15 +299,15 @@ fun SettingsView(navigator: Navigator) {
                 value = weatherApiKey,
                 onValueChange = { weatherApiKey = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(Res.string.api_key_placeholder)) },
-                label = { Text(stringResource(Res.string.api_key_field_label)) },
+                placeholder = { Text(strings.apiKeyPlaceholder) },
+                label = { Text(strings.apiKeyFieldLabel) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = false,
                 maxLines = 3
             )
 
             Text(
-                text = stringResource(Res.string.visual_crossing_api_url),
+                text = strings.visualCrossingApiUrl,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -272,7 +321,7 @@ fun SettingsView(navigator: Navigator) {
                     modifier = Modifier.weight(1f),
                     enabled = WeatherApiKeyManager.hasValidKey()
                 ) {
-                    Text(stringResource(Res.string.delete))
+                    Text(strings.delete)
                 }
 
                 Button(
@@ -289,7 +338,7 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(Res.string.save_key))
+                    Text(strings.saveKey)
                 }
             }
         }
@@ -298,11 +347,11 @@ fun SettingsView(navigator: Navigator) {
     // Delete confirmation dialog
     if (showDeleteConfirm.isNotBlank()) {
         val (keyType, onConfirmDelete) = when (showDeleteConfirm) {
-            "anthropic" -> stringResource(Res.string.anthropic_key_title) to {
+            "anthropic" -> strings.anthropicKeyTitle to {
                 deleteApiKeyPlatform()
                 ApiKeyManager.setApiKey("")
             }
-            "weather" -> stringResource(Res.string.visual_crossing_key_title) to {
+            "weather" -> strings.visualCrossingKeyTitle to {
                 deleteWeatherApiKeyPlatform()
                 WeatherApiKeyManager.setApiKey("")
             }
@@ -311,8 +360,8 @@ fun SettingsView(navigator: Navigator) {
 
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showDeleteConfirm = "" },
-            title = { Text(stringResource(Res.string.delete_key_title, keyType)) },
-            text = { Text(stringResource(Res.string.delete_key_message, keyType)) },
+            title = { Text(strings.deleteKeyTitle(keyType)) },
+            text = { Text(strings.deleteKeyMessage(keyType)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -324,12 +373,12 @@ fun SettingsView(navigator: Navigator) {
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text(stringResource(Res.string.delete))
+                    Text(strings.delete)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = "" }) {
-                    Text(stringResource(Res.string.cancel))
+                    Text(strings.cancel)
                 }
             }
         )

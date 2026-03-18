@@ -28,10 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import core.LocalAppStrings
 import place.DayWeatherSummary
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 /**
  * A composable that displays a summary of weather for a single day in a row format.
@@ -41,6 +39,7 @@ import rewinds.composeapp.generated.resources.*
  */
 @Composable
 fun DaySummaryRow(daySummary: DayWeatherSummary) {
+    val strings = LocalAppStrings.current
     var expanded by remember { mutableStateOf(false) }
 
     ElevatedCard(
@@ -63,12 +62,12 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                 // Always visible content
                 Text(text = daySummary.date ?: "", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.weight(1f))
-                Text(text = "${daySummary.avgTemp}°C", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
+                Text(text = "${daySummary.avgTemp}\u00B0C", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
                 Text(text = "${daySummary.avgWindSpeed} km/h", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = if (expanded) stringResource(Res.string.collapse) else stringResource(Res.string.expand)
+                        contentDescription = if (expanded) strings.collapse else strings.expand
                     )
                 }
             }
@@ -77,10 +76,10 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = daySummary.description ?: stringResource(Res.string.no_details), style = MaterialTheme.typography.bodySmall)
+                    Text(text = daySummary.description ?: strings.noDetails, style = MaterialTheme.typography.bodySmall)
                     daySummary.solarenergy?.let {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = stringResource(Res.string.solar_energy, it), style = MaterialTheme.typography.bodySmall)
+                        Text(text = strings.solarEnergy(it.toString()), style = MaterialTheme.typography.bodySmall)
                     }
                     // --- START: Added Fog/Low Visibility Info ---
                     if (daySummary.isFoggy) {
@@ -88,12 +87,12 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Filled.VisibilityOff,
-                                contentDescription = stringResource(Res.string.low_visibility_desc),
+                                contentDescription = strings.lowVisibilityDesc,
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(Res.string.low_visibility_hours, daySummary.foggyHours),
+                                text = strings.lowVisibilityHours(daySummary.foggyHours),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.secondary
                             )

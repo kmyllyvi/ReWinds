@@ -45,19 +45,17 @@ import androidx.compose.ui.unit.dp
 import components.PlaceButton
 import components.AppHeader
 import core.GeoSearchResult
+import core.LocalAppStrings
 import core.isAndroid
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
-import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.pluralStringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val searchText by vm.searchText.collectAsState()
     val focusManager = LocalFocusManager.current
+    val strings = LocalAppStrings.current
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -92,13 +90,13 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
     ) {
         // Header with title and action buttons
         AppHeader(
-            title = stringResource(Res.string.app_title),
+            title = strings.appTitle,
             showLogo = true,
             rightContent = {
                 IconButton(onClick = { navigator.navigateToSettings() }) {
                     Icon(
                         Icons.Filled.Settings,
-                        contentDescription = stringResource(Res.string.settings_icon_desc),
+                        contentDescription = strings.settingsIconDesc,
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -110,7 +108,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 ) {
                     Icon(
                         Icons.Filled.Chat,
-                        contentDescription = stringResource(Res.string.chat_icon_desc),
+                        contentDescription = strings.chatIconDesc,
                         modifier = Modifier.padding(end = 4.dp)
                     )
                 }
@@ -148,7 +146,7 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             if (uiState.placeDisplayData.isNotEmpty()) {
                 item {
                     Text(
-                        stringResource(Res.string.saved_locations),
+                        strings.savedLocations,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
@@ -184,13 +182,14 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
 
 @Composable
 private fun ErrorDialog(error: String, onDismiss: () -> Unit) {
+    val strings = LocalAppStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.api_error)) },
+        title = { Text(strings.apiError) },
         text = { Text(error) },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text(stringResource(Res.string.ok))
+                Text(strings.ok)
             }
         }
     )
@@ -198,18 +197,19 @@ private fun ErrorDialog(error: String, onDismiss: () -> Unit) {
 
 @Composable
 private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val strings = LocalAppStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.delete_place_title)) },
-        text = { Text(stringResource(Res.string.delete_place_message, placeName)) },
+        title = { Text(strings.deletePlaceTitle) },
+        text = { Text(strings.deletePlaceMessage(placeName)) },
         confirmButton = {
             Button(onClick = onConfirm) {
-                Text(stringResource(Res.string.delete))
+                Text(strings.delete)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(Res.string.cancel))
+                Text(strings.cancel)
             }
         }
     )
@@ -223,6 +223,7 @@ private fun SearchWithSuggestions(
     suggestions: List<GeoSearchResult>,
     onSuggestionSelected: (GeoSearchResult) -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         // Search field with iOS-style rounded corners
         OutlinedTextField(
@@ -234,7 +235,7 @@ private fun SearchWithSuggestions(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(8.dp)
                 ),
-            placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+            placeholder = { Text(strings.searchPlaceholder) },
             singleLine = true,
             shape = RoundedCornerShape(8.dp)
         )
@@ -292,6 +293,7 @@ private fun PlaceCell(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -317,7 +319,7 @@ private fun PlaceCell(
                 )
                 if (dayCount != null && dayCount > 0) {
                     Text(
-                        text = pluralStringResource(Res.plurals.days_stored, dayCount, dayCount),
+                        text = strings.daysStored(dayCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)

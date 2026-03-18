@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import core.LocalAppStrings
 import core.Navigator
 import core.PlaceSummaryRoute
 import io.github.aakira.napier.Napier
@@ -54,10 +55,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import place.components.YearSelector
 import components.AppHeader
 import kotlin.time.ExperimentalTime
-import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.pluralStringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 // Define this outside or in a shared file if MonthSelector needs it directly
 // For now, keeping it local to SuccessStateView and MonthSelector will use the map
@@ -104,6 +101,7 @@ fun PlaceSummaryView(
 ) {
     val uiState by vm.uiState.collectAsState()
     val currentPlaceName = vm.placeName // Access it directly
+    val strings = LocalAppStrings.current
     var showMapModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -140,7 +138,7 @@ fun PlaceSummaryView(
                 ) {
                     Icon(
                         Icons.Filled.Info,
-                        contentDescription = stringResource(Res.string.info_icon_desc),
+                        contentDescription = strings.infoIconDesc,
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -193,26 +191,27 @@ private fun DownloadMissingDaysDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     if (showDialog && month != null && year != null) {
         val monthName = getMonthFullName(month)
         val dialogText = if (missingDaysCount > 0) {
-            stringResource(Res.string.missing_days_message, monthName, year, missingDaysCount)
+            strings.missingDaysMessage(monthName, year, missingDaysCount)
         } else {
-            stringResource(Res.string.not_downloaded_message, monthName, year)
+            strings.notDownloadedMessage(monthName, year)
         }
 
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(stringResource(Res.string.download_full_month)) },
+            title = { Text(strings.downloadFullMonth) },
             text = { Text(dialogText) },
             confirmButton = {
                 Button(onClick = onConfirm) {
-                    Text(stringResource(Res.string.download))
+                    Text(strings.download)
                 }
             },
             dismissButton = {
                 Button(onClick = onDismissRequest) {
-                    Text(stringResource(Res.string.cancel))
+                    Text(strings.cancel)
                 }
             }
         )
@@ -325,6 +324,7 @@ private fun MonthCardForGrid(
     onMonthSelected: () -> Unit,
     onPromptForMissingDays: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val monthName = getMonthShortName(month)
 
     // Calculate total days in month and present days
@@ -368,14 +368,14 @@ private fun MonthCardForGrid(
             Spacer(modifier = Modifier.height(4.dp))
 
             if (isFullyLoaded && temperature != null) {
-                val tempStr = kotlin.math.round(temperature * 10) / 10.0
-                Text(stringResource(Res.string.temp_display, tempStr), style = MaterialTheme.typography.bodySmall)
+                val tempStr = "${kotlin.math.round(temperature * 10) / 10.0}"
+                Text(strings.tempDisplay(tempStr), style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(2.dp))
                 // TODO: Show kiteable days count when available
                 Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    if (hasNoData) stringResource(Res.string.no_stored_days) else stringResource(Res.string.days_fraction, presentDaysCount, totalDaysInMonth),
+                    if (hasNoData) strings.noStoredDays else strings.daysFraction(presentDaysCount, totalDaysInMonth),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -468,12 +468,13 @@ private fun SuccessStateView(
 
 @Composable
 fun LoadingStateView(modifier: Modifier = Modifier) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(stringResource(Res.string.loading_summary))
+        Text(strings.loadingSummary)
         CircularProgressIndicator(modifier = Modifier.padding(16.dp))
     }
 }
@@ -483,13 +484,14 @@ fun ErrorStateView(
     modifier: Modifier = Modifier,
     errorState: WeatherSummaryUiState.Error
 ) {
+    val strings = LocalAppStrings.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = stringResource(Res.string.error_label),
+            text = strings.errorLabel,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.error
         )
@@ -502,38 +504,40 @@ fun ErrorStateView(
 
 @Composable
 private fun getMonthShortName(month: Int): String {
+    val strings = LocalAppStrings.current
     return when (month) {
-        1 -> stringResource(Res.string.month_short_jan)
-        2 -> stringResource(Res.string.month_short_feb)
-        3 -> stringResource(Res.string.month_short_mar)
-        4 -> stringResource(Res.string.month_short_apr)
-        5 -> stringResource(Res.string.month_short_may)
-        6 -> stringResource(Res.string.month_short_jun)
-        7 -> stringResource(Res.string.month_short_jul)
-        8 -> stringResource(Res.string.month_short_aug)
-        9 -> stringResource(Res.string.month_short_sep)
-        10 -> stringResource(Res.string.month_short_oct)
-        11 -> stringResource(Res.string.month_short_nov)
-        12 -> stringResource(Res.string.month_short_dec)
-        else -> stringResource(Res.string.month_fallback_number, month)
+        1 -> strings.monthShortJan
+        2 -> strings.monthShortFeb
+        3 -> strings.monthShortMar
+        4 -> strings.monthShortApr
+        5 -> strings.monthShortMay
+        6 -> strings.monthShortJun
+        7 -> strings.monthShortJul
+        8 -> strings.monthShortAug
+        9 -> strings.monthShortSep
+        10 -> strings.monthShortOct
+        11 -> strings.monthShortNov
+        12 -> strings.monthShortDec
+        else -> strings.monthFallbackNumber(month)
     }
 }
 
 @Composable
 private fun getMonthFullName(month: Int): String {
+    val strings = LocalAppStrings.current
     return when (month) {
-        1 -> stringResource(Res.string.month_january)
-        2 -> stringResource(Res.string.month_february)
-        3 -> stringResource(Res.string.month_march)
-        4 -> stringResource(Res.string.month_april)
-        5 -> stringResource(Res.string.month_may)
-        6 -> stringResource(Res.string.month_june)
-        7 -> stringResource(Res.string.month_july)
-        8 -> stringResource(Res.string.month_august)
-        9 -> stringResource(Res.string.month_september)
-        10 -> stringResource(Res.string.month_october)
-        11 -> stringResource(Res.string.month_november)
-        12 -> stringResource(Res.string.month_december)
-        else -> stringResource(Res.string.month_fallback_number, month)
+        1 -> strings.monthJanuary
+        2 -> strings.monthFebruary
+        3 -> strings.monthMarch
+        4 -> strings.monthApril
+        5 -> strings.monthMay
+        6 -> strings.monthJune
+        7 -> strings.monthJuly
+        8 -> strings.monthAugust
+        9 -> strings.monthSeptember
+        10 -> strings.monthOctober
+        11 -> strings.monthNovember
+        12 -> strings.monthDecember
+        else -> strings.monthFallbackNumber(month)
     }
 }

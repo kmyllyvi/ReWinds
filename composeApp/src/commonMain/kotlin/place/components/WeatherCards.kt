@@ -19,11 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import core.KiteSpotterConfig
+import core.LocalAppStrings
 import place.DayWeatherSummary
 import kotlin.math.roundToInt
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun StoredDaysList(storedDays: List<DayWeatherSummary>) {
@@ -46,7 +44,7 @@ fun StoredDaysList(storedDays: List<DayWeatherSummary>) {
 
 private fun formatTemperature(value: Double?): String {
     if (value == null) return "--"
-    return "${(value * 10).roundToInt() / 10.0}°C"
+    return "${(value * 10).roundToInt() / 10.0}\u00B0C"
 }
 
 private fun formatWindSpeed(value: Double?): String {
@@ -59,6 +57,7 @@ fun DayWeatherSummaryCard(
     daySummary: DayWeatherSummary,
     isDayOfInterest: Boolean
 ) {
+    val strings = LocalAppStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -75,7 +74,7 @@ fun DayWeatherSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = daySummary.date ?: stringResource(Res.string.no_date),
+                    text = daySummary.date ?: strings.noDate,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
@@ -92,9 +91,9 @@ fun DayWeatherSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                InfoColumn(stringResource(Res.string.max_temp), formatTemperature(daySummary.maxTemp))
-                InfoColumn(stringResource(Res.string.avg_temp), formatTemperature(daySummary.avgTemp))
-                InfoColumn(stringResource(Res.string.min_temp), formatTemperature(daySummary.minTemp))
+                InfoColumn(strings.maxTemp, formatTemperature(daySummary.maxTemp))
+                InfoColumn(strings.avgTemp, formatTemperature(daySummary.avgTemp))
+                InfoColumn(strings.minTemp, formatTemperature(daySummary.minTemp))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -104,10 +103,10 @@ fun DayWeatherSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround // Changed for better spacing
             ) {
-                InfoColumn(stringResource(Res.string.avg_wind), formatWindSpeed(daySummary.avgWindSpeed))
+                InfoColumn(strings.avgWind, formatWindSpeed(daySummary.avgWindSpeed))
                 // Add the new Sustained Wind column
-                InfoColumn(stringResource(Res.string.sust_wind), formatWindSpeed(daySummary.sustainedWindSpeed))
-                InfoColumn(stringResource(Res.string.max_wind), formatWindSpeed(daySummary.maxWindSpeed))
+                InfoColumn(strings.sustWind, formatWindSpeed(daySummary.sustainedWindSpeed))
+                InfoColumn(strings.maxWind, formatWindSpeed(daySummary.maxWindSpeed))
             }
         }
     }

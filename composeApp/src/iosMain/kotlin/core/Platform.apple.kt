@@ -79,3 +79,15 @@ actual fun deleteWeatherApiKeyPlatform() {
     WeatherKeychainBridge.deleteKey()
     Log.d("Platform: Weather API key deleted from Keychain")
 }
+
+actual fun saveLanguagePreference(code: String) {
+    platform.Foundation.NSUserDefaults.standardUserDefaults.setObject(
+        code,
+        forKey = "rewinds_language_code"
+    )
+}
+
+actual fun loadLanguagePreference(): String? {
+    return platform.Foundation.NSUserDefaults.standardUserDefaults
+        .stringForKey("rewinds_language_code")
+}

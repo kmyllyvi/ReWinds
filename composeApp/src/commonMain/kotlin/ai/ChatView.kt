@@ -38,18 +38,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
+import core.LocalAppStrings
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 @Composable
 fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
+    val strings = LocalAppStrings.current
 
     // Scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {
@@ -129,7 +128,7 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
 
         // Header positioned at top - stays fixed above all other content
         AppHeader(
-            title = stringResource(Res.string.chat_title),
+            title = strings.chatTitle,
             onBackClick = { navigator.navigateBack() },
             modifier = Modifier.align(Alignment.TopCenter)
         )
@@ -142,17 +141,17 @@ fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
             icon = {
                 Icon(
                     imageVector = Icons.Filled.Warning,
-                    contentDescription = stringResource(Res.string.warning_icon_desc),
+                    contentDescription = strings.warningIconDesc,
                     tint = MaterialTheme.colorScheme.error
                 )
             },
-            title = { Text(stringResource(Res.string.api_key_not_configured)) },
+            title = { Text(strings.apiKeyNotConfigured) },
             text = {
-                Text(stringResource(Res.string.api_key_not_configured_message))
+                Text(strings.apiKeyNotConfiguredMessage)
             },
             confirmButton = {
                 Button(onClick = { vm.onApiKeyDialogDismissed() }) {
-                    Text(stringResource(Res.string.ok))
+                    Text(strings.ok)
                 }
             }
         )
@@ -195,6 +194,7 @@ fun ChatMessageBubble(message: ChatMessage) {
 
 @Composable
 fun ErrorMessageBox(error: String, onDismiss: () -> Unit) {
+    val strings = LocalAppStrings.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -216,7 +216,7 @@ fun ErrorMessageBox(error: String, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
             TextButton(onClick = onDismiss) {
-                Text(stringResource(Res.string.dismiss))
+                Text(strings.dismiss)
             }
         }
     }
@@ -229,6 +229,7 @@ fun ChatInputArea(
     onSendClick: () -> Unit,
     isLoading: Boolean
 ) {
+    val strings = LocalAppStrings.current
     val focusManager = LocalFocusManager.current
 
     Row(
@@ -243,7 +244,7 @@ fun ChatInputArea(
             onValueChange = onInputChange,
             modifier = Modifier
                 .weight(1f),
-            placeholder = { Text(stringResource(Res.string.message_placeholder)) },
+            placeholder = { Text(strings.messagePlaceholder) },
             singleLine = false,
             maxLines = 3,
             enabled = !isLoading
@@ -261,7 +262,7 @@ fun ChatInputArea(
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,
-                contentDescription = stringResource(Res.string.send_message_desc),
+                contentDescription = strings.sendMessageDesc,
                 tint = MaterialTheme.colorScheme.primary
             )
         }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import core.LocalAppStrings
 import core.MonthlyStatisticsRoute
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
@@ -34,15 +35,11 @@ import org.koin.core.parameter.parametersOf
 import place.components.DaySummaryRow
 import kotlin.math.roundToInt
 import components.AppHeader
-import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.pluralStringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 // Helper function to format temperature consistently
 private fun formatTemperature(value: Double?): String {
     if (value == null) return "--"
-    return "${(value * 10).roundToInt() / 10.0}°C"
+    return "${(value * 10).roundToInt() / 10.0}\u00B0C"
 }
 
 @Composable
@@ -58,6 +55,7 @@ fun MonthlyStatisticsView(
     val statistics by vm.statistics.collectAsState()
     val dailySummaries by vm.dailySummaries.collectAsState()
     val isDownloading by vm.isDownloading.collectAsState()
+    val strings = LocalAppStrings.current
 
     key(year, month) {
         // Reload data when month or year changes
@@ -81,7 +79,7 @@ fun MonthlyStatisticsView(
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item {
-                            Text(stringResource(Res.string.monthly_summary), style = MaterialTheme.typography.headlineSmall)
+                            Text(strings.monthlySummary, style = MaterialTheme.typography.headlineSmall)
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Show download button if data is incomplete
@@ -107,7 +105,10 @@ fun MonthlyStatisticsView(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                         }
-                                        Text(if (isDownloading) stringResource(Res.string.downloading) else pluralStringResource(Res.plurals.download_missing_days, missingDaysCount, missingDaysCount))
+                                        Text(
+                                            if (isDownloading) strings.downloading
+                                            else strings.downloadMissingDays(missingDaysCount)
+                                        )
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -116,7 +117,7 @@ fun MonthlyStatisticsView(
                             if (currentStats.numberOfDaysWithData > 0) {
                                 // Display Kiteable Days count prominently
                                 Text(
-                                    text = stringResource(Res.string.kiteable_days, currentStats.kiteableDaysCount),
+                                    text = strings.kiteableDays(currentStats.kiteableDaysCount),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -124,50 +125,55 @@ fun MonthlyStatisticsView(
                                 HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                Text(stringResource(Res.string.general_stats), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                                Text(strings.generalStats, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(stringResource(Res.string.days_with_data, currentStats.numberOfDaysWithData), color = MaterialTheme.colorScheme.onSurface)
+                                Text(strings.daysWithData(currentStats.numberOfDaysWithData.toString()), color = MaterialTheme.colorScheme.onSurface)
                                 currentStats.averageMinTemp?.let {
                                     Text(
-                                        stringResource(Res.string.avg_min_temp, formatTemperature(it)),
+                                        strings.avgMinTemp(formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.averageMaxTemp?.let {
                                     Text(
-                                        stringResource(Res.string.avg_max_temp, formatTemperature(it)),
+                                        strings.avgMaxTemp(formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.overallAverageTemp?.let {
                                     Text(
-                                        stringResource(Res.string.overall_avg_temp, formatTemperature(it)),
+                                        strings.overallAvgTemp(formatTemperature(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMinTemp?.let {
                                     Text(
-                                        stringResource(Res.string.coldest_day, formatTemperature(it), currentStats.coldestDate ?: ""),
+                                        strings.coldestDay(formatTemperature(it), currentStats.coldestDate ?: ""),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMaxTemp?.let {
                                     Text(
-                                        stringResource(Res.string.hottest_day, formatTemperature(it), currentStats.hottestDate ?: ""),
+                                        strings.hottestDay(formatTemperature(it), currentStats.hottestDate ?: ""),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                currentStats.totalSolarEnergy?.let { Text(stringResource(Res.string.total_solar_energy, "${it.roundToInt()}"), color = MaterialTheme.colorScheme.onSurface) }
+                                currentStats.totalSolarEnergy?.let {
+                                    Text(
+                                        strings.totalSolarEnergy("${it.roundToInt()}"),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             } else {
-                                Text(stringResource(Res.string.no_weather_data), color = MaterialTheme.colorScheme.onSurface)
+                                Text(strings.noWeatherData, color = MaterialTheme.colorScheme.onSurface)
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(stringResource(Res.string.daily_breakdown), style = MaterialTheme.typography.titleMedium)
+                            Text(strings.dailyBreakdown, style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 

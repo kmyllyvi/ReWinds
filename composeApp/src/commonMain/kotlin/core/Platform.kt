@@ -35,3 +35,7 @@ expect fun saveWeatherApiKeyPlatform(key: String)
 
 // Delete Visual Crossing API key from platform-specific storage
 expect fun deleteWeatherApiKeyPlatform()
+
+// Persist and load language preference across app restarts
+expect fun saveLanguagePreference(code: String)
+expect fun loadLanguagePreference(): String?

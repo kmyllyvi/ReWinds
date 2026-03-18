@@ -31,12 +31,10 @@ import androidx.compose.ui.unit.dp
 import components.monthFullyLoadedColor
 import components.monthNotLoadedColor
 import components.monthPartiallyLoadedColor
+import core.LocalAppStrings
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.jetbrains.compose.resources.stringResource
-import rewinds.composeapp.generated.resources.Res
-import rewinds.composeapp.generated.resources.*
 
 
 // Basic helper, replace with kotlinx-datetime for accuracy
@@ -64,13 +62,14 @@ internal fun YearDropdownSelector(
     onYearSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     var expanded by remember { mutableStateOf(false) }
     // Fixed list of years (excluding current year since it's shown separately as default)
     val yearsToDisplay = remember { (2020..initialYear - 1).toList().sortedDescending() }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            stringResource(Res.string.select_year),
+            strings.selectYear,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -122,9 +121,10 @@ internal fun MonthSelector(
     onDownloadedMonthSelected: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     Column(modifier = modifier.padding(vertical = 8.dp).fillMaxWidth()) {
         Text(
-            stringResource(Res.string.select_month),
+            strings.selectMonth,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -193,45 +193,6 @@ internal fun YearItem(
     }
 }
 
-//@Composable
-//internal fun MonthItem(
-//    month: Int, // 1 for January, 12 for December
-//    isSelected: Boolean,
-//    hasData: Boolean, // New parameter
-//    onClick: () -> Unit, // Changed from (Int) -> Unit to () -> Unit as logic is now in MonthSelector
-//    modifier: Modifier = Modifier
-//) {
-//    // Please don't change these!
-//    val monthNames = remember {
-//        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12")
-//    }
-//    val monthName = monthNames.getOrElse(month - 1) { "N/A" }
-//
-//    Log.d("Month: $month, Selected: $isSelected, Data: $hasData")
-//
-//    val containerColor = when {
-//        isSelected -> MaterialTheme.colorScheme.primary
-//        hasData -> MaterialTheme.colorScheme.secondaryContainer
-//        else -> MaterialTheme.colorScheme.surfaceVariant // Color for no data and not selected
-//    }
-//    val contentColor = when {
-//        isSelected -> MaterialTheme.colorScheme.onPrimary
-//        hasData -> MaterialTheme.colorScheme.onSecondaryContainer
-//        else -> MaterialTheme.colorScheme.onSurfaceVariant
-//    }
-//
-//    Button(
-//        onClick = onClick, // Use the passed lambda
-//        colors = ButtonDefaults.buttonColors(
-//            containerColor = containerColor,
-//            contentColor = contentColor
-//        ),
-//        modifier = modifier.padding(horizontal = 4.dp) // Standard padding
-//    ) {
-//        Text(text = monthName)
-//    }
-//}
-
 @Composable
 internal fun MonthItem(
     month: Int, // 1 for January, 12 for December
@@ -281,13 +242,11 @@ internal fun MonthSelectorWithTemperature(
     onDownloadedMonthSelected: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val monthNames = remember {
-        listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-    }
+    val strings = LocalAppStrings.current
 
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
-            stringResource(Res.string.select_month),
+            strings.selectMonth,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -374,7 +333,7 @@ internal fun MonthItemWithTemperature(
 
             avgTemp?.let {
                 Text(
-                    text = "${(it * 10).toInt() / 10.0}°",
+                    text = "${(it * 10).toInt() / 10.0}\u00B0",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -390,13 +349,14 @@ internal fun YearSelector(
     onYearSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     if (availableYears.isEmpty()) {
-        Text(stringResource(Res.string.no_data_available), modifier = modifier.padding(8.dp))
+        Text(strings.noDataAvailable, modifier = modifier.padding(8.dp))
         return
     }
     Column(modifier = modifier.padding(vertical = 8.dp)) {
         Text(
-            stringResource(Res.string.select_year),
+            strings.selectYear,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -417,19 +377,20 @@ internal fun YearSelector(
 
 @Composable
 private fun getMonthFullName(month: Int): String {
+    val strings = LocalAppStrings.current
     return when (month) {
-        1 -> stringResource(Res.string.month_january)
-        2 -> stringResource(Res.string.month_february)
-        3 -> stringResource(Res.string.month_march)
-        4 -> stringResource(Res.string.month_april)
-        5 -> stringResource(Res.string.month_may)
-        6 -> stringResource(Res.string.month_june)
-        7 -> stringResource(Res.string.month_july)
-        8 -> stringResource(Res.string.month_august)
-        9 -> stringResource(Res.string.month_september)
-        10 -> stringResource(Res.string.month_october)
-        11 -> stringResource(Res.string.month_november)
-        12 -> stringResource(Res.string.month_december)
-        else -> stringResource(Res.string.month_fallback_number, month)
+        1 -> strings.monthJanuary
+        2 -> strings.monthFebruary
+        3 -> strings.monthMarch
+        4 -> strings.monthApril
+        5 -> strings.monthMay
+        6 -> strings.monthJune
+        7 -> strings.monthJuly
+        8 -> strings.monthAugust
+        9 -> strings.monthSeptember
+        10 -> strings.monthOctober
+        11 -> strings.monthNovember
+        12 -> strings.monthDecember
+        else -> strings.monthFallbackNumber(month)
     }
 }

@@ -87,3 +87,33 @@ actual fun deleteWeatherApiKeyPlatform() {
     // No-op on Android
     Log.d("Platform: deleteWeatherApiKeyPlatform is no-op on Android")
 }
+
+// Lazily obtained application context for SharedPreferences access.
+// This is set indirectly via the Context stored by DatabaseExportImport initialization.
+// We reuse the same pattern: a module-private lateinit var populated at startup.
+private var androidAppContext: Context? = null
+
+/**
+ * Called from [initializeDatabaseExportImport] (or DI setup) to supply the app context
+ * so language preferences can use SharedPreferences.
+ */
+fun provideAndroidContextForLanguage(context: Context) {
+    androidAppContext = context.applicationContext
+}
+
+actual fun saveLanguagePreference(code: String) {
+    val ctx = androidAppContext ?: run {
+        Log.d("Platform: androidAppContext not set - language preference not saved")
+        return
+    }
+    ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        .edit()
+        .putString("language_code", code)
+        .apply()
+}
+
+actual fun loadLanguagePreference(): String? {
+    val ctx = androidAppContext ?: return null
+    return ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        .getString("language_code", null)
+}
