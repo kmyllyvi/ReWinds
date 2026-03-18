@@ -3,8 +3,12 @@
 **Project**: Compose Multiplatform app (iOS + Android)
 **Current Goals**: Fix runtime error on iOS
 
-IMPORTANT!
-All development files and rules under "/docs" folder. Start with README!
+## ⚠️ Session Init Instructions
+On each new session, Claude should read:
+1. **`docs/README.md`** — Main documentation hub with all doc navigation
+2. **`docs/ARCHITECTURE-RULES.md`** — Architectural patterns and conventions
+
+These establish context before working on any tasks.
 
 ## Quick Start
 
