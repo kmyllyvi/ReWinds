@@ -273,3 +273,19 @@ tasks.register("coverageReport") {
         """.trimIndent())
     }
 }
+
+// ============================================
+// JaCoCo Code Coverage (KIM-115)
+// ============================================
+
+plugins.withId("org.gradle.jacoco") {
+    jacoco {
+        toolVersion = "0.8.11"
+    }
+}
+
+android {
+    buildTypes.all {
+        enableUnitTestCoverage = true
+    }
+}
