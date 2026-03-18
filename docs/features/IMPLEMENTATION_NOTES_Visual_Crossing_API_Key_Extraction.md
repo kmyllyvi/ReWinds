@@ -6,13 +6,13 @@
 
 ## Overview
 
-The Visual Crossing weather API key (`***REMOVED***`) was hardcoded in `WeatherRepositoryImpl` as a security risk and prevented per-user configuration. This implementation extracts the key and implements a secure, platform-specific storage pattern mirroring the existing Anthropic API key solution.
+The Visual Crossing weather API key (`PMTSF9SVU3ZKEMCH4NFVUZR76`) was hardcoded in `WeatherRepositoryImpl` as a security risk and prevented per-user configuration. This implementation extracts the key and implements a secure, platform-specific storage pattern mirroring the existing Anthropic API key solution.
 
 ## Security Problem Solved
 
 **Before**: Hardcoded secret in source code
 ```kotlin
-private val apiKey = "***REMOVED***"
+private val apiKey = "PMTSF9SVU3ZKEMCH4NFVUZR76"
 ```
 
 **After**: Platform-specific secure storage
@@ -208,7 +208,7 @@ buildConfigField("String", "VISUAL_CROSSING_API_KEY", "\"$weatherKey\"")
 #### gradle.properties
 Added the key for local development:
 ```
-VISUAL_CROSSING_API_KEY=***REMOVED***
+VISUAL_CROSSING_API_KEY=PMTSF9SVU3ZKEMCH4NFVUZR76
 ```
 
 This file is git-ignored in the project, so it won't be committed.
@@ -218,7 +218,7 @@ This file is git-ignored in the project, so it won't be committed.
 #### Removed Hardcoded Key
 ```kotlin
 // REMOVED:
-private val apiKey = "***REMOVED***"
+private val apiKey = "PMTSF9SVU3ZKEMCH4NFVUZR76"
 private val apiQuery = "?unitGroup=metric&key=$apiKey&contentType=json&include=hours"
 ```
 
@@ -274,7 +274,7 @@ val url = "$visualcrossingUrl$place/today?unitGroup=metric&key=${getVisualCrossi
 ./gradlew buildAndroidOnly
 
 # Or set environment variable
-export VISUAL_CROSSING_API_KEY=***REMOVED***
+export VISUAL_CROSSING_API_KEY=PMTSF9SVU3ZKEMCH4NFVUZR76
 ./gradlew buildAndroidOnly
 
 # Manual verification:
