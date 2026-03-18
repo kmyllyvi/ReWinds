@@ -120,17 +120,18 @@ fun MonthlyStatisticsView(
                                 HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                Text("General Stats", style = MaterialTheme.typography.titleMedium)
+                                Text("General Stats", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                Text("Days with data: ${currentStats.numberOfDaysWithData}")
+                                Text("Days with data: ${currentStats.numberOfDaysWithData}", color = MaterialTheme.colorScheme.onSurface)
                                 currentStats.averageMinTemp?.let {
                                     Text(
                                         "Average Min Temp: ${
                                             formatTemperature(
                                                 it
                                             )
-                                        }"
+                                        }",
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.averageMaxTemp?.let {
@@ -139,7 +140,8 @@ fun MonthlyStatisticsView(
                                             formatTemperature(
                                                 it
                                             )
-                                        }"
+                                        }",
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.overallAverageTemp?.let {
@@ -148,7 +150,8 @@ fun MonthlyStatisticsView(
                                             formatTemperature(
                                                 it
                                             )
-                                        }"
+                                        }",
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMinTemp?.let {
@@ -157,7 +160,8 @@ fun MonthlyStatisticsView(
                                             formatTemperature(
                                                 it
                                             )
-                                        } (on ${currentStats.coldestDate})"
+                                        } (on ${currentStats.coldestDate})",
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 currentStats.absoluteMaxTemp?.let {
@@ -166,12 +170,13 @@ fun MonthlyStatisticsView(
                                             formatTemperature(
                                                 it
                                             )
-                                        } (on ${currentStats.hottestDate})"
+                                        } (on ${currentStats.hottestDate})",
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²") }
+                                currentStats.totalSolarEnergy?.let { Text("Total Solar Energy: ${it.roundToInt()} kWh/m²", color = MaterialTheme.colorScheme.onSurface) }
                             } else {
-                                Text("No detailed weather data available for calculations in this month, or data is still loading.")
+                                Text("No detailed weather data available for calculations in this month, or data is still loading.", color = MaterialTheme.colorScheme.onSurface)
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
