@@ -37,3 +37,28 @@
 - Shared Xcode scheme: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme`
 - Xcode config: `iosApp/Configuration/Config.xcconfig` (use `#include?` for optional includes)
 - BuildConfig API key: `composeApp/build.gradle.kts` buildTypes section
+
+## Localization Pattern (KIM-57)
+
+### CompositionLocal Architecture
+- `AppStrings.kt` - data class with all string fields; plurals are lambdas `(Int) -> String`
+- `LanguageManager.kt` - object with `StateFlow<Language>` + `setLanguage()` + persistence
+- `LocalAppStrings.kt` - `compositionLocalOf { AppStrings.English }`
+- `App.kt` - wraps AppContent in `CompositionLocalProvider(LocalAppStrings provides strings)`
+- Views: `val strings = LocalAppStrings.current` then `strings.someKey`
+- No `stringResource()`, `pluralStringResource()`, or `Res` imports in views after migration
+
+### Android Context for SharedPreferences
+- `provideAndroidContextForLanguage(context: Context)` in `Platform.android.kt`
+- Called from `MainApplication.onCreate()` (same pattern as `initializeDatabaseExportImport`)
+- SharedPrefs key: `"rewinds_prefs"` / `"language_code"`
+
+### iOS NSUserDefaults
+- `NSUserDefaults.standardUserDefaults.setObject(code, forKey: "rewinds_language_code")`
+- In `iosMain/kotlin/core/Platform.apple.kt`
+
+### Tests
+- `commonTest/kotlin/core/LocalizationTest.kt` - 38 tests, 3 test classes
+  - `AppStringsCompletenessTest` - German strings not blank
+  - `AppStringsGermanNotEnglishTest` - German differs from English
+  - `LanguageManagerTest` - StateFlow updates correctly

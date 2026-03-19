@@ -29,8 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import core.ApiKeyManager
 import core.Language
 import core.LanguageManager
@@ -49,6 +52,7 @@ fun SettingsView(navigator: Navigator) {
     val scrollState = rememberScrollState()
     val strings = LocalAppStrings.current
     val language by LanguageManager.currentLanguage.collectAsState()
+    val focusManager = LocalFocusManager.current
     var anthropicApiKey by remember { mutableStateOf("") }
     var weatherApiKey by remember { mutableStateOf("") }
     var showSuccessMessage by remember { mutableStateOf("") }
@@ -68,6 +72,12 @@ fun SettingsView(navigator: Navigator) {
                 .fillMaxWidth()
                 .weight(1f)
                 .verticalScroll(scrollState)
+                .clickable(
+                    indication = null,
+                    interactionSource = MutableInteractionSource()
+                ) {
+                    focusManager.clearFocus()
+                }
                 .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
