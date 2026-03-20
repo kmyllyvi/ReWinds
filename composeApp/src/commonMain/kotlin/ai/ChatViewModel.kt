@@ -67,8 +67,11 @@ data class ChatUiState(
  */
 class ChatViewModel(
     private val aiRepository: AiRepository,
-    private val weatherRepository: core.WeatherRepository
+    private val weatherRepository: core.WeatherRepository,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
+
+    private var currentSessionId: Long? = null
 
     private val _uiState = MutableStateFlow(ChatUiState(
         messages = listOf(
@@ -82,6 +85,30 @@ class ChatViewModel(
      * The current UI state.
      */
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            val sessionId = chatRepository.getOrCreateSession()
+            currentSessionId = sessionId
+            val savedMessages = chatRepository.loadUiMessages(sessionId)
+            if (savedMessages.isNotEmpty()) {
+                val history = chatRepository.loadConversationHistory(sessionId)
+                aiRepository.loadHistory(history)
+                _uiState.update { it.copy(messages = savedMessages) }
+                Log.d("ChatViewModel: loaded ${savedMessages.size} messages from session $sessionId")
+            } else {
+                Log.d("ChatViewModel: new session $sessionId, starting fresh")
+            }
+        }
+    }
+
+    private suspend fun persistMessage(message: ChatMessage) {
+        val sessionId = currentSessionId ?: run {
+            Log.d("ChatViewModel: session not ready, skipping persist")
+            return
+        }
+        chatRepository.saveMessage(sessionId, message)
+    }
 
     /**
      * Called when the user sends a message.
@@ -142,6 +169,9 @@ class ChatViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Persist user message
+                persistMessage(userMessage)
+
                 // Send to AI repository
                 val result = aiRepository.sendMessage(trimmedInput)
 
@@ -186,6 +216,9 @@ class ChatViewModel(
                     )
                 }
 
+                // Persist assistant message
+                persistMessage(assistantMessage)
+
                 Log.d("ChatViewModel: received response in ${result.totalTurns} turn(s), tools called: ${result.toolCallsMade}")
             } catch (e: Exception) {
                 Log.e("ChatViewModel: error sending message", e)
@@ -226,6 +259,9 @@ class ChatViewModel(
      */
     fun clearChat() {
         aiRepository.clearHistory()
+        viewModelScope.launch(Dispatchers.IO) {
+            currentSessionId?.let { chatRepository.clearSession(it) }
+        }
         _uiState.update {
             ChatUiState(
                 messages = listOf(
@@ -275,6 +311,9 @@ class ChatViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Persist user confirmation message
+                persistMessage(userMessage)
+
                 // STEP 1: Actually fetch the data from the API before asking Claude to retry
                 Log.d("ChatViewModel: Fetching data for ${pending.location} from ${pending.startDate} to ${pending.endDate}")
 
@@ -314,6 +353,9 @@ class ChatViewModel(
                         pendingDataFetch = null  // Clear pending fetch
                     )
                 }
+
+                // Persist assistant response
+                persistMessage(assistantMessage)
 
                 Log.d("ChatViewModel: Data fetch confirmed and query executed in ${result.totalTurns} turn(s)")
             } catch (e: Exception) {

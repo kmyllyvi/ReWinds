@@ -1,5 +1,7 @@
 import ai.AiRepository
 import ai.AnthropicClient
+import ai.ChatRepository
+import ai.ChatRepositoryImpl
 import ai.ChatViewModel
 import ai.WeatherTools
 import com.km.rewinds.db.AppDatabase
@@ -33,6 +35,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     single { AnthropicClient(apiKey = getAnthropicApiKey(), enableLogs = enableNetworkLogs) }
     single { WeatherTools }
     single { AiRepository(get(), get(), get()) } // AnthropicClient, WeatherTools, WeatherRepository
+    single<ChatRepository> { ChatRepositoryImpl(get()) } // AppDatabase
 
     // ViewModels
     viewModelOf(::AppViewModel)

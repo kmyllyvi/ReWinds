@@ -115,3 +115,43 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
 
 getHoursForDay:
 SELECT * FROM Hour WHERE dayId = ?;
+
+-- Chat persistence tables (for KIM-119 single persistent chat)
+
+CREATE TABLE ChatSession (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    lastMessageTimestamp INTEGER NOT NULL,
+    messageCount INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE ChatMessage (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    conversationMessageJson TEXT NOT NULL,
+    messageRole TEXT NOT NULL,
+    messageContent TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    chatSessionId INTEGER NOT NULL,
+    FOREIGN KEY(chatSessionId) REFERENCES ChatSession(id) ON DELETE CASCADE
+);
+
+getCurrentSession:
+SELECT * FROM ChatSession WHERE id = (SELECT MAX(id) FROM ChatSession) LIMIT 1;
+
+createSession:
+INSERT INTO ChatSession(lastMessageTimestamp, messageCount) VALUES (?, ?);
+
+updateSessionMetadata:
+UPDATE ChatSession SET lastMessageTimestamp = ?, messageCount = ? WHERE id = ?;
+
+insertChatMessage:
+INSERT INTO ChatMessage(conversationMessageJson, messageRole, messageContent, timestamp, chatSessionId)
+VALUES (?, ?, ?, ?, ?);
+
+getMessagesBySessionId:
+SELECT * FROM ChatMessage WHERE chatSessionId = ? ORDER BY timestamp ASC;
+
+deleteAllMessagesBySessionId:
+DELETE FROM ChatMessage WHERE chatSessionId = ?;
+
+getLatestSessionId:
+SELECT id FROM ChatSession ORDER BY id DESC LIMIT 1;

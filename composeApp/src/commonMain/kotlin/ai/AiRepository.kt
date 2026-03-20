@@ -228,6 +228,15 @@ class AiRepository(
     }
 
     /**
+     * Seeds the conversation history from persisted messages (e.g. on app restart).
+     */
+    fun loadHistory(messages: List<ConversationMessage>) {
+        conversationHistory.clear()
+        conversationHistory.addAll(messages)
+        Log.d("AiRepository: loaded ${messages.size} messages from persistence")
+    }
+
+    /**
      * Returns a copy of the current conversation history.
      */
     fun getHistory(): List<ConversationMessage> = conversationHistory.toList()
