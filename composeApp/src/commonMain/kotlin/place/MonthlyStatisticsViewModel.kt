@@ -202,11 +202,11 @@ class MonthlyStatisticsViewModel(
                 _isDownloading.value = true
                 weatherRepository.downloadFullMonth(placeName, currentYear, currentMonth)
                 Log.d("Successfully downloaded full month. Reloading statistics...")
-                loadStatistics()
             } catch (e: Exception) {
                 Log.e("Error downloading full month data", e)
             } finally {
                 _isDownloading.value = false
+                loadStatistics() // Always reload — partial downloads still write to DB
             }
         }
     }
