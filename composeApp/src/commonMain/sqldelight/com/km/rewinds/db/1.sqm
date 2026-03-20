@@ -1,0 +1,18 @@
+-- Migration from schema version 1 to 2
+-- Adds chat persistence tables for KIM-119
+
+CREATE TABLE ChatSession (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    lastMessageTimestamp INTEGER NOT NULL,
+    messageCount INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE ChatMessage (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    conversationMessageJson TEXT NOT NULL,
+    messageRole TEXT NOT NULL,
+    messageContent TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    chatSessionId INTEGER NOT NULL,
+    FOREIGN KEY(chatSessionId) REFERENCES ChatSession(id) ON DELETE CASCADE
+);
