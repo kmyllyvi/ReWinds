@@ -167,6 +167,8 @@ android {
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/androidMain/res")
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
+    sourceSets["debug"].manifest.srcFile("src/androidDebug/AndroidManifest.xml")
+    sourceSets["androidTest"].java.srcDirs("src/androidInstrumentedTest/kotlin")
 
     defaultConfig {
         applicationId = "com.km.rewinds"
@@ -174,6 +176,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
@@ -212,6 +215,10 @@ android {
     }
     dependencies {
         debugImplementation(compose.uiTooling)
+        val composeVersion = libs.versions.compose.plugin.get()
+        androidTestImplementation("org.jetbrains.compose.ui:ui-test-junit4:$composeVersion")
+        androidTestImplementation(libs.androidx.test.junit)
+        androidTestImplementation("androidx.test:runner:1.6.2")
     }
 }
 
