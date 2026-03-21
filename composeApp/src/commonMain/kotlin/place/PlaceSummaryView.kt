@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -135,7 +135,7 @@ fun PlaceSummaryView(
                     onClick = { navigator.navigateToChat(initialMessage = "Chat about $currentPlaceName") }
                 ) {
                     Icon(
-                        Icons.Filled.Chat,
+                        Icons.AutoMirrored.Filled.Chat,
                         contentDescription = "Chat about $currentPlaceName",
                         tint = MaterialTheme.colorScheme.onBackground
                     )
@@ -241,88 +241,73 @@ private fun PlaceDetailsContent(
     onPromptForMissingDays: (Int, Int, Int) -> Unit, // (year, month, missingDaysCount)
     viewModel: PlaceSummaryViewModel
 ) {
-    Column(
-        modifier = modifier
-    ) {
+    val availableYears = remember { (2020..place.components.initialYear).toList().sortedDescending() }
+
+    LazyColumn(modifier = modifier) {
         currentPlaceDescription?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
+            item {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+            }
         }
 
-        // Year selector - horizontal scrolling list
-        val availableYears = remember { (2020..place.components.initialYear).toList().sortedDescending() }
-        YearSelector(
-            availableYears = availableYears,
-            selectedYear = selectedYear,
-            onYearSelected = { year -> onYearSelected(year) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+        // Year selector scrolls with content
+        item {
+            YearSelector(
+                availableYears = availableYears,
+                selectedYear = selectedYear,
+                onYearSelected = { year -> onYearSelected(year) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Months grid
         if (selectedYear != null && selectedYear != Int.MIN_VALUE) {
-            MonthsGridLayout(
-                year = selectedYear,
-                monthCompletionStatus = monthCompletionStatusMap,
-                monthAverageTemps = monthAverageTemps,
-                onMonthSelected = { month ->
-                    onMonthSelected(month)
-                    viewModel.onShowMonth(selectedYear, month)
-                },
-                onPromptForMissingDays = onPromptForMissingDays
-            )
-        }
-    }
-}
-
-@Composable
-private fun MonthsGridLayout(
-    year: Int,
-    monthCompletionStatus: Map<Int, Int>,
-    monthAverageTemps: Map<Int, Double?>,
-    onMonthSelected: (Int) -> Unit,
-    onPromptForMissingDays: (Int, Int, Int) -> Unit
-) {
-    LazyColumn {
-        item {
-            Text(
-                "$year",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
-        items((1..12).chunked(2)) { monthPair ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                monthPair.forEach { month ->
-                    MonthCardForGrid(
-                        month = month,
-                        year = year,
-                        missingDaysCount = monthCompletionStatus[month] ?: 0,
-                        temperature = monthAverageTemps[month],
-                        modifier = Modifier.weight(1f),
-                        onMonthSelected = { onMonthSelected(month) },
-                        onPromptForMissingDays = { onPromptForMissingDays(year, month, monthCompletionStatus[month] ?: 0) }
-                    )
-                }
-                // Add spacer if odd number of months
-                if (monthPair.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+            item {
+                Text(
+                    "$selectedYear",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+
+            items((1..12).chunked(2)) { monthPair ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    monthPair.forEach { month ->
+                        MonthCardForGrid(
+                            month = month,
+                            year = selectedYear,
+                            missingDaysCount = monthCompletionStatusMap[month] ?: 0,
+                            temperature = monthAverageTemps[month],
+                            modifier = Modifier.weight(1f),
+                            onMonthSelected = {
+                                onMonthSelected(month)
+                                viewModel.onShowMonth(selectedYear, month)
+                            },
+                            onPromptForMissingDays = {
+                                onPromptForMissingDays(selectedYear, month, monthCompletionStatusMap[month] ?: 0)
+                            }
+                        )
+                    }
+                    if (monthPair.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
+
 
 @Composable
 private fun MonthCardForGrid(
