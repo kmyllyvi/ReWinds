@@ -44,11 +44,18 @@ import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
 
 @Composable
-fun ChatView(vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
+fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
     val uiState by vm.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
     val strings = LocalAppStrings.current
+
+    // Pre-fill input with initial message (e.g. "Chat about Helsinki")
+    LaunchedEffect(initialMessage) {
+        if (!initialMessage.isNullOrEmpty()) {
+            vm.onInputTextChange(initialMessage)
+        }
+    }
 
     // Scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size) {

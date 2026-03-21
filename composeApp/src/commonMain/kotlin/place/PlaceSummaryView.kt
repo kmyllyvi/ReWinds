@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -130,6 +131,15 @@ fun PlaceSummaryView(
                 onBackClick()
             },
             rightContent = {
+                IconButton(
+                    onClick = { navigator.navigateToChat(initialMessage = "Chat about $currentPlaceName") }
+                ) {
+                    Icon(
+                        Icons.Filled.Chat,
+                        contentDescription = "Chat about $currentPlaceName",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
                 IconButton(
                     onClick = { showMapModal = true },
                     modifier = Modifier

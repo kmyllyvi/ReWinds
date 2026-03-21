@@ -42,7 +42,7 @@ fun Navigation() {
             )
         }
         is ChatRoute -> {
-            ChatView(navigator = navigator)
+            ChatView(initialMessage = currentRoute.initialMessage, navigator = navigator)
         }
         is SettingsRoute -> {
             SettingsView(navigator = navigator)

@@ -19,7 +19,7 @@ data class MonthlyStatisticsRoute(
 ) : NavRoute
 
 @Serializable
-data object ChatRoute : NavRoute
+data class ChatRoute(val initialMessage: String? = null) : NavRoute
 
 @Serializable
 data object SettingsRoute : NavRoute
