@@ -96,7 +96,7 @@ data class AppStrings(
 
     // MonthlyStatisticsView
     val monthlySummary: String,
-    val kiteableDays: (Int) -> String,
+    val daysOfInterest: (Int) -> String,
     val generalStats: String,
     val dailyBreakdown: String,
     val daysWithData: (String) -> String,
@@ -232,7 +232,7 @@ data class AppStrings(
 
             // MonthlyStatisticsView
             monthlySummary = "Monthly Summary",
-            kiteableDays = { count -> "Kiteable Days: $count" },
+            daysOfInterest = { count -> "Days of Interest: $count" },
             generalStats = "General Stats",
             dailyBreakdown = "Daily Breakdown",
             daysWithData = { count -> "Days with data: $count" },
@@ -368,7 +368,7 @@ data class AppStrings(
 
             // MonthlyStatisticsView
             monthlySummary = "Monatliche Zusammenfassung",
-            kiteableDays = { count -> "Drachen-Tage: $count" },
+            daysOfInterest = { count -> "Interessante Tage: $count" },
             generalStats = "Allgemeine Statistiken",
             dailyBreakdown = "Tages\u00FCbersicht",
             daysWithData = { count -> "Tage mit Daten: $count" },

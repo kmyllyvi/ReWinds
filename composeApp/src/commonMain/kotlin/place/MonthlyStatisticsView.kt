@@ -117,7 +117,7 @@ fun MonthlyStatisticsView(
                             if (currentStats.numberOfDaysWithData > 0) {
                                 // Display Kiteable Days count prominently
                                 Text(
-                                    text = strings.kiteableDays(currentStats.kiteableDaysCount),
+                                    text = strings.daysOfInterest(currentStats.daysOfInterestCount),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )

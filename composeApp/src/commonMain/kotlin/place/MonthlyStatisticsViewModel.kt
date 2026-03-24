@@ -31,7 +31,7 @@ data class CalculatedStats(
     val coldestDate: String? = null,
     val absoluteMaxTemp: Double? = null,
     val hottestDate: String? = null,
-    val kiteableDaysCount: Int = 0, // New field for kiteable days
+    val daysOfInterestCount: Int = 0,
     val totalSolarEnergy: Double? = null
 )
 
@@ -209,7 +209,7 @@ class MonthlyStatisticsViewModel(
             coldestDate = coldestDate,
             absoluteMaxTemp = absMaxTemp,
             hottestDate = hottestDate,
-            kiteableDaysCount = kiteableDaysCount, // Set the new count
+            daysOfInterestCount = kiteableDaysCount,
             totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
         )
     }
