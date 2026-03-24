@@ -11,5 +11,7 @@ data class DayWeatherSummary(
     val sustainedWindSpeed: Double?, // 3h avg
     val solarenergy: Double?,
     val isFoggy: Boolean,
-    val foggyHours: Int
+    val foggyHours: Int,
+    val precipitation: Double? = null,
+    val windDirection: Double? = null  // degrees
 )

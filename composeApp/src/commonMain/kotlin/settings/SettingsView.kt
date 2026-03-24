@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,9 +47,13 @@ import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
 import core.saveWeatherApiKeyPlatform
 import components.AppHeader
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun SettingsView(navigator: Navigator) {
+fun SettingsView(
+    navigator: Navigator,
+    vm: SettingsViewModel = koinViewModel()
+) {
     val scrollState = rememberScrollState()
     val strings = LocalAppStrings.current
     val language by LanguageManager.currentLanguage.collectAsState()
@@ -57,6 +62,10 @@ fun SettingsView(navigator: Navigator) {
     var weatherApiKey by remember { mutableStateOf("") }
     var showSuccessMessage by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf("") }
+
+    val doiState by vm.doiState.collectAsState()
+    val currentFilter by vm.currentFilter.collectAsState()
+    var doiCriteria by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -350,6 +359,117 @@ fun SettingsView(navigator: Navigator) {
                 ) {
                     Text(strings.saveKey)
                 }
+            }
+
+            // Days of Interest Section
+            Text(
+                text = strings.daysOfInterestTitle,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Text(
+                text = strings.daysOfInterestDescription,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            currentFilter?.let { filter ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = strings.daysOfInterestCurrent(filter.naturalLanguageCriteria),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            when (val state = doiState) {
+                is DaysOfInterestUiState.Parsing -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = strings.daysOfInterestParsing,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                is DaysOfInterestUiState.Success -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = strings.daysOfInterestCurrent(state.filter.naturalLanguageCriteria),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                is DaysOfInterestUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.errorContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = strings.daysOfInterestError(state.message),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+                is DaysOfInterestUiState.Idle -> Unit
+            }
+
+            OutlinedTextField(
+                value = doiCriteria,
+                onValueChange = {
+                    doiCriteria = it
+                    if (doiState !is DaysOfInterestUiState.Idle) vm.resetDoiState()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(strings.daysOfInterestPlaceholder) },
+                label = { Text(strings.daysOfInterestTitle) },
+                singleLine = false,
+                maxLines = 4
+            )
+
+            Button(
+                onClick = {
+                    vm.saveFilter(doiCriteria)
+                    doiCriteria = ""
+                    focusManager.clearFocus()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = doiCriteria.isNotBlank() && doiState !is DaysOfInterestUiState.Parsing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(strings.daysOfInterestSave)
             }
         }
     }

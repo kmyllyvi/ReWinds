@@ -131,7 +131,16 @@ data class AppStrings(
     val selectMonth: String,
     val noDataAvailable: String,
     val monthFallbackNa: String,
-    val monthFallbackNumber: (Int) -> String
+    val monthFallbackNumber: (Int) -> String,
+
+    // Days of Interest (SettingsView)
+    val daysOfInterestTitle: String,
+    val daysOfInterestDescription: String,
+    val daysOfInterestPlaceholder: String,
+    val daysOfInterestCurrent: (String) -> String,
+    val daysOfInterestParsing: String,
+    val daysOfInterestSave: String,
+    val daysOfInterestError: (String) -> String
 ) {
     companion object {
         val English = AppStrings(
@@ -258,7 +267,16 @@ data class AppStrings(
             selectMonth = "Select Month:",
             noDataAvailable = "No data available.",
             monthFallbackNa = "N/A",
-            monthFallbackNumber = { num -> "Month $num" }
+            monthFallbackNumber = { num -> "Month $num" },
+
+            // Days of Interest
+            daysOfInterestTitle = "Days of Interest",
+            daysOfInterestDescription = "Describe your ideal day in natural language. AI will parse your criteria.",
+            daysOfInterestPlaceholder = "e.g. sustained wind 12+ knots from SW, temperature above 5\u00B0C",
+            daysOfInterestCurrent = { criteria -> "Current: $criteria" },
+            daysOfInterestParsing = "Parsing criteria with AI...",
+            daysOfInterestSave = "Set Filter",
+            daysOfInterestError = { msg -> "Could not parse: $msg" }
         )
 
         val German = AppStrings(
@@ -385,7 +403,16 @@ data class AppStrings(
             selectMonth = "Monat ausw\u00E4hlen:",
             noDataAvailable = "Keine Daten verf\u00FCgbar.",
             monthFallbackNa = "N/V",
-            monthFallbackNumber = { num -> "Monat $num" }
+            monthFallbackNumber = { num -> "Monat $num" },
+
+            // Days of Interest
+            daysOfInterestTitle = "Interessante Tage",
+            daysOfInterestDescription = "Beschreiben Sie Ihren idealen Tag in nat\u00FCrlicher Sprache. Die KI analysiert Ihre Kriterien.",
+            daysOfInterestPlaceholder = "z.B. anhaltender Wind 12+ Knoten aus SW, Temperatur \u00FCber 5\u00B0C",
+            daysOfInterestCurrent = { criteria -> "Aktuell: $criteria" },
+            daysOfInterestParsing = "Kriterien werden mit KI analysiert...",
+            daysOfInterestSave = "Filter setzen",
+            daysOfInterestError = { msg -> "Konnte nicht analysiert werden: $msg" }
         )
     }
 }

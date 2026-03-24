@@ -13,6 +13,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import place.MonthlyStatisticsViewModel
 import place.PlaceSummaryViewModel
+import settings.SettingsViewModel
 
 fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: Boolean) = module {
     // Provide the factory from the platform
@@ -37,6 +38,9 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     single { AiRepository(get(), get(), get()) } // AnthropicClient, WeatherTools, WeatherRepository
     single<ChatRepository> { ChatRepositoryImpl(get()) } // AppDatabase
 
+    // App settings
+    single { AppSettingsRepository(get()) }
+
     // ViewModels
     viewModelOf(::AppViewModel)
     // Navigator is created in Router.kt composable, not through DI
@@ -44,6 +48,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     viewModelOf(::PlaceSummaryViewModel)
     viewModelOf(::MonthlyStatisticsViewModel)
     viewModelOf(::ChatViewModel)
+    viewModelOf(::SettingsViewModel)
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {

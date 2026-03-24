@@ -2,19 +2,24 @@ package place
 
 import androidx.lifecycle.ViewModel // KMM ViewModel
 import androidx.lifecycle.viewModelScope
+import core.AppSettingsRepository
 import core.Day
+import core.DaysOfInterestFilter
 import core.Hour
 import core.KiteSpotterConfig
 import core.Log // Assuming you have a Log wrapper or use Napier
 import core.MonthlyStatisticsRoute
 import core.WeatherRepository
 import core.WeatherResponse
+import core.matches
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.Json
+import settings.SettingsViewModel
 
 // CalculatedStats data class remains the same
 data class CalculatedStats(
@@ -32,7 +37,8 @@ data class CalculatedStats(
 
 class MonthlyStatisticsViewModel(
     route: MonthlyStatisticsRoute,
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val settingsRepo: AppSettingsRepository
 ) : ViewModel() { // Extend androidx.lifecycle.ViewModel
 
     val placeName: String = route.placeName
@@ -48,6 +54,17 @@ class MonthlyStatisticsViewModel(
 
     private val _isDownloading = MutableStateFlow(false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    private val filter: DaysOfInterestFilter = loadFilter()
+
+    private fun loadFilter(): DaysOfInterestFilter {
+        val jsonStr = settingsRepo.getString(SettingsViewModel.FILTER_KEY) ?: return DaysOfInterestFilter.DEFAULT
+        return try {
+            Json.decodeFromString<DaysOfInterestFilter>(jsonStr)
+        } catch (_: Exception) {
+            DaysOfInterestFilter.DEFAULT
+        }
+    }
 
     init {
         // Log or print the retrieved arguments to verify
@@ -90,19 +107,22 @@ class MonthlyStatisticsViewModel(
             sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
             solarenergy = this.solarenergy,
             isFoggy = foggyHours > 0,
-            foggyHours = foggyHours
+            foggyHours = foggyHours,
+            precipitation = this.precip,
+            windDirection = this.winddir
         )
     }
 
-    // New helper to calculate the highest 3-hour rolling average wind speed
+    // New helper to calculate the highest rolling average wind speed using the filter's window
     private fun calculateMaxSustainedWindSpeed(hours: List<Hour>?): Double? {
-        if (hours == null || hours.size < KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS) {
+        val windowSize = filter.sustainedWindHours ?: KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
+        if (hours == null || hours.size < windowSize) {
             return null
         }
 
         return hours
             .mapNotNull { it.windspeed }
-            .windowed(size = KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS, step = 1) { window ->
+            .windowed(size = windowSize, step = 1) { window ->
                 window.average()
             }
             .maxOrNull()
@@ -149,9 +169,7 @@ class MonthlyStatisticsViewModel(
         if (validDays.isEmpty()) return CalculatedStats(numberOfDaysWithData = daysData.size)
 
         val kiteableDaysCount = validDays.count { day ->
-            // Use predefined filter values for decision on "kiteable"
-            (day.sustainedWindSpeed ?: 0.0) >= KiteSpotterConfig.MIN_SUSTAINED_WIND_SPEED_KMH &&
-                    (day.avgTemp ?: 0.0) >= KiteSpotterConfig.MIN_TEMP_CELSIUS
+            filter.matches(day)
         }
 
         val minTemps = validDays.mapNotNull { it.minTemp }

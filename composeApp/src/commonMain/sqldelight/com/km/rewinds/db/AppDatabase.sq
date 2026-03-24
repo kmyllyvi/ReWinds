@@ -155,3 +155,16 @@ DELETE FROM ChatMessage WHERE chatSessionId = ?;
 
 getLatestSessionId:
 SELECT id FROM ChatSession ORDER BY id DESC LIMIT 1;
+
+-- AppSettings table (key-value store for user preferences)
+
+CREATE TABLE AppSettings (
+    key   TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+getAppSetting:
+SELECT value FROM AppSettings WHERE key = ?;
+
+setAppSetting:
+INSERT OR REPLACE INTO AppSettings(key, value) VALUES (?, ?);

@@ -18,21 +18,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import core.KiteSpotterConfig
+import core.DaysOfInterestFilter
 import core.LocalAppStrings
+import core.matches
 import place.DayWeatherSummary
 import kotlin.math.roundToInt
 
 @Composable
-fun StoredDaysList(storedDays: List<DayWeatherSummary>) {
+fun StoredDaysList(
+    storedDays: List<DayWeatherSummary>,
+    filter: DaysOfInterestFilter = DaysOfInterestFilter.DEFAULT
+) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(storedDays) { daySummary ->
-            // Use the new sustained wind speed and centralized config for the highlighting logic
-            val isDayOfInterest = (daySummary.sustainedWindSpeed ?: 0.0) >= KiteSpotterConfig.MIN_SUSTAINED_WIND_SPEED_KMH &&
-                    (daySummary.avgTemp ?: 0.0) >= KiteSpotterConfig.MIN_TEMP_CELSIUS
+            val isDayOfInterest = filter.matches(daySummary)
 
             DayWeatherSummaryCard(
                 daySummary = daySummary,
