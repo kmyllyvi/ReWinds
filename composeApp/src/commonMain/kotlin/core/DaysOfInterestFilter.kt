@@ -32,6 +32,32 @@ fun degreesToCompass(degrees: Double): String {
     return directions[index]
 }
 
+fun DaysOfInterestFilter.filterSummary(): String {
+    val parts = mutableListOf<String>()
+    if (minWindSpeedKmh != null || maxWindSpeedKmh != null) {
+        val windRange = when {
+            minWindSpeedKmh != null && maxWindSpeedKmh != null -> "${minWindSpeedKmh.toInt()}–${maxWindSpeedKmh.toInt()} km/h"
+            minWindSpeedKmh != null -> "≥ ${minWindSpeedKmh.toInt()} km/h"
+            else -> "≤ ${maxWindSpeedKmh!!.toInt()} km/h"
+        }
+        val hours = if (sustainedWindHours != null) " for ${sustainedWindHours}h+" else ""
+        val dirs = if (!windDirections.isNullOrEmpty()) " from ${windDirections.joinToString("/")}" else ""
+        parts.add("Wind: $windRange$dirs$hours")
+    }
+    if (minTempC != null || maxTempC != null) {
+        val tempRange = when {
+            minTempC != null && maxTempC != null -> "${minTempC.toInt()}–${maxTempC.toInt()}°C"
+            minTempC != null -> "≥ ${minTempC.toInt()}°C"
+            else -> "≤ ${maxTempC!!.toInt()}°C"
+        }
+        parts.add("Temp: $tempRange")
+    }
+    if (maxCloudCoverPct != null) parts.add("Cloud: ≤ ${maxCloudCoverPct.toInt()}%")
+    if (noRain == true) parts.add("No rain")
+    if (daylightOnly == true) parts.add("Daylight hours only")
+    return if (parts.isEmpty()) naturalLanguageCriteria else parts.joinToString(" · ")
+}
+
 fun DaysOfInterestFilter.matches(day: DayWeatherSummary): Boolean {
     if (minTempC != null && (day.avgTemp ?: Double.MIN_VALUE) < minTempC) return false
     if (maxTempC != null && (day.avgTemp ?: Double.MAX_VALUE) > maxTempC) return false

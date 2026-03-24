@@ -46,6 +46,7 @@ import core.deleteWeatherApiKeyPlatform
 import core.isAnthropicApiKeyConfigured
 import core.saveApiKeyPlatform
 import core.saveWeatherApiKeyPlatform
+import core.filterSummary
 import components.AppHeader
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -385,11 +386,18 @@ fun SettingsView(
                         )
                         .padding(12.dp)
                 ) {
-                    Text(
-                        text = strings.daysOfInterestCurrent(filter.naturalLanguageCriteria),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = filter.naturalLanguageCriteria,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = filter.filterSummary(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
