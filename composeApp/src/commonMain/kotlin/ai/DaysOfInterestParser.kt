@@ -69,10 +69,36 @@ object DaysOfInterestParser {
         }
 
         val response = client.sendRawMessage(request)
-        val jsonText = extractTextFromResponse(response)
+        val rawText = extractTextFromResponse(response)
+        val jsonText = stripCodeFences(rawText)
 
         Log.d("DaysOfInterestParser: received JSON: $jsonText")
 
+        return parseJson(criteria, jsonText)
+    }
+
+    private fun extractTextFromResponse(response: JsonObject): String {
+        val content = response["content"] as? JsonArray
+            ?: throw AnthropicException("No content array in response")
+        val firstBlock = content.firstOrNull() as? JsonObject
+            ?: throw AnthropicException("Content array is empty")
+        val text = (firstBlock["text"] as? JsonPrimitive)?.content
+            ?: throw AnthropicException("No text field in first content block")
+        return text.trim()
+    }
+
+    /** Strips markdown code fences (```json ... ``` or ``` ... ```) from [text]. */
+    fun stripCodeFences(text: String): String {
+        val trimmed = text.trim()
+        val withoutOpening = trimmed
+            .removePrefix("```json")
+            .removePrefix("```")
+        val withoutBoth = withoutOpening.trimStart().removeSuffix("```").trimEnd()
+        return withoutBoth
+    }
+
+    /** Parses a JSON string into a [DaysOfInterestFilter] with the given [criteria] label. */
+    fun parseJson(criteria: String, jsonText: String): DaysOfInterestFilter {
         val extracted = json.decodeFromString<ExtractedFilter>(jsonText)
         return DaysOfInterestFilter(
             naturalLanguageCriteria = criteria,
@@ -86,16 +112,6 @@ object DaysOfInterestParser {
             noRain = extracted.noRain,
             maxCloudCoverPct = extracted.maxCloudCoverPct
         )
-    }
-
-    private fun extractTextFromResponse(response: JsonObject): String {
-        val content = response["content"] as? JsonArray
-            ?: throw AnthropicException("No content array in response")
-        val firstBlock = content.firstOrNull() as? JsonObject
-            ?: throw AnthropicException("Content array is empty")
-        val text = (firstBlock["text"] as? JsonPrimitive)?.content
-            ?: throw AnthropicException("No text field in first content block")
-        return text.trim()
     }
 
     @kotlinx.serialization.Serializable
