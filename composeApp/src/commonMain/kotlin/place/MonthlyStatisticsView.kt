@@ -121,6 +121,14 @@ fun MonthlyStatisticsView(
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                                if (currentStats.filterSummary.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = currentStats.filterSummary,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 HorizontalDivider()
                                 Spacer(modifier = Modifier.height(16.dp))

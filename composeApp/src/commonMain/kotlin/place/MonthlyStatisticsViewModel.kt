@@ -11,6 +11,7 @@ import core.Log // Assuming you have a Log wrapper or use Napier
 import core.MonthlyStatisticsRoute
 import core.WeatherRepository
 import core.WeatherResponse
+import core.filterSummary
 import core.matches
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ data class CalculatedStats(
     val absoluteMaxTemp: Double? = null,
     val hottestDate: String? = null,
     val daysOfInterestCount: Int = 0,
+    val filterSummary: String = "",
     val totalSolarEnergy: Double? = null
 )
 
@@ -55,7 +57,7 @@ class MonthlyStatisticsViewModel(
     private val _isDownloading = MutableStateFlow(false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
 
-    private val filter: DaysOfInterestFilter = loadFilter()
+    private var filter: DaysOfInterestFilter = loadFilter()
 
     private fun loadFilter(): DaysOfInterestFilter {
         val jsonStr = settingsRepo.getString(SettingsViewModel.FILTER_KEY) ?: return DaysOfInterestFilter.DEFAULT
@@ -79,6 +81,7 @@ class MonthlyStatisticsViewModel(
     }
 
     private fun loadStatistics() {
+        filter = loadFilter()
         viewModelScope.launch {
 
             // Now use the 'this.placeName', 'this.currentYear', 'this.currentMonth' properties
@@ -210,6 +213,7 @@ class MonthlyStatisticsViewModel(
             absoluteMaxTemp = absMaxTemp,
             hottestDate = hottestDate,
             daysOfInterestCount = kiteableDaysCount,
+            filterSummary = filter.filterSummary(),
             totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
         )
     }
