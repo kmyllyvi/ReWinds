@@ -47,7 +47,11 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable { expanded = !expanded },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = if (daySummary.isMatch)
+            CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        else
+            CardDefaults.elevatedCardColors()
     ) {
         Column(
             modifier = Modifier

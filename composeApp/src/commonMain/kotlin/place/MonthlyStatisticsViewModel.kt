@@ -161,7 +161,10 @@ class MonthlyStatisticsViewModel(
                     null // Discard otherwise
                 }
             }
-            .map { it.toDayWeatherSummary() } // Map the filtered Days to DayWeatherSummary
+            .map { day ->
+                val summary = day.toDayWeatherSummary()
+                summary.copy(isMatch = filter.matches(summary))
+            }
     }
 
 
