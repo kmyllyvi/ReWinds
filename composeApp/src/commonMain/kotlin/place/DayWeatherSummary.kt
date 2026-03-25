@@ -14,5 +14,7 @@ data class DayWeatherSummary(
     val foggyHours: Int,
     val precipitation: Double? = null,
     val windDirection: Double? = null,  // degrees
+    val sunrise: String? = null,
+    val sunset: String? = null,
     val isMatch: Boolean = false
 )
