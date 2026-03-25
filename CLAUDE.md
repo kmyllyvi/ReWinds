@@ -54,6 +54,23 @@ xcodebuild -workspace iosApp/iosApp.xcworkspace \
 - **iOS**: Cocoapods manages sqlite3 dependency
 - **Database**: SQLDelight with sqlite3 driver
 
+## Agent PR Workflow
+
+When agents post comments on GitHub PRs (reviews, replies, general comments), they **must** append the following signature so comments are distinguishable from the human author:
+
+```
+— 🤖 Claude
+```
+
+Example reply body:
+```
+Added unit tests covering the new mapping fields.
+
+— 🤖 Claude
+```
+
+This applies to all `gh pr review`, `gh api .../comments`, and `gh api .../replies` calls.
+
 ## Development Workflow
 
 This project uses a **two-agent workflow** for development and quality assurance:
