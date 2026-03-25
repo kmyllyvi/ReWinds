@@ -115,3 +115,25 @@ fun testToggleDebugMenu() {
 
 **Enforced by**: Project code review standards
 **Applied to**: All Composable functions and ViewModels
+
+---
+
+## 📵 KMP Platform Gotchas (commonMain)
+
+Code in `commonMain` must compile on both JVM (Android) and Kotlin/Native (iOS). Avoid these JVM-only APIs:
+
+### ❌ String.format / "...".format()
+```kotlin
+// ❌ JVM-only — does NOT compile on iOS
+"%.1f".format(value)
+String.format("%.1f", value)
+```
+
+**Use instead**: `core.utils.formatDecimal(value)` — a shared KMP-safe helper in `core/FormatUtils.kt`.
+
+```kotlin
+// ✅ KMP-safe
+formatDecimal(value)  // import core.utils.formatDecimal
+```
+
+If you need a new format pattern, add it to `FormatUtils.kt` using integer math rather than format strings.
