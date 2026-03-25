@@ -106,6 +106,7 @@ data class AppStrings(
     val coldestDay: (String, String) -> String,
     val hottestDay: (String, String) -> String,
     val totalSolarEnergy: (String) -> String,
+    val totalRainfall: (String) -> String,
     val noWeatherData: String,
     val downloadMissingDays: (Int) -> String,
 
@@ -239,9 +240,10 @@ data class AppStrings(
             avgMinTemp = { temp -> "Average Min Temp: $temp" },
             avgMaxTemp = { temp -> "Average Max Temp: $temp" },
             overallAvgTemp = { temp -> "Overall Average Temp: $temp" },
-            coldestDay = { temp, date -> "Coldest Day: $temp (on $date)" },
-            hottestDay = { temp, date -> "Hottest Day: $temp (on $date)" },
+            coldestDay = { temp, date -> "Coldest: $temp (on $date)" },
+            hottestDay = { temp, date -> "Warmest: $temp (on $date)" },
             totalSolarEnergy = { energy -> "Total Solar Energy: $energy kWh/m\u00B2" },
+            totalRainfall = { mm -> "Total Rainfall: $mm mm" },
             noWeatherData = "No detailed weather data available for calculations in this month, or data is still loading.",
             downloadMissingDays = { count -> if (count == 1) "Download $count missing day" else "Download $count missing days" },
 
@@ -378,6 +380,7 @@ data class AppStrings(
             coldestDay = { temp, date -> "K\u00E4ltester Tag: $temp (am $date)" },
             hottestDay = { temp, date -> "W\u00E4rmster Tag: $temp (am $date)" },
             totalSolarEnergy = { energy -> "Gesamte Sonnenenergie: $energy kWh/m\u00B2" },
+            totalRainfall = { mm -> "Gesamtniederschlag: $mm mm" },
             noWeatherData = "Keine detaillierten Wetterdaten f\u00FCr Berechnungen in diesem Monat verf\u00FCgbar, oder die Daten werden noch geladen.",
             downloadMissingDays = { count -> if (count == 1) "$count fehlenden Tag herunterladen" else "$count fehlende Tage herunterladen" },
 

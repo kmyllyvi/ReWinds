@@ -167,6 +167,12 @@ fun MonthlyStatisticsView(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
+                                currentStats.totalRainfall?.let {
+                                    Text(
+                                        strings.totalRainfall("${"%.1f".format(it)}"),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                                 currentStats.totalSolarEnergy?.let {
                                     Text(
                                         strings.totalSolarEnergy("${it.roundToInt()}"),

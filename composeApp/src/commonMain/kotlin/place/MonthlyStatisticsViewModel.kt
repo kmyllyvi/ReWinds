@@ -34,6 +34,7 @@ data class CalculatedStats(
     val hottestDate: String? = null,
     val daysOfInterestCount: Int = 0,
     val filterSummary: String = "",
+    val totalRainfall: Double? = null,
     val totalSolarEnergy: Double? = null
 )
 
@@ -182,6 +183,7 @@ class MonthlyStatisticsViewModel(
         val maxTemps = validDays.mapNotNull { it.maxTemp }
         val avgTemps = validDays.mapNotNull { it.avgTemp }
         val totalSolarEnergy = validDays.mapNotNull { it.solarenergy }.sum()
+        val totalRainfall = validDays.mapNotNull { it.precipitation }.sum()
 
 
         var absMinTemp: Double? = null
@@ -217,6 +219,7 @@ class MonthlyStatisticsViewModel(
             hottestDate = hottestDate,
             daysOfInterestCount = kiteableDaysCount,
             filterSummary = filter.filterSummary(),
+            totalRainfall = if (totalRainfall > 0) totalRainfall else null,
             totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
         )
     }
