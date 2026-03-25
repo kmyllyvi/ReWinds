@@ -1,67 +1,46 @@
-# Session: Mar 18 - 2026 (Continued) - KIM-57 Localization Framework
+# Session: Mar 25, 2026 - KIM-143 + Monthly Stats Improvements
 
-**Started**: Mar 18, 2026 (Session Part 2)
-**Status**: ✅ Complete
+**Started**: Mar 25, 2026
+**Status**: Complete — ready for PR
 
 ---
 
 ## Session Goal
-Complete KIM-57 Phase 1: Set up localization framework infrastructure with Compose Multiplatform resources
+
+Fix KIM-143 (days of interest filter not applied after settings change) and polish the monthly summary view.
 
 ---
 
-## Current State
+## What Was Done
 
-**Branch**: develop
-**Commits ahead of origin/develop**: 7 (6 from KIM-115 + 1 from KIM-57)
-**Latest commits**:
-- 724d21c: Feature: Implement localization framework setup (KIM-57)
-- 53f98c3: docs: Update session summary - KIM-115 complete
+### Bug Fix: KIM-143 - Filter not applied after settings change
+- `MonthlyStatisticsViewModel` was caching the filter as `private val` at init time
+- Koin reuses the same ViewModel instance across navigation, so stale filter was used
+- **Fix**: Changed to `private var`, reload via `loadFilter()` at the top of `loadStatistics()`
+- Commit: `92289f4`
 
-**Build status**: Android debug APK compiles successfully ✅
-**All strings**: 90+ UI strings extracted and localized
+### Feature: Filter summary on monthly stats
+- Added `filterSummary: String` to `CalculatedStats`
+- Populated from `DaysOfInterestFilter.filterSummary()` extension
+- Displayed as subtitle under "Days of Interest: N" count
+- Commit: `92289f4`
 
----
+### Feature: Highlight matching days in daily breakdown
+- Added `isMatch: Boolean` to `DayWeatherSummary`
+- Set during mapping in `filterAndMapDaysForMonth()` via `filter.matches(summary)`
+- `DaySummaryRow` uses `primaryContainer` card color when `isMatch = true`
+- Commit: `6197986`
 
-## Work Completed - This Session
-
-### ✅ KIM-57: Localization Framework Setup (Phase 1)
-
-**Objective**: Set up infrastructure for multi-language support using Compose Multiplatform resources
-
-**Tasks completed**:
-- ✅ Created `composeResources/values/strings.xml` with 90+ English UI strings
-- ✅ Created `composeResources/values-de/strings.xml` placeholder (English copy for now)
-- ✅ Replaced all hardcoded strings in 9 view files with `stringResource()` calls
-- ✅ Updated HomeView, ChatView, SettingsView (main navigation)
-- ✅ Updated PlaceSummaryView, MonthlyStatisticsView (detail views)
-- ✅ Updated component files: WeatherCards, DaySummaryRow, CalendarSelectors, AppHeader
-- ✅ Implemented helper functions for month name resource access
-- ✅ Verified Android debug build compiles successfully
-- ✅ Organized strings by feature for easier translation management
-- ✅ Committed all changes: `Feature: Implement localization framework setup (KIM-57)`
-
-**Framework Used**: Compose Multiplatform built-in resource system (no external i18n library needed)
-
-**Coverage**:
-- All user-visible UI strings migrated to resources
-- Support for parameterized strings (format args)
-- Support for plural strings (one/other variants)
-- Month names consolidated into resource system
-
-**Result**: App now has complete infrastructure for adding translations. German translations can be added in next session.
+### Feature: Total rainfall in general stats
+- Added `totalRainfall: Double?` to `CalculatedStats`
+- Summed from `precipitation` field of all days in the month
+- Added `totalRainfall` string to `AppStrings` (EN + DE)
+- Displayed as "Total Rainfall: X.X mm", hidden if zero
+- Commit: `d9ea9f2`
 
 ---
 
-## Upcoming Work Items
+## Next Steps
 
-### Phase 2: German Translations (KIM-57)
-
-Now that framework is in place, translate strings to German:
-- Replace English text in `composeResources/values-de/strings.xml`
-- Test app in German locale to verify translations display correctly
-- 90+ strings across all screens to translate
-
-### GitHub Configuration & PR Workflow (KIM-97, KIM-96)
-
-After KIM-57 complete, resume work on branch protection and PR documentation
+- [ ] Create PR for these changes (branch: develop)
+- [ ] Mark KIM-143 as done in Linear

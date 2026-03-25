@@ -32,6 +32,39 @@
 - Use `xcrun simctl list devices available --json` + Python to get latest iPhone simulator UDID
 - Export UDID via `GITHUB_ENV`, reference as `$SIMULATOR_UDID` in shell scripts
 
+## SQLDelight Schema Migrations
+- Migration files: `composeApp/src/commonMain/sqldelight/com/km/rewinds/db/N.sqm`
+- Schema: `AppDatabase.sq` (CREATE TABLE + queries)
+- **When adding a table**: add to `AppDatabase.sq` AND create matching `N.sqm` migration file
+- Current schema version: 3 (KIM-140 added AppSettings in `2.sqm`)
+
+## KMP Compatibility: String Formatting
+
+`"%.1f".format(value)` is JVM-only — does NOT compile on Kotlin/Native (iOS).
+Use `core.utils.formatDecimal(value: Double): String` from `FormatUtils.kt` instead.
+- Implementation uses integer math: `(value * 10).toLong()` — safe on all platforms
+- Other existing pattern in codebase: `(value * 10).roundToInt() / 10.0` (returns Double, not String)
+- Any `String.format(...)` calls in `commonMain` will fail iOS builds — always replace with KMP-safe alternatives
+
+## Build Commands
+- Android compile only (fastest): `./gradlew :composeApp:compileDebugKotlinAndroid --no-daemon`
+- Common metadata check: `./gradlew :composeApp:compileCommonMainKotlinMetadata --no-daemon`
+- Full Android build (slow, runs tests): `./gradlew buildAndroidOnly --no-daemon`
+- Pre-existing test failures: `compileTestKotlinIos*` fails with `@ExperimentalNativeApi` — not my code
+- `buildAndroidOnly` has config cache issues — use `:composeApp:assembleDebug --no-configuration-cache` instead
+- Add `--rerun-tasks` when build cache is stale and you need to verify compilation
+
+## DayWeatherSummary Pattern
+- Data model lives at: `composeApp/src/commonMain/kotlin/place/DayWeatherSummary.kt`
+- Mapping from `Day` (DB model) happens in `MonthlyStatisticsViewModel.toDayWeatherSummary()`
+- New nullable fields with defaults don't break existing positional-argument tests
+- `degreesToCompass(degrees: Double)` in `core.DaysOfInterestFilter.kt` converts wind degrees to compass point string
+
+## Anthropic API Patterns
+- `AnthropicClient.sendMessage()` — typed request (with tools, full model)
+- `AnthropicClient.sendRawMessage(JsonObject)` — raw JSON in/out (for simple one-shot calls)
+- DaysOfInterestParser: uses `sendRawMessage`, no tools, system prompt instructs JSON-only output
+
 ## Key File Locations
 - CI workflow: `.github/workflows/ci.yml`
 - Shared Xcode scheme: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme`
