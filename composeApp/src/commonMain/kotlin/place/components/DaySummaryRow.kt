@@ -91,13 +91,13 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             minTemp?.let {
                                 Text(
-                                    text = strings.dayMinTemp("%.1f".format(it)),
+                                    text = strings.dayMinTemp(formatDecimal(it)),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
                             maxTemp?.let {
                                 Text(
-                                    text = strings.dayMaxTemp("%.1f".format(it)),
+                                    text = strings.dayMaxTemp(formatDecimal(it)),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -118,7 +118,7 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                         if (precip > 0.0) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = strings.dayRainfall("%.1f".format(precip)),
+                                text = strings.dayRainfall(formatDecimal(precip)),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -173,3 +173,5 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
         }
     }
 }
+
+private fun formatDecimal(value: Double): String = "%.1f".format(value)
