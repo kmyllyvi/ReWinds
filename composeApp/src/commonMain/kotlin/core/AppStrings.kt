@@ -126,6 +126,12 @@ data class AppStrings(
     val lowVisibilityHours: (Int) -> String,
     val collapse: String,
     val expand: String,
+    val dayMinTemp: (String) -> String,
+    val dayMaxTemp: (String) -> String,
+    val dayWindDirection: (String) -> String,
+    val dayRainfall: (String) -> String,
+    val daySunrise: (String) -> String,
+    val daySunset: (String) -> String,
 
     // CalendarSelectors
     val selectYear: String,
@@ -263,6 +269,12 @@ data class AppStrings(
             lowVisibilityHours = { hours -> "Low visibility for $hours hour(s)" },
             collapse = "Collapse",
             expand = "Expand",
+            dayMinTemp = { temp -> "Min: $temp\u00B0C" },
+            dayMaxTemp = { temp -> "Max: $temp\u00B0C" },
+            dayWindDirection = { dir -> "Wind direction: $dir" },
+            dayRainfall = { mm -> "Rainfall: $mm mm" },
+            daySunrise = { time -> "Sunrise: $time" },
+            daySunset = { time -> "Sunset: $time" },
 
             // CalendarSelectors
             selectYear = "Select Year:",
@@ -400,6 +412,12 @@ data class AppStrings(
             lowVisibilityHours = { hours -> "Geringe Sichtweite f\u00FCr $hours Stunde(n)" },
             collapse = "Zuklappen",
             expand = "Ausklappen",
+            dayMinTemp = { temp -> "Min: $temp\u00B0C" },
+            dayMaxTemp = { temp -> "Max: $temp\u00B0C" },
+            dayWindDirection = { dir -> "Windrichtung: $dir" },
+            dayRainfall = { mm -> "Niederschlag: $mm mm" },
+            daySunrise = { time -> "Sonnenaufgang: $time" },
+            daySunset = { time -> "Sonnenuntergang: $time" },
 
             // CalendarSelectors
             selectYear = "Jahr ausw\u00E4hlen:",

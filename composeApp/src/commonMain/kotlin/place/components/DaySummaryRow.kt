@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
+import core.degreesToCompass
 import place.DayWeatherSummary
 
 /**
@@ -81,11 +82,76 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = daySummary.description ?: strings.noDetails, style = MaterialTheme.typography.bodySmall)
+
+                    // Min / Max temperature row
+                    val minTemp = daySummary.minTemp
+                    val maxTemp = daySummary.maxTemp
+                    if (minTemp != null || maxTemp != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            minTemp?.let {
+                                Text(
+                                    text = strings.dayMinTemp(formatDecimal(it)),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            maxTemp?.let {
+                                Text(
+                                    text = strings.dayMaxTemp(formatDecimal(it)),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+
+                    // Dominant wind direction
+                    daySummary.windDirection?.let { degrees ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = strings.dayWindDirection(degreesToCompass(degrees)),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    // Rainfall
+                    daySummary.precipitation?.let { precip ->
+                        if (precip > 0.0) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = strings.dayRainfall(formatDecimal(precip)),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    // Sunrise / Sunset row
+                    val sunrise = daySummary.sunrise
+                    val sunset = daySummary.sunset
+                    if (sunrise != null || sunset != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            sunrise?.let {
+                                Text(
+                                    text = strings.daySunrise(it),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            sunset?.let {
+                                Text(
+                                    text = strings.daySunset(it),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+
+                    // Solar energy
                     daySummary.solarenergy?.let {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(text = strings.solarEnergy(it.toString()), style = MaterialTheme.typography.bodySmall)
                     }
-                    // --- START: Added Fog/Low Visibility Info ---
+
+                    // Fog / Low visibility info
                     if (daySummary.isFoggy) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -102,9 +168,10 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                             )
                         }
                     }
-                    // --- END: Added Fog/Low Visibility Info ---
                 }
             }
         }
     }
 }
+
+private fun formatDecimal(value: Double): String = "%.1f".format(value)

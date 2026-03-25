@@ -113,7 +113,9 @@ class MonthlyStatisticsViewModel(
             isFoggy = foggyHours > 0,
             foggyHours = foggyHours,
             precipitation = this.precip,
-            windDirection = this.winddir
+            windDirection = this.winddir,
+            sunrise = this.sunrise,
+            sunset = this.sunset
         )
     }
 
