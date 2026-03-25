@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
 import core.degreesToCompass
+import core.utils.formatDecimal
 import place.DayWeatherSummary
 
 /**
@@ -174,4 +175,4 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
     }
 }
 
-private fun formatDecimal(value: Double): String = "%.1f".format(value)
+// formatDecimal is imported from core.utils.formatDecimal (KMP-compatible, no String.format)

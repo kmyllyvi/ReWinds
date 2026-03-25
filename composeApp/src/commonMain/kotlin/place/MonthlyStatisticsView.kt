@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
 import core.MonthlyStatisticsRoute
+import core.utils.formatDecimal
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -169,7 +170,7 @@ fun MonthlyStatisticsView(
                                 }
                                 currentStats.totalRainfall?.let {
                                     Text(
-                                        strings.totalRainfall("${"%.1f".format(it)}"),
+                                        strings.totalRainfall(formatDecimal(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
