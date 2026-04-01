@@ -100,7 +100,9 @@ class SqlDelightDatabase(
                         longitude = dbResponse.longitude,
                         address = dbResponse.address,
                         timezone = dbResponse.timezone,
-                        tzoffset = dbResponse.tzoffset
+                        tzoffset = dbResponse.tzoffset,
+                        stationLatitude = dbResponse.stationLatitude,
+                        stationLongitude = dbResponse.stationLongitude
                     )
 
                     weatherResponse.days?.forEach { day ->

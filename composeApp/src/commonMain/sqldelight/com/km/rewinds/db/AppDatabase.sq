@@ -5,7 +5,9 @@ CREATE TABLE WeatherResponse (
     longitude REAL NOT NULL,
     address TEXT,
     timezone TEXT,
-    tzoffset REAL
+    tzoffset REAL,
+    stationLatitude REAL,
+    stationLongitude REAL
 );
 
 CREATE TABLE Day (
@@ -79,8 +81,8 @@ CREATE TABLE Hour (
 
 -- WeatherResponse Queries
 insertWeatherResponse:
-INSERT OR REPLACE INTO WeatherResponse(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO WeatherResponse(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset, stationLatitude, stationLongitude)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getWeatherResponseByResolvedAddress:
 SELECT * FROM WeatherResponse WHERE resolvedAddress = ?;

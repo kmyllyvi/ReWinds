@@ -308,9 +308,11 @@ class WeatherRepositoryImpl(
     }
 
     override suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse {
-        // Fetch weather for the location using its lat/lon from geo-search
+        // Fetch weather for the location using its lat/lon from geo-search.
+        // Include stations so we can persist the actual weather station coordinates (KIM-149).
         val locationString = "${place.latitude}%2C${place.longitude}"
-        val weatherResponse = fetchWeatherFromNetwork(locationString, 0) // Fetch some data to validate the new place
+        val requestUrl = "$visualcrossingUrl$locationString/last0days$apiQuery&include=stations"
+        val weatherResponse = doRequest(requestUrl)
 
         // Overwrite the address from the API response with the correct name from the search result
         val correctedResponse = weatherResponse.copy(
