@@ -170,7 +170,7 @@ class HomeViewModel(
                     weatherRepository.addPlaceFromSearch(place)
                 }
                 loadSavedPlaces()
-            } catch (e: NetworkException) {
+            } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
             _uiState.update { it.copy(isSearching = false) }
