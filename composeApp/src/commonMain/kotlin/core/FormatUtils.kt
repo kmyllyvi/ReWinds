@@ -1,8 +1,20 @@
 package core.utils
 
+import kotlin.math.abs
+
+/**
+ * Formats a Double to one decimal place in a KMP-compatible way (no String.format).
+ * Example: 12.34 → "12.3", -5.67 → "-5.7", 3.0 → "3.0"
+ */
+fun formatDecimal(value: Double): String {
+    val shifted = (value * 10).toLong()
+    val intPart = shifted / 10
+    val decPart = abs(shifted % 10)
+    return "$intPart.$decPart"
+}
+
 // Helper for month name (consider a KMM-friendly date library for more robust formatting)
 fun monthName(month: Int): String {
-    // Basic Jvm specific, replace if KMM formatting needed
     return when (month) {
         1 -> "January"
         2 -> "February"
