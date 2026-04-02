@@ -340,6 +340,9 @@ class WeatherRepositoryImpl(
     }
 
     private suspend fun doRequest(requestUrl: String): WeatherResponse {
+        if (!WeatherApiKeyManager.hasValidKey()) {
+            throw IllegalStateException("Visual Crossing API key is not configured. Please add your API key in Settings.")
+        }
         try {
             val response = networkService.fetchWeatherData(requestUrl)
             Log.d("WeatherRepository - new weather data SUCCESS")
