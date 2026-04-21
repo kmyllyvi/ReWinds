@@ -33,14 +33,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -155,13 +159,37 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     )
                 }
 
-                items(uiState.placeDisplayData) {
-                    PlaceCell(
-                        text = it.name,
-                        dayCount = it.dayCount,
-                        onClick = { vm.onSavedPlaceSelected(it.name) },
-                        onDelete = { vm.onDeleteRequest(it.name) }
+                items(uiState.placeDisplayData, key = { it.name }) { place ->
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                vm.onDeleteRequest(place.name)
+                            }
+                            false // always snap back — dialog handles actual deletion
+                        }
                     )
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .background(MaterialTheme.colorScheme.error, RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.White)
+                            }
+                        }
+                    ) {
+                        PlaceCell(
+                            text = place.name,
+                            dayCount = place.dayCount,
+                            onClick = { vm.onSavedPlaceSelected(place.name) }
+                        )
+                    }
                 }
             }
 
@@ -292,8 +320,7 @@ private fun SuggestionCell(
 private fun PlaceCell(
     text: String,
     dayCount: Int?,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     Card(
@@ -327,13 +354,6 @@ private fun PlaceCell(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = strings.delete,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
             }
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
