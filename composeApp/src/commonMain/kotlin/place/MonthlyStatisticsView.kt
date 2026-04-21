@@ -49,7 +49,7 @@ fun MonthlyStatisticsView(
     year: Int,
     month: Int, // 1-12
     onBackClick: () -> Unit,
-    vm: MonthlyStatisticsViewModel = koinViewModel {
+    vm: MonthlyStatisticsViewModel = koinViewModel(key = placeName) {
         parametersOf(MonthlyStatisticsRoute(placeName, year, month))
     }
 ) {
@@ -58,9 +58,9 @@ fun MonthlyStatisticsView(
     val isDownloading by vm.isDownloading.collectAsState()
     val strings = LocalAppStrings.current
 
-    key(year, month) {
-        // Reload data when month or year changes
-        LaunchedEffect(year, month) {
+    key(placeName, year, month) {
+        // Reload data when place, month or year changes
+        LaunchedEffect(placeName, year, month) {
             vm.reloadStatistics(year = year, month = month)
         }
 
