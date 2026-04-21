@@ -35,6 +35,7 @@ import org.koin.core.parameter.parametersOf
 import place.components.DaySummaryRow
 import kotlin.math.roundToInt
 import components.AppHeader
+import core.utils.formatDecimal
 
 // Helper function to format temperature consistently
 private fun formatTemperature(value: Double?): String {
@@ -169,7 +170,7 @@ fun MonthlyStatisticsView(
                                 }
                                 currentStats.totalRainfall?.let {
                                     Text(
-                                        strings.totalRainfall("${"%.1f".format(it)}"),
+                                        strings.totalRainfall(formatDecimal(it)),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
