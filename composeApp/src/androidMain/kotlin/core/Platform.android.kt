@@ -64,28 +64,39 @@ actual fun deleteApiKeyPlatform() {
 }
 
 actual fun getVisualCrossingApiKey(): String {
-    // Try to get from BuildConfig (set at build time from gradle.properties)
-    val apiKey = BuildConfig.VISUAL_CROSSING_API_KEY
-    if (apiKey.isNotBlank() && !apiKey.contains("placeholder")) {
-        return apiKey
+    // 1. Runtime key set via Settings (highest priority)
+    val runtimeKey = WeatherApiKeyManager.getApiKey()
+    if (runtimeKey.isNotBlank() && !runtimeKey.contains("placeholder")) {
+        return runtimeKey
     }
-
-    // Development fallback: return a placeholder key
-    // NOTE: This will fail at runtime when calling Visual Crossing API unless a real key is set
-    // To use the weather feature, set VISUAL_CROSSING_API_KEY in gradle.properties
+    // 2. Build-time key from gradle.properties
+    val buildKey = BuildConfig.VISUAL_CROSSING_API_KEY
+    if (buildKey.isNotBlank() && !buildKey.contains("placeholder")) {
+        return buildKey
+    }
     Log.d("Platform: VISUAL_CROSSING_API_KEY not configured, using placeholder for development")
     return "placeholder-weather-key-not-configured"
 }
 
 actual fun saveWeatherApiKeyPlatform(key: String) {
-    // No-op on Android: uses BuildConfig at build time
-    // If we wanted to support runtime key saving on Android, we could use SharedPreferences
-    Log.d("Platform: saveWeatherApiKeyPlatform is no-op on Android (use gradle.properties)")
+    WeatherApiKeyManager.setApiKey(key)
+    val ctx = androidAppContext ?: run {
+        Log.d("Platform: androidAppContext not set - weather API key not persisted")
+        return
+    }
+    ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        .edit()
+        .putString("visual_crossing_api_key", key)
+        .apply()
+    Log.d("Platform: Visual Crossing API key saved to SharedPreferences")
 }
 
 actual fun deleteWeatherApiKeyPlatform() {
-    // No-op on Android
-    Log.d("Platform: deleteWeatherApiKeyPlatform is no-op on Android")
+    WeatherApiKeyManager.setApiKey("")
+    androidAppContext?.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        ?.edit()
+        ?.remove("visual_crossing_api_key")
+        ?.apply()
 }
 
 // Lazily obtained application context for SharedPreferences access.
@@ -116,4 +127,14 @@ actual fun loadLanguagePreference(): String? {
     val ctx = androidAppContext ?: return null
     return ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
         .getString("language_code", null)
+}
+
+fun loadWeatherApiKeyFromPreferences() {
+    val ctx = androidAppContext ?: return
+    val key = ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        .getString("visual_crossing_api_key", null)
+    if (!key.isNullOrBlank()) {
+        WeatherApiKeyManager.setApiKey(key)
+        Log.d("Platform: Visual Crossing API key loaded from SharedPreferences")
+    }
 }

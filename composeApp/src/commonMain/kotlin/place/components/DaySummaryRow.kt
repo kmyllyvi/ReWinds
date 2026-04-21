@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
 import core.degreesToCompass
 import place.DayWeatherSummary
+import core.utils.formatDecimal
 
 /**
  * A composable that displays a summary of weather for a single day in a row format.
@@ -173,5 +174,3 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
         }
     }
 }
-
-private fun formatDecimal(value: Double): String = "%.1f".format(value)

@@ -1,0 +1,5 @@
+-- Migration from schema version 3 to 4
+-- Adds station coordinates to WeatherResponse for KIM-149
+
+ALTER TABLE WeatherResponse ADD COLUMN stationLatitude REAL;
+ALTER TABLE WeatherResponse ADD COLUMN stationLongitude REAL;

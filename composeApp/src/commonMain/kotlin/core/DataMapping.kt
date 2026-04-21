@@ -13,6 +13,10 @@ class DataMapping {
         val resolvedAddress = response.resolvedAddress ?: response.address
         ?: throw IllegalArgumentException("Both resolvedAddress and address are null")
 
+        // Pick the primary station: prefer highest useCount, fall back to lowest distance
+        val primaryStation = response.stations?.values
+            ?.maxByOrNull { it.useCount ?: 0 }
+
         return WeatherResponseDb(
             resolvedAddress = resolvedAddress,
             queryCost = response.queryCost?.toLong(),
@@ -20,12 +24,35 @@ class DataMapping {
             longitude = response.longitude ?: Double.NaN,
             address = response.address,
             timezone = response.timezone,
-            tzoffset = response.tzoffset
+            tzoffset = response.tzoffset,
+            stationLatitude = primaryStation?.latitude,
+            stationLongitude = primaryStation?.longitude
         )
     }
     // mapper from db model to API response
 
     fun toWeatherResponse(dbResponse: WeatherResponseDb, days: List<Day>): WeatherResponse {
+        // Reconstruct a single-entry stations map from the persisted station coordinates
+        // so that downstream code (e.g. PlaceSummaryViewModel) can use the real station location.
+        val stations: Map<String, Station>? = if (
+            dbResponse.stationLatitude != null && dbResponse.stationLongitude != null
+        ) {
+            mapOf(
+                "primary" to Station(
+                    id = "primary",
+                    name = null,
+                    distance = null,
+                    latitude = dbResponse.stationLatitude,
+                    longitude = dbResponse.stationLongitude,
+                    useCount = null,
+                    quality = null,
+                    contribution = null
+                )
+            )
+        } else {
+            null
+        }
+
         return WeatherResponse(
             queryCost = dbResponse.queryCost?.toInt(),
             latitude = if (dbResponse.latitude == Double.NaN) null else dbResponse.latitude,
@@ -35,7 +62,7 @@ class DataMapping {
             timezone = dbResponse.timezone,
             tzoffset = dbResponse.tzoffset,
             days = days,
-            stations= null // Not included in the API response
+            stations = stations
         )
     }
 
