@@ -36,6 +36,13 @@ data class AppStrings(
     val apiKeyNotConfigured: String,
     val apiKeyNotConfiguredMessage: String,
     val warningIconDesc: String,
+    val goToSettings: String,
+    val claudeKeyInvalidTitle: String,
+    val claudeKeyInvalidMessage: String,
+    val vcKeyMissingTitle: String,
+    val vcKeyMissingMessage: String,
+    val vcKeyInvalidTitle: String,
+    val vcKeyInvalidMessage: String,
 
     // SettingsView
     val settingsTitle: String,
@@ -179,6 +186,13 @@ data class AppStrings(
             apiKeyNotConfigured = "API Key Not Configured",
             apiKeyNotConfiguredMessage = "To use the AI Chat feature, you need to set your Anthropic API key. Run the app with:\n\nexport ANTHROPIC_API_KEY=sk-ant-<your-key>\n\nThen restart the app.",
             warningIconDesc = "Warning",
+            goToSettings = "Go to Settings",
+            claudeKeyInvalidTitle = "Claude API Key Invalid",
+            claudeKeyInvalidMessage = "Your Anthropic API key was rejected (401/403). Please check your key in Settings.",
+            vcKeyMissingTitle = "Weather API Key Not Configured",
+            vcKeyMissingMessage = "A Visual Crossing API key is required to download weather data. Add your key in Settings.",
+            vcKeyInvalidTitle = "Weather API Key Invalid",
+            vcKeyInvalidMessage = "Your Visual Crossing API key was rejected (401/403). Please check your key in Settings.",
 
             // SettingsView
             settingsTitle = "Settings",
@@ -322,6 +336,13 @@ data class AppStrings(
             apiKeyNotConfigured = "API-Schl\u00FCssel nicht konfiguriert",
             apiKeyNotConfiguredMessage = "Um den KI-Chat zu nutzen, m\u00FCssen Sie Ihren Anthropic-API-Schl\u00FCssel festlegen. Starten Sie die App mit:\n\nexport ANTHROPIC_API_KEY=sk-ant-<Ihr-Schl\u00FCssel>\n\nStarten Sie die App dann neu.",
             warningIconDesc = "Warnung",
+            goToSettings = "Zu Einstellungen",
+            claudeKeyInvalidTitle = "Claude API-Schl\u00FCssel ung\u00FCltig",
+            claudeKeyInvalidMessage = "Ihr Anthropic-API-Schl\u00FCssel wurde abgelehnt (401/403). Bitte \u00FCberpr\u00FCfen Sie Ihren Schl\u00FCssel in den Einstellungen.",
+            vcKeyMissingTitle = "Wetter-API-Schl\u00FCssel nicht konfiguriert",
+            vcKeyMissingMessage = "Ein Visual-Crossing-API-Schl\u00FCssel wird ben\u00F6tigt. F\u00FCgen Sie Ihren Schl\u00FCssel in den Einstellungen hinzu.",
+            vcKeyInvalidTitle = "Wetter-API-Schl\u00FCssel ung\u00FCltig",
+            vcKeyInvalidMessage = "Ihr Visual-Crossing-API-Schl\u00FCssel wurde abgelehnt (401/403). Bitte \u00FCberpr\u00FCfen Sie Ihren Schl\u00FCssel in den Einstellungen.",
 
             // SettingsView
             settingsTitle = "Einstellungen",

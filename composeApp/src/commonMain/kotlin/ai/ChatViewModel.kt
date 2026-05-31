@@ -51,6 +51,10 @@ data class PendingDataFetch(
 
 /**
  * UI state for the chat interface.
+ *
+ * [showApiKeyMissingDialog] — Anthropic key is absent before sending.
+ * [showApiKeyInvalidError] — Anthropic API returned 401/403 (key invalid/expired).
+ * [error] — generic (non-auth) failure; shown as a dismissible banner without a Settings CTA.
  */
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -58,6 +62,7 @@ data class ChatUiState(
     val error: String? = null,
     val inputText: String = "",
     val showApiKeyMissingDialog: Boolean = false,
+    val showApiKeyInvalidError: Boolean = false,
     val pendingDataFetch: PendingDataFetch? = null
 )
 
@@ -220,6 +225,14 @@ class ChatViewModel(
                 persistMessage(assistantMessage)
 
                 Log.d("ChatViewModel: received response in ${result.totalTurns} turn(s), tools called: ${result.toolCallsMade}")
+            } catch (e: AnthropicException) {
+                if (e.httpStatus == 401 || e.httpStatus == 403) {
+                    Log.e("ChatViewModel: Anthropic auth error (${e.httpStatus})", e)
+                    _uiState.update { it.copy(isLoading = false, showApiKeyInvalidError = true) }
+                } else {
+                    Log.e("ChatViewModel: Anthropic API error", e)
+                    _uiState.update { it.copy(isLoading = false, error = "Error: ${e.message}") }
+                }
             } catch (e: Exception) {
                 Log.e("ChatViewModel: error sending message", e)
                 _uiState.update {
@@ -252,6 +265,13 @@ class ChatViewModel(
      */
     fun onApiKeyDialogDismissed() {
         _uiState.update { it.copy(showApiKeyMissingDialog = false) }
+    }
+
+    /**
+     * Called when the "API key invalid" error banner is dismissed.
+     */
+    fun onApiKeyInvalidErrorDismissed() {
+        _uiState.update { it.copy(showApiKeyInvalidError = false) }
     }
 
     /**
@@ -358,6 +378,14 @@ class ChatViewModel(
                 persistMessage(assistantMessage)
 
                 Log.d("ChatViewModel: Data fetch confirmed and query executed in ${result.totalTurns} turn(s)")
+            } catch (e: AnthropicException) {
+                if (e.httpStatus == 401 || e.httpStatus == 403) {
+                    Log.e("ChatViewModel: Anthropic auth error during data fetch confirmation (${e.httpStatus})", e)
+                    _uiState.update { it.copy(isLoading = false, showApiKeyInvalidError = true, pendingDataFetch = null) }
+                } else {
+                    Log.e("ChatViewModel: Anthropic API error during data fetch confirmation", e)
+                    _uiState.update { it.copy(isLoading = false, error = "Error: ${e.message}", pendingDataFetch = null) }
+                }
             } catch (e: Exception) {
                 Log.e("ChatViewModel: error during data fetch confirmation", e)
                 _uiState.update {

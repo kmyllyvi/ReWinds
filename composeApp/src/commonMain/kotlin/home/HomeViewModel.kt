@@ -7,6 +7,7 @@ import core.DatabaseExportImport
 import core.GeoSearchResult
 import core.Log
 import core.NetworkException
+import core.WeatherApiKeyManager
 import core.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -47,11 +48,18 @@ data class PlaceDisplayData(
  * @property showDebugMenu Whether to show the debug menu.
  * @property debugMessage The current debug message.
  */
+/**
+ * Distinguishes Visual Crossing key problems from generic network errors so the UI
+ * can offer a targeted "Go to Settings" CTA rather than a raw error message.
+ */
+enum class VcKeyErrorType { MISSING, INVALID }
+
 data class HomeUiState(
     val placeDisplayData: List<PlaceDisplayData> = emptyList(),
     val searchResults: List<GeoSearchResult> = emptyList(),
     val isSearching: Boolean = false,
     val error: String? = null,
+    val vcKeyError: VcKeyErrorType? = null,
     val showDeleteConfirmation: Boolean = false,
     val placeToDelete: String? = null,
     val showDebugMenu: Boolean = false,
@@ -170,6 +178,15 @@ class HomeViewModel(
                     weatherRepository.addPlaceFromSearch(place)
                 }
                 loadSavedPlaces()
+            } catch (e: IllegalStateException) {
+                // WeatherRepository throws this when the VC key is absent
+                _uiState.update { it.copy(vcKeyError = VcKeyErrorType.MISSING) }
+            } catch (e: NetworkException) {
+                if (e.httpStatus == 401 || e.httpStatus == 403) {
+                    _uiState.update { it.copy(vcKeyError = VcKeyErrorType.INVALID) }
+                } else {
+                    _uiState.update { it.copy(error = e.message) }
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
@@ -193,6 +210,13 @@ class HomeViewModel(
      */
     fun onErrorDismissed() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * Called when the VC key error banner is dismissed.
+     */
+    fun onVcKeyErrorDismissed() {
+        _uiState.update { it.copy(vcKeyError = null) }
     }
 
     /**
