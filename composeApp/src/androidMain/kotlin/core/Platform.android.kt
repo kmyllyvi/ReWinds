@@ -39,28 +39,41 @@ actual fun isAndroid(): Boolean = true
 actual fun isIOS(): Boolean = false
 
 actual fun getAnthropicApiKey(): String {
-    // Try to get from BuildConfig (set at build time from gradle.properties)
-    val apiKey = BuildConfig.ANTHROPIC_API_KEY
-    if (apiKey.isNotBlank() && !apiKey.contains("placeholder")) {
-        return apiKey
+    // 1. Runtime key set via Settings (highest priority — persisted across restarts)
+    val runtimeKey = androidAppContext?.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        ?.getString("anthropic_api_key", null)
+    if (!runtimeKey.isNullOrBlank() && !runtimeKey.contains("placeholder")) {
+        return runtimeKey
     }
 
-    // Development fallback: return a placeholder key
-    // NOTE: This will fail at runtime when calling Anthropic API unless a real key is set
-    // To use the chat feature, set ANTHROPIC_API_KEY in gradle.properties
+    // 2. Build-time key from gradle.properties
+    val buildKey = BuildConfig.ANTHROPIC_API_KEY
+    if (buildKey.isNotBlank() && !buildKey.contains("placeholder")) {
+        return buildKey
+    }
+
     Log.d("Platform: ANTHROPIC_API_KEY not configured, using placeholder for development")
     return "sk-placeholder-dev-key-not-configured"
 }
 
 actual fun saveApiKeyPlatform(key: String) {
-    // No-op on Android: uses BuildConfig at build time
-    // If we wanted to support runtime key saving on Android, we could use SharedPreferences
-    Log.d("Platform: saveApiKeyPlatform is no-op on Android (use gradle.properties)")
+    val ctx = androidAppContext ?: run {
+        Log.d("Platform: androidAppContext not set - Anthropic API key not persisted")
+        return
+    }
+    ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        .edit()
+        .putString("anthropic_api_key", key)
+        .apply()
+    Log.d("Platform: Anthropic API key saved to SharedPreferences")
 }
 
 actual fun deleteApiKeyPlatform() {
-    // No-op on Android
-    Log.d("Platform: deleteApiKeyPlatform is no-op on Android")
+    androidAppContext?.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
+        ?.edit()
+        ?.remove("anthropic_api_key")
+        ?.apply()
+    Log.d("Platform: Anthropic API key removed from SharedPreferences")
 }
 
 actual fun getVisualCrossingApiKey(): String {
