@@ -29,7 +29,7 @@ class NetworkService(enableNetworkLogs: Boolean): Networking {
         } catch (e: ClientRequestException) {
             val errorBody = e.response.bodyAsText()
             Log.e("API Client Error for $url: $errorBody", e)
-            throw NetworkException(errorBody, e)
+            throw NetworkException(errorBody, e, httpStatus = e.response.status.value)
         } catch (e: Exception) {
             Log.e("Generic Network Error for $url", e)
             throw NetworkException("Network request failed: ${e.message}", e)
@@ -43,7 +43,7 @@ class NetworkService(enableNetworkLogs: Boolean): Networking {
         } catch (e: ClientRequestException) {
             val errorBody = e.response.bodyAsText()
             Log.e("API Client Error for $url: $errorBody", e)
-            throw NetworkException(errorBody, e)
+            throw NetworkException(errorBody, e, httpStatus = e.response.status.value)
         } catch (e: Exception) {
             Log.e("Generic Network Error for $url", e)
             throw NetworkException("Network request failed: ${e.message}", e)

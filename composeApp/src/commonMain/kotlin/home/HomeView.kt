@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.Chat
@@ -78,6 +79,18 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
         ErrorDialog(
             error = it,
             onDismiss = vm::onErrorDismissed
+        )
+    }
+
+    // Show VC key error dialog
+    uiState.vcKeyError?.let { keyError ->
+        VcKeyErrorDialog(
+            errorType = keyError,
+            onGoToSettings = {
+                vm.onVcKeyErrorDismissed()
+                navigator.navigateToSettings()
+            },
+            onDismiss = vm::onVcKeyErrorDismissed
         )
     }
 
@@ -208,6 +221,39 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             }
         }
     }
+}
+
+@Composable
+private fun VcKeyErrorDialog(
+    errorType: VcKeyErrorType,
+    onGoToSettings: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val title = if (errorType == VcKeyErrorType.MISSING) strings.vcKeyMissingTitle else strings.vcKeyInvalidTitle
+    val message = if (errorType == VcKeyErrorType.MISSING) strings.vcKeyMissingMessage else strings.vcKeyInvalidMessage
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = strings.warningIconDesc,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            Button(onClick = onGoToSettings) {
+                Text(strings.goToSettings)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.dismiss)
+            }
+        }
+    )
 }
 
 @Composable

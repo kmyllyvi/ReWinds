@@ -135,7 +135,7 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
         )
     }
 
-    // API Key Missing Dialog
+    // API Key Missing Dialog — with "Go to Settings" primary action
     if (uiState.showApiKeyMissingDialog) {
         AlertDialog(
             onDismissRequest = { vm.onApiKeyDialogDismissed() },
@@ -151,8 +151,45 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
                 Text(strings.apiKeyNotConfiguredMessage)
             },
             confirmButton = {
-                Button(onClick = { vm.onApiKeyDialogDismissed() }) {
-                    Text(strings.ok)
+                Button(onClick = {
+                    vm.onApiKeyDialogDismissed()
+                    navigator.navigateToSettings()
+                }) {
+                    Text(strings.goToSettings)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.onApiKeyDialogDismissed() }) {
+                    Text(strings.dismiss)
+                }
+            }
+        )
+    }
+
+    // API Key Invalid Dialog — shown when Anthropic returns 401/403
+    if (uiState.showApiKeyInvalidError) {
+        AlertDialog(
+            onDismissRequest = { vm.onApiKeyInvalidErrorDismissed() },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = strings.warningIconDesc,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text(strings.claudeKeyInvalidTitle) },
+            text = { Text(strings.claudeKeyInvalidMessage) },
+            confirmButton = {
+                Button(onClick = {
+                    vm.onApiKeyInvalidErrorDismissed()
+                    navigator.navigateToSettings()
+                }) {
+                    Text(strings.goToSettings)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.onApiKeyInvalidErrorDismissed() }) {
+                    Text(strings.dismiss)
                 }
             }
         )

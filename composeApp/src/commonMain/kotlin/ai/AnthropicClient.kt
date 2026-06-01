@@ -61,7 +61,7 @@ class AnthropicClient(
     } catch (e: ClientRequestException) {
         val errorBody = e.response.bodyAsText()
         Log.e("AnthropicClient: API Client Error (${e.response.status}): $errorBody", e)
-        throw AnthropicException("Anthropic API error: ${e.response.status} - $errorBody", e)
+        throw AnthropicException("Anthropic API error: ${e.response.status} - $errorBody", e, httpStatus = e.response.status.value)
     } catch (e: AnthropicException) {
         throw e
     } catch (e: Exception) {
@@ -85,14 +85,16 @@ class AnthropicClient(
         if (response.status.value !in 200..299) {
             val errorBody = response.bodyAsText()
             Log.e("AnthropicClient: API error (${response.status}): $errorBody")
-            throw AnthropicException("Anthropic API error ${response.status}: $errorBody")
+            throw AnthropicException("Anthropic API error ${response.status}: $errorBody", httpStatus = response.status.value)
         }
 
         response.body()
     } catch (e: ClientRequestException) {
         val errorBody = e.response.bodyAsText()
         Log.e("AnthropicClient: API Client Error (${e.response.status}): $errorBody", e)
-        throw AnthropicException("Anthropic API error: ${e.response.status} - $errorBody", e)
+        throw AnthropicException("Anthropic API error: ${e.response.status} - $errorBody", e, httpStatus = e.response.status.value)
+    } catch (e: AnthropicException) {
+        throw e
     } catch (e: Exception) {
         Log.e("AnthropicClient: Generic error during message send: ${e.message}", e)
         throw AnthropicException("Failed to communicate with Anthropic API: ${e.message}", e)
@@ -100,9 +102,12 @@ class AnthropicClient(
 }
 
 /**
- * Exception thrown when Anthropic API communication fails.
+ * Thrown when Anthropic API communication fails.
+ * [httpStatus] is populated for HTTP-level failures (e.g. 401, 403) so callers
+ * can distinguish auth errors from generic API/connectivity problems.
  */
 class AnthropicException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
+    val httpStatus: Int? = null
 ) : Exception(message, cause)
