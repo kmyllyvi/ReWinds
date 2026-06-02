@@ -3,19 +3,15 @@ package core
 import com.km.rewinds.db.Day as DayDb
 import com.km.rewinds.db.Hour as HourDb
 import com.km.rewinds.db.WeatherResponse as WeatherResponseDb
+import com.km.rewinds.db.WeatherStation as WeatherStationDb
 
 // For mapping API data to DB model and vice versa
 class DataMapping {
 
     // mapper from API response to db model
     fun fromWeatherResponse(response: WeatherResponse): WeatherResponseDb {
-        // Ensure that the required fields are not null
         val resolvedAddress = response.resolvedAddress ?: response.address
-        ?: throw IllegalArgumentException("Both resolvedAddress and address are null")
-
-        // Pick the primary station: prefer highest useCount, fall back to lowest distance
-        val primaryStation = response.stations?.values
-            ?.maxByOrNull { it.useCount ?: 0 }
+            ?: throw IllegalArgumentException("Both resolvedAddress and address are null")
 
         return WeatherResponseDb(
             resolvedAddress = resolvedAddress,
@@ -24,33 +20,23 @@ class DataMapping {
             longitude = response.longitude ?: Double.NaN,
             address = response.address,
             timezone = response.timezone,
-            tzoffset = response.tzoffset,
-            stationLatitude = primaryStation?.latitude,
-            stationLongitude = primaryStation?.longitude
+            tzoffset = response.tzoffset
         )
     }
-    // mapper from db model to API response
 
-    fun toWeatherResponse(dbResponse: WeatherResponseDb, days: List<Day>): WeatherResponse {
-        // Reconstruct a single-entry stations map from the persisted station coordinates
-        // so that downstream code (e.g. PlaceSummaryViewModel) can use the real station location.
-        val stations: Map<String, Station>? = if (
-            dbResponse.stationLatitude != null && dbResponse.stationLongitude != null
-        ) {
-            mapOf(
-                "primary" to Station(
-                    id = "primary",
-                    name = null,
-                    distance = null,
-                    latitude = dbResponse.stationLatitude,
-                    longitude = dbResponse.stationLongitude,
-                    useCount = null,
-                    quality = null,
-                    contribution = null
-                )
-            )
-        } else {
+    /**
+     * Map DB row back to the API model, assembling the stations map from the joined WeatherStation rows.
+     * Passing an empty list produces a null stations map (consistent with "no station data").
+     */
+    fun toWeatherResponse(
+        dbResponse: WeatherResponseDb,
+        days: List<Day>,
+        stations: List<Station> = emptyList()
+    ): WeatherResponse {
+        val stationsMap: Map<String, Station>? = if (stations.isEmpty()) {
             null
+        } else {
+            stations.associateBy { it.id ?: it.name ?: "station_${stations.indexOf(it)}" }
         }
 
         return WeatherResponse(
@@ -62,7 +48,20 @@ class DataMapping {
             timezone = dbResponse.timezone,
             tzoffset = dbResponse.tzoffset,
             days = days,
-            stations = stations
+            stations = stationsMap
+        )
+    }
+
+    fun mapDbStationToStation(dbStation: WeatherStationDb): Station {
+        return Station(
+            id = dbStation.stationId,
+            name = dbStation.name,
+            latitude = dbStation.latitude,
+            longitude = dbStation.longitude,
+            distance = dbStation.distance,
+            quality = dbStation.quality?.toInt(),
+            useCount = dbStation.useCount?.toInt(),
+            contribution = dbStation.contribution
         )
     }
 

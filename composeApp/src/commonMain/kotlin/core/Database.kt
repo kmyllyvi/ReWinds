@@ -53,6 +53,12 @@ interface Database {
 
     // cleanup forecast data: remove any days after yesterday
     suspend fun cleanupForecastDays()
+
+    // Replace all WeatherStation rows for a place within a single transaction.
+    suspend fun upsertStations(place: String, stations: List<Station>)
+
+    // Return all persisted WeatherStation rows for a place (no network call).
+    suspend fun getStationsForPlace(place: String): List<Station>
 }
 
 class SqlDelightDatabase(
@@ -74,14 +80,16 @@ class SqlDelightDatabase(
                 ?: return@withContext null
 
             val dbDays = dbQuery.getDaysForWeatherResponse(place).executeAsList()
-
             val days = dbDays.map { dbDay ->
                 val dbHours = dbQuery.getHoursForDay(dbDay.id).executeAsList()
                 val hours = dbHours.map { dataMapping.mapHourDbToApiHour(it) }
                 dataMapping.mapDayDbToApiDay(dbDay, hours)
             }
 
-            dataMapping.toWeatherResponse(dbResponse, days)
+            val stations = dbQuery.getStationsForPlace(place).executeAsList()
+                .map { dataMapping.mapDbStationToStation(it) }
+
+            dataMapping.toWeatherResponse(dbResponse, days, stations)
         }
     }
 
@@ -92,7 +100,7 @@ class SqlDelightDatabase(
                 val existing = dbQuery.getWeatherResponseByResolvedAddress(dbResponse.resolvedAddress).executeAsOneOrNull()
 
                 if (existing == null) {
-                    // New place, insert everything
+                    // New place — insert the WeatherResponse row and all days/hours
                     dbQuery.insertWeatherResponse(
                         resolvedAddress = dbResponse.resolvedAddress,
                         queryCost = dbResponse.queryCost,
@@ -100,16 +108,14 @@ class SqlDelightDatabase(
                         longitude = dbResponse.longitude,
                         address = dbResponse.address,
                         timezone = dbResponse.timezone,
-                        tzoffset = dbResponse.tzoffset,
-                        stationLatitude = dbResponse.stationLatitude,
-                        stationLongitude = dbResponse.stationLongitude
+                        tzoffset = dbResponse.tzoffset
                     )
 
                     weatherResponse.days?.forEach { day ->
                         insertDayAndHours(day, dbResponse.resolvedAddress)
                     }
                 } else {
-                    // Existing place, only add new days
+                    // Existing place — only add days not already stored
                     val existingDays = dbQuery.getDaysForWeatherResponse(dbResponse.resolvedAddress).executeAsList()
                     val existingDateTimes = existingDays.map { it.datetime }.toSet()
                     val newDays = weatherResponse.days?.filter { it.datetime !in existingDateTimes } ?: emptyList()
@@ -118,7 +124,57 @@ class SqlDelightDatabase(
                         insertDayAndHours(day, dbResponse.resolvedAddress)
                     }
                 }
+
+                // Persist stations from the API response when present.
+                // addPlaceFromSearch includes stations in the response; day-range downloads do not.
+                val validStations = weatherResponse.stations?.values
+                    ?.filter { it.latitude != null && it.longitude != null }
+                    ?: emptyList()
+                if (validStations.isNotEmpty()) {
+                    dbQuery.deleteStationsForPlace(dbResponse.resolvedAddress)
+                    validStations.forEach { station ->
+                        dbQuery.insertWeatherStation(
+                            resolvedAddress = dbResponse.resolvedAddress,
+                            stationId = station.id,
+                            name = station.name,
+                            latitude = station.latitude!!,
+                            longitude = station.longitude!!,
+                            distance = station.distance,
+                            quality = station.quality?.toLong(),
+                            useCount = station.useCount?.toLong(),
+                            contribution = station.contribution
+                        )
+                    }
+                }
             }
+        }
+    }
+
+    override suspend fun upsertStations(place: String, stations: List<Station>) {
+        withContext(Dispatchers.IO) {
+            dbQuery.transaction {
+                dbQuery.deleteStationsForPlace(place)
+                stations.forEach { station ->
+                    dbQuery.insertWeatherStation(
+                        resolvedAddress = place,
+                        stationId = station.id,
+                        name = station.name,
+                        latitude = station.latitude!!,
+                        longitude = station.longitude!!,
+                        distance = station.distance,
+                        quality = station.quality?.toLong(),
+                        useCount = station.useCount?.toLong(),
+                        contribution = station.contribution
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun getStationsForPlace(place: String): List<Station> {
+        return withContext(Dispatchers.IO) {
+            dbQuery.getStationsForPlace(place).executeAsList()
+                .map { dataMapping.mapDbStationToStation(it) }
         }
     }
 

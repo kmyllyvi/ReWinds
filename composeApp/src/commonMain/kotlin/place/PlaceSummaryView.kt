@@ -101,9 +101,9 @@ fun PlaceSummaryView(
     vm: PlaceSummaryViewModel = koinViewModel(key = route.placeName) { org.koin.core.parameter.parametersOf(route) }
 ) {
     val uiState by vm.uiState.collectAsState()
-    val currentPlaceName = vm.placeName // Access it directly
+    val showMapModal by vm.isMapModalVisible.collectAsState()
+    val currentPlaceName = vm.placeName
     val strings = LocalAppStrings.current
-    var showMapModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.navigationEvent.collect { event ->
@@ -141,7 +141,7 @@ fun PlaceSummaryView(
                     )
                 }
                 IconButton(
-                    onClick = { showMapModal = true },
+                    onClick = { vm.showMapModal() },
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.primary)
@@ -186,7 +186,7 @@ fun PlaceSummaryView(
                 lat = success.latitude,
                 lon = success.longitude,
                 placeName = currentPlaceName,
-                onDismiss = { showMapModal = false }
+                onDismiss = { vm.dismissMapModal() }
             )
         }
     }

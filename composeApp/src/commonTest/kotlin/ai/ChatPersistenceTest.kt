@@ -244,6 +244,8 @@ private class FakeWeatherRepository : core.WeatherRepository {
         TestWeatherRepositoryFactory.createWeatherResponse(place.name)
     override suspend fun checkDataAvailability(place: String, fromDate: String, toDate: String): core.DataAvailabilityStatus =
         core.DataAvailabilityStatus.Available
+    override suspend fun fetchAndPersistStations(place: String): core.StationsResult = core.StationsResult.Empty
+    override suspend fun getPersistedStations(place: String): List<core.Station> = emptyList()
 }
 
 /**
