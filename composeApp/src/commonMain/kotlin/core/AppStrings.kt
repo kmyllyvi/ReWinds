@@ -65,6 +65,13 @@ data class AppStrings(
     val deleteKeyTitle: (String) -> String,
     val deleteKeyMessage: (String) -> String,
 
+    // StationMapModal
+    val noStationData: String,
+    val refreshStations: String,
+    val refreshStationsDesc: String,
+    val unknownStation: String,
+    val stationRefreshError: (String) -> String,
+
     // PlaceSummaryView
     val infoIconDesc: String,
     val downloadFullMonth: String,
@@ -218,6 +225,13 @@ data class AppStrings(
             deleteKeyTitle = { keyType -> "Delete $keyType?" },
             deleteKeyMessage = { keyType -> "This will remove your stored $keyType. You can add it again later from settings." },
 
+            // StationMapModal
+            noStationData = "No station data available",
+            refreshStations = "Refresh stations",
+            refreshStationsDesc = "Refresh weather station data",
+            unknownStation = "Unknown station",
+            stationRefreshError = { msg -> "Station refresh failed: $msg" },
+
             // PlaceSummaryView
             infoIconDesc = "Info",
             downloadFullMonth = "Download full month?",
@@ -370,6 +384,13 @@ data class AppStrings(
             visualCrossingApiUrl = "Holen Sie sich Ihren API-Schl\u00FCssel unter: https://www.visualcrossing.com/",
             deleteKeyTitle = { keyType -> "$keyType l\u00F6schen?" },
             deleteKeyMessage = { keyType -> "Dadurch wird Ihr gespeicherter $keyType entfernt. Sie k\u00F6nnen ihn sp\u00E4ter erneut \u00FCber die Einstellungen hinzuf\u00FCgen." },
+
+            // StationMapModal
+            noStationData = "Keine Stationsdaten verfügbar",
+            refreshStations = "Stationen aktualisieren",
+            refreshStationsDesc = "Wetterstationsdaten aktualisieren",
+            unknownStation = "Unbekannte Station",
+            stationRefreshError = { msg -> "Aktualisierung fehlgeschlagen: $msg" },
 
             // PlaceSummaryView
             infoIconDesc = "Info",
