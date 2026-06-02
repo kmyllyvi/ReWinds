@@ -226,7 +226,9 @@ private fun createSafeDataUri(html: String): String {
     return "data:text/html;base64,$base64Html"
 }
 
-// Simple base64 encoder using only standard characters
+// Simple base64 encoder using only standard characters.
+// Tracks bytes-read-per-triplet explicitly to avoid off-by-one padding errors
+// that would corrupt the trailing byte(s) when bytes.size % 3 != 2.
 private fun htmlToBase64(html: String): String {
     val base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     val bytes = html.map { it.code.toByte() }.toByteArray()
@@ -235,11 +237,10 @@ private fun htmlToBase64(html: String): String {
 
     while (i < bytes.size) {
         val b1 = bytes[i++].toInt() and 0xFF
-        val b2 = if (i < bytes.size) bytes[i++].toInt() and 0xFF else 0
-        val b3 = if (i < bytes.size) bytes[i++].toInt() and 0xFF else 0
-
-        val hasSecond = i - 1 < bytes.size
-        val hasThird = i < bytes.size
+        val hasB2 = i < bytes.size
+        val b2 = if (hasB2) bytes[i++].toInt() and 0xFF else 0
+        val hasB3 = i < bytes.size
+        val b3 = if (hasB3) bytes[i++].toInt() and 0xFF else 0
 
         val c1 = b1 shr 2
         val c2 = ((b1 and 0x3) shl 4) or (b2 shr 4)
@@ -248,8 +249,8 @@ private fun htmlToBase64(html: String): String {
 
         result.append(base64Alphabet[c1])
         result.append(base64Alphabet[c2])
-        result.append(if (hasSecond) base64Alphabet[c3] else '=')
-        result.append(if (hasThird) base64Alphabet[c4] else '=')
+        result.append(if (hasB2) base64Alphabet[c3] else '=')
+        result.append(if (hasB3) base64Alphabet[c4] else '=')
     }
 
     return result.toString()
