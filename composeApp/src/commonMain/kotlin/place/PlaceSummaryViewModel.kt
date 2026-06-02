@@ -82,11 +82,11 @@ class PlaceSummaryViewModel(
     private val _isRefreshingStations = MutableStateFlow(false)
     val isRefreshingStations: StateFlow<Boolean> = _isRefreshingStations.asStateFlow()
 
-    private val _isMapModalVisible = MutableStateFlow(false)
-    val isMapModalVisible: StateFlow<Boolean> = _isMapModalVisible.asStateFlow()
+    private val _showStationMap = MutableStateFlow(false)
+    val showStationMap: StateFlow<Boolean> = _showStationMap.asStateFlow()
 
-    fun showMapModal() { _isMapModalVisible.value = true }
-    fun dismissMapModal() { _isMapModalVisible.value = false }
+    fun openStationMap() { _showStationMap.value = true }
+    fun closeStationMap() { _showStationMap.value = false }
 
     fun setSelectedYear(year: Int?) {
         _selectedYear.value = year
