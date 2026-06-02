@@ -64,7 +64,10 @@ data class HomeUiState(
     val placeToDelete: String? = null,
     val showDebugMenu: Boolean = false,
     val debugMessage: String = "",
-    val importFilePath: String = ""
+    val importFilePath: String = "",
+    // True when WeatherApiKeyManager reports a valid VC key is present.
+    // Drives the onboarding nudge banner on the home screen.
+    val isWeatherKeyConfigured: Boolean = false
 )
 
 /**
@@ -111,6 +114,7 @@ class HomeViewModel(
     val navigationEvent = _navigationEvent.receiveAsFlow()
 
     init {
+        refreshWeatherKeyState()
         loadSavedPlaces()
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -142,6 +146,15 @@ class HomeViewModel(
                     _uiState.update { it.copy(searchResults = results) }
                 }
         }
+    }
+
+    /**
+     * Re-reads the VC key status from WeatherApiKeyManager.
+     * Called on init and whenever the home screen reappears (e.g. returning from Settings),
+     * so the nudge banner hides immediately after the user saves a key.
+     */
+    fun refreshWeatherKeyState() {
+        _uiState.update { it.copy(isWeatherKeyConfigured = WeatherApiKeyManager.hasValidKey()) }
     }
 
     private fun loadSavedPlaces() {
