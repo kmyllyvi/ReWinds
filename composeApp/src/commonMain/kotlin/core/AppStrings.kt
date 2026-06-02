@@ -28,6 +28,9 @@ data class AppStrings(
     val settingsIconDesc: String,
     val chatIconDesc: String,
     val daysStored: (Int) -> String,
+    val vcKeyNudgeTitle: String,
+    val vcKeyNudgeBody: String,
+    val vcKeyNudgeAction: String,
 
     // ChatView
     val chatTitle: String,
@@ -178,6 +181,9 @@ data class AppStrings(
             settingsIconDesc = "Settings",
             chatIconDesc = "AI Chat",
             daysStored = { count -> if (count == 1) "$count day stored data" else "$count days stored data" },
+            vcKeyNudgeTitle = "Weather data not set up",
+            vcKeyNudgeBody = "Add your Visual Crossing API key to start downloading weather data.",
+            vcKeyNudgeAction = "Set up now",
 
             // ChatView
             chatTitle = "Chat",
@@ -328,6 +334,9 @@ data class AppStrings(
             settingsIconDesc = "Einstellungen",
             chatIconDesc = "KI-Chat",
             daysStored = { count -> if (count == 1) "$count Tag gespeichert" else "$count Tage gespeichert" },
+            vcKeyNudgeTitle = "Wetterdaten nicht eingerichtet",
+            vcKeyNudgeBody = "Fügen Sie Ihren Visual Crossing API-Schlüssel hinzu, um Wetterdaten herunterladen zu können.",
+            vcKeyNudgeAction = "Jetzt einrichten",
 
             // ChatView
             chatTitle = "Chat",
