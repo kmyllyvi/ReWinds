@@ -66,6 +66,8 @@ class MockWeatherRepositoryForSearch : WeatherRepository {
     override suspend fun checkDataAvailability(place: String, fromDate: String, toDate: String): core.DataAvailabilityStatus {
         return core.DataAvailabilityStatus.Available
     }
+    override suspend fun fetchAndPersistStations(place: String): core.StationsResult = core.StationsResult.Empty
+    override suspend fun getPersistedStations(place: String): List<core.Station> = emptyList()
 }
 
 /**
@@ -78,6 +80,8 @@ class MockDatabaseForSearch : Database {
     override suspend fun getWeatherDataFor(placeName: String, date: String): WeatherResponse? = null
     override suspend fun deletePlace(placeName: String) {}
     override suspend fun cleanupForecastDays() {}
+    override suspend fun upsertStations(place: String, stations: List<core.Station>) {}
+    override suspend fun getStationsForPlace(place: String): List<core.Station> = emptyList()
 }
 
 /**

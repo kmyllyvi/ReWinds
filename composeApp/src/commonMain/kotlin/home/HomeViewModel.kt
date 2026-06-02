@@ -132,7 +132,12 @@ class HomeViewModel(
                 .onEach { _uiState.update { it.copy(isSearching = true) } }
                 .map {
                     if (it.isNotBlank()) {
-                        weatherRepository.searchForLocations(it)
+                        try {
+                            weatherRepository.searchForLocations(it)
+                        } catch (e: Exception) {
+                            Log.e("Search failed for query '$it'", e)
+                            emptyList()
+                        }
                     } else {
                         emptyList()
                     }

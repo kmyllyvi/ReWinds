@@ -151,6 +151,8 @@ class WeatherToolsMetricsTest {
             // Mock: always return Available for testing
             return core.DataAvailabilityStatus.Available
         }
+        override suspend fun fetchAndPersistStations(place: String): core.StationsResult = core.StationsResult.Empty
+        override suspend fun getPersistedStations(place: String): List<core.Station> = emptyList()
     }
 
     // ========== Valid Request Tests ==========

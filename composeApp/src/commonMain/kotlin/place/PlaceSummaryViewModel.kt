@@ -7,6 +7,8 @@ import core.Hour // Import Hour
 import core.KiteSpotterConfig
 import core.Log
 import core.PlaceSummaryRoute
+import core.Station
+import core.StationsResult
 import core.WeatherRepository
 import core.WeatherResponse
 import io.github.aakira.napier.Napier
@@ -32,7 +34,11 @@ sealed interface WeatherSummaryUiState {
         val latitude: Double? = null,
         val longitude: Double? = null,
         val currentPlaceDescription: String? = null,
-        val isDownloadingMonth: Boolean = false
+        val isDownloadingMonth: Boolean = false,
+        // Stations from the WeatherStation table. Empty list = no station data available.
+        val stations: List<StationDisplayData> = emptyList(),
+        // Non-null when the last station fetch/refresh failed (existing stations still shown).
+        val stationsError: String? = null
     ) : WeatherSummaryUiState
     data class Error(val message: String) : WeatherSummaryUiState
 }
@@ -73,6 +79,15 @@ class PlaceSummaryViewModel(
     private val _selectedYear = MutableStateFlow<Int?>(Int.MIN_VALUE)
     val selectedYear: StateFlow<Int?> = _selectedYear.asStateFlow()
 
+    private val _isRefreshingStations = MutableStateFlow(false)
+    val isRefreshingStations: StateFlow<Boolean> = _isRefreshingStations.asStateFlow()
+
+    private val _isMapModalVisible = MutableStateFlow(false)
+    val isMapModalVisible: StateFlow<Boolean> = _isMapModalVisible.asStateFlow()
+
+    fun showMapModal() { _isMapModalVisible.value = true }
+    fun dismissMapModal() { _isMapModalVisible.value = false }
+
     fun setSelectedYear(year: Int?) {
         _selectedYear.value = year
     }
@@ -100,30 +115,29 @@ class PlaceSummaryViewModel(
 
                 if (loadedData != null) {
                     weatherData = loadedData
-                    
-                    // Debug: Log all stations from Visual Crossing
-                    if (loadedData.stations != null && loadedData.stations.isNotEmpty()) {
-                        Log.d("🗺️ Visual Crossing Stations found: ${loadedData.stations.size}")
-                        loadedData.stations.forEach { (id, station) ->
-                            Log.d("  Station: ${station.name ?: "Unknown"} (ID: $id)")
-                            Log.d("    Lat: ${station.latitude}, Lon: ${station.longitude}")
-                            Log.d("    Distance: ${station.distance}km, Quality: ${station.quality}")
-                        }
-                    } else {
-                        Log.d("⚠️  No stations found in response - using geosearch coordinates")
-                    }
                     Log.d("Loaded ${weatherData?.days?.count()} days for $placeName")
 
                     val newStoredDays = loadedData.days?.toDayWeatherSummaryList() ?: emptyList()
 
+                    // Check for persisted stations. If none exist, auto-backfill once.
+                    val persistedStations = weatherRepository.getPersistedStations(placeName)
+                    val (displayStations, stationsError) = if (persistedStations.isEmpty()) {
+                        Log.d("No stations persisted for $placeName — triggering auto-backfill")
+                        backfillStations()
+                    } else {
+                        Log.d("${persistedStations.size} station(s) already persisted for $placeName")
+                        Pair(persistedStations.toDisplayData(), null)
+                    }
+
                     val newState = WeatherSummaryUiState.Success(
                         placeName = placeName,
                         storedDays = newStoredDays,
-                        latitude = loadedData.stations?.values?.firstOrNull()?.latitude ?: loadedData.latitude,
-                        longitude = loadedData.stations?.values?.firstOrNull()?.longitude ?: loadedData.longitude
+                        latitude = loadedData.latitude,
+                        longitude = loadedData.longitude,
+                        stations = displayStations,
+                        stationsError = stationsError
                     )
                     _uiState.value = newState
-                    // Update monthly average temperatures
                     _monthlyAverageTemps.value = calculateMonthlyAverageTemps(newStoredDays)
 
                 } else {
@@ -140,6 +154,63 @@ class PlaceSummaryViewModel(
             }
         }
     }
+
+    /**
+     * Re-fetch station data from the API and replace whatever is stored.
+     * Called both for auto-backfill (once when table is empty) and user-triggered refresh.
+     *
+     * Returns the display list and an optional error message to surface in the UI.
+     * On network error the previously-persisted rows are untouched, so we fall back to reading
+     * them from the repository again.
+     */
+    private suspend fun backfillStations(): Pair<List<StationDisplayData>, String?> {
+        return when (val result = weatherRepository.fetchAndPersistStations(placeName)) {
+            is StationsResult.Success -> {
+                Log.d("Station backfill success: ${result.stations.size} station(s) for $placeName")
+                Pair(result.stations.toDisplayData(), null)
+            }
+            is StationsResult.Empty -> {
+                Log.d("Station backfill: API returned no stations for $placeName")
+                Pair(emptyList(), null)
+            }
+            is StationsResult.Error -> {
+                Log.e("Station backfill failed for $placeName: ${result.message}")
+                // Existing rows were not touched — read back whatever is still in the DB.
+                val fallback = weatherRepository.getPersistedStations(placeName).toDisplayData()
+                Pair(fallback, result.message)
+            }
+        }
+    }
+
+    /**
+     * Manually re-fetch and replace station data. Sets isRefreshingStations while running.
+     * On error the previously-persisted rows remain, and an error message is shown in state.
+     */
+    fun refreshStations() {
+        viewModelScope.launch {
+            _isRefreshingStations.value = true
+            val (displayStations, error) = backfillStations()
+            val current = _uiState.value
+            if (current is WeatherSummaryUiState.Success) {
+                _uiState.value = current.copy(stations = displayStations, stationsError = error)
+            }
+            _isRefreshingStations.value = false
+        }
+    }
+
+    private fun List<Station>.toDisplayData(): List<StationDisplayData> =
+        mapNotNull { station ->
+            val lat = station.latitude ?: return@mapNotNull null
+            val lon = station.longitude ?: return@mapNotNull null
+            StationDisplayData(
+                name = station.name,
+                latitude = lat,
+                longitude = lon,
+                distance = station.distance,
+                quality = station.quality,
+                useCount = station.useCount
+            )
+        }
 
     // New helper to calculate the highest 3-hour rolling average wind speed
     private fun calculateMaxSustainedWindSpeed(hours: List<Hour>?): Double? {

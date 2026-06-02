@@ -5,9 +5,23 @@ CREATE TABLE WeatherResponse (
     longitude REAL NOT NULL,
     address TEXT,
     timezone TEXT,
-    tzoffset REAL,
-    stationLatitude REAL,
-    stationLongitude REAL
+    tzoffset REAL
+);
+
+-- One row per weather station per place. Replaces the single stationLatitude/stationLongitude
+-- pair that used to live on WeatherResponse (dropped in migration 4→5).
+CREATE TABLE WeatherStation (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    resolvedAddress TEXT NOT NULL,
+    stationId TEXT,
+    name TEXT,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    distance REAL,
+    quality INTEGER,
+    useCount INTEGER,
+    contribution REAL,
+    FOREIGN KEY(resolvedAddress) REFERENCES WeatherResponse(resolvedAddress) ON DELETE CASCADE
 );
 
 CREATE TABLE Day (
@@ -81,8 +95,19 @@ CREATE TABLE Hour (
 
 -- WeatherResponse Queries
 insertWeatherResponse:
-INSERT OR REPLACE INTO WeatherResponse(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset, stationLatitude, stationLongitude)
+INSERT OR REPLACE INTO WeatherResponse(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- WeatherStation Queries
+insertWeatherStation:
+INSERT INTO WeatherStation(resolvedAddress, stationId, name, latitude, longitude, distance, quality, useCount, contribution)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getStationsForPlace:
+SELECT * FROM WeatherStation WHERE resolvedAddress = ?;
+
+deleteStationsForPlace:
+DELETE FROM WeatherStation WHERE resolvedAddress = ?;
 
 getWeatherResponseByResolvedAddress:
 SELECT * FROM WeatherResponse WHERE resolvedAddress = ?;

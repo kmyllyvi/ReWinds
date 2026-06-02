@@ -31,6 +31,17 @@ data class GeoSearchResult(
     @SerialName("admin1") val region: String? = null // "admin1" is the region/state
 )
 
+/**
+ * Sealed result type for station fetch operations.
+ * Returned by fetchAndPersistStations so the ViewModel can distinguish the three outcomes
+ * without catching exceptions directly.
+ */
+sealed class StationsResult {
+    data class Success(val stations: List<Station>) : StationsResult()
+    object Empty : StationsResult()
+    data class Error(val message: String) : StationsResult()
+}
+
 interface WeatherRepository {
     suspend fun getSavedPlaceNames(): List<String>
     suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse?
@@ -42,6 +53,21 @@ interface WeatherRepository {
     // new search
     suspend fun searchForLocations(query: String): List<GeoSearchResult>
     suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse
+
+    /**
+     * Fetch weather stations for a place from the Visual Crossing API and persist them.
+     * Uses delete-then-insert in a single transaction (full replace), so calling this
+     * for a place that already has station rows replaces them cleanly.
+     *
+     * Stations with null lat/lon are silently skipped.
+     * On network error, existing persisted rows are left unchanged.
+     */
+    suspend fun fetchAndPersistStations(place: String): StationsResult
+
+    /**
+     * Return the persisted WeatherStation rows for a place without any network call.
+     */
+    suspend fun getPersistedStations(place: String): List<Station>
 
     /**
      * Check if data is available for a location and date range without fetching.
@@ -363,25 +389,38 @@ class WeatherRepositoryImpl(
     }
 
 
-    /**
-     * Verify a place exists on Visual Crossing and fetch its weather station(s).
-     * Called once when a new place is first searched.
-     * 
-     * @param place The place name to verify
-     * @return WeatherResponse with station data, or null if place not found
-     */
-    suspend fun verifyPlaceAndGetStations(place: String): WeatherResponse? {
+    override suspend fun fetchAndPersistStations(place: String): StationsResult {
         return withContext(Dispatchers.IO) {
             try {
-                // Request a single day with stations to verify place and get station coords
-                val url = "$visualcrossingUrl$place/today?unitGroup=metric&key=${getVisualCrossingApiKey()}&contentType=json&include=hours&include=stations"
+                // last0days returns zero weather days but still includes stations — lightweight call.
+                val url = "$visualcrossingUrl$place/last0days?unitGroup=metric&key=${getVisualCrossingApiKey()}&contentType=json&include=stations"
                 val response = doRequest(url)
-                Log.d("verifyPlaceAndGetStations - SUCCESS: Found ${"$"}{response.stations?.size ?: 0} stations")
-                response
+
+                // Filter out any stations that lack coordinates — they cannot be plotted.
+                val validStations = response.stations?.values
+                    ?.filter { it.latitude != null && it.longitude != null }
+                    ?: emptyList()
+
+                Log.d("fetchAndPersistStations - $place: ${validStations.size} valid station(s) from API")
+
+                if (validStations.isEmpty()) {
+                    StationsResult.Empty
+                } else {
+                    // Full replace: delete existing rows and insert the fresh list atomically.
+                    database.upsertStations(place, validStations)
+                    StationsResult.Success(validStations)
+                }
             } catch (e: Exception) {
-                Log.e("verifyPlaceAndGetStations - FAILED for place: $place", e)
-                null
+                Log.e("fetchAndPersistStations - FAILED for place: $place", e)
+                // Do NOT touch existing persisted rows on error.
+                StationsResult.Error(e.message ?: "Unknown error fetching stations")
             }
+        }
+    }
+
+    override suspend fun getPersistedStations(place: String): List<Station> {
+        return withContext(Dispatchers.IO) {
+            database.getStationsForPlace(place)
         }
     }
     override suspend fun checkDataAvailability(

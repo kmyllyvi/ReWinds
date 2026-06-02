@@ -38,6 +38,30 @@
 - Xcode config: `iosApp/Configuration/Config.xcconfig` (use `#include?` for optional includes)
 - BuildConfig API key: `composeApp/build.gradle.kts` buildTypes section
 
+## Station architecture (post KIM-258)
+
+- Stations stored in `WeatherStation` table (multi-row per place), not on `WeatherResponse`
+- `WeatherRepository.fetchAndPersistStations(place)` → `StationsResult` (Success/Empty/Error)
+- `WeatherRepository.getPersistedStations(place)` → reads without network
+- Auto-backfill in `PlaceSummaryViewModel.loadWeatherData()` when no stations persisted
+- `refreshStations()` on ViewModel for manual re-fetch (sets `isRefreshingStations` flag)
+- `StationDisplayData` in `place/` package for UI — separate from `core.Station`
+- `WeatherSummaryUiState.Success.stations: List<StationDisplayData>` — View reads from state only
+- Migration: 4.sqm (v4→v5) recreates WeatherResponse table without old station columns
+- Modal visibility state (`isMapModalVisible`) lives on ViewModel, not in View
+
+## Test isolation gotcha
+
+- `StandardTestDispatcher` + `viewModelScope.launch` coroutines: uncaught exceptions in `.map {}` operators leak to next test as `UncaughtExceptionsBeforeTest`
+- Fix: wrap `repository.call()` in try-catch inside `.map {}` so exceptions never escape
+- See `HomeViewModel.kt` search flow for the pattern
+
+## Build command notes
+
+- `./gradlew buildAndroidOnly` may fail with config-cache error (pre-existing, unrelated to code)
+- Use `./gradlew :composeApp:compileDebugKotlinAndroid` for a clean compile check
+- `./gradlew :composeApp:testDebugUnitTest` for unit tests
+
 ## Localization Pattern (KIM-57)
 
 ### CompositionLocal Architecture

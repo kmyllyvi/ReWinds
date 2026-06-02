@@ -1,0 +1,36 @@
+-- Migration from schema version 4 to 5 (KIM-258)
+-- Replaces single stationLatitude/stationLongitude columns on WeatherResponse
+-- with a proper WeatherStation table that holds one row per station per place.
+
+-- SQLite does not support DROP COLUMN before 3.35.0, so we recreate the table.
+CREATE TABLE WeatherResponse_new (
+    resolvedAddress TEXT NOT NULL PRIMARY KEY,
+    queryCost INTEGER,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    address TEXT,
+    timezone TEXT,
+    tzoffset REAL
+);
+
+INSERT INTO WeatherResponse_new(resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset)
+SELECT resolvedAddress, queryCost, latitude, longitude, address, timezone, tzoffset
+FROM WeatherResponse;
+
+DROP TABLE WeatherResponse;
+
+ALTER TABLE WeatherResponse_new RENAME TO WeatherResponse;
+
+CREATE TABLE WeatherStation (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    resolvedAddress TEXT NOT NULL,
+    stationId TEXT,
+    name TEXT,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    distance REAL,
+    quality INTEGER,
+    useCount INTEGER,
+    contribution REAL,
+    FOREIGN KEY(resolvedAddress) REFERENCES WeatherResponse(resolvedAddress) ON DELETE CASCADE
+);
