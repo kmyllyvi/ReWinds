@@ -38,6 +38,13 @@
 - Xcode config: `iosApp/Configuration/Config.xcconfig` (use `#include?` for optional includes)
 - BuildConfig API key: `composeApp/build.gradle.kts` buildTypes section
 
+## MV* Modal pattern
+
+- Modal visibility: `showXxx: StateFlow<Boolean>` on ViewModel (not `remember { mutableStateOf }` in View)
+- Open/close methods: `openXxx()` / `closeXxx()` on ViewModel
+- Modal composable receives all data as params + callbacks — no ViewModel access inside it
+- This pattern was enforced/renamed in KIM-259 (`isMapModalVisible` → `showStationMap`, etc.)
+
 ## Station architecture (post KIM-258)
 
 - Stations stored in `WeatherStation` table (multi-row per place), not on `WeatherResponse`
@@ -48,7 +55,8 @@
 - `StationDisplayData` in `place/` package for UI — separate from `core.Station`
 - `WeatherSummaryUiState.Success.stations: List<StationDisplayData>` — View reads from state only
 - Migration: 4.sqm (v4→v5) recreates WeatherResponse table without old station columns
-- Modal visibility state (`isMapModalVisible`) lives on ViewModel, not in View
+- Modal visibility state (`showStationMap: StateFlow<Boolean>`) lives on ViewModel, not in View
+- `openStationMap()` / `closeStationMap()` on ViewModel (renamed in KIM-259 from showMapModal/dismissMapModal)
 
 ## Test isolation gotcha
 

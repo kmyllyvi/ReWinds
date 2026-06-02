@@ -6,17 +6,20 @@ import core.Station
 import core.StationsResult
 import core.WeatherRepository
 import core.WeatherResponse
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -210,6 +213,199 @@ class PlaceSummaryViewModelStationTest {
         assertEquals("Network timeout", stateAfterError.stationsError)
     }
 
+    // ─── Additional QA coverage (KIM-258 gaps) ─────────────────────────────────
+
+    /**
+     * isRefreshingStations must flip true while fetchAndPersistStations is in flight
+     * and back to false once it settles. We gate the fake repo with a CompletableDeferred
+     * so we can observe both states deterministically.
+     */
+    @Test
+    fun refreshStations_togglesIsRefreshingStationsFlagAroundFetch() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = { StationsResult.Success(listOf(sampleStation)) },
+            preFetchSuspend = { gate.await() }
+        )
+
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+        assertFalse(vm.isRefreshingStations.value, "initial state should not be refreshing")
+
+        vm.refreshStations()
+        runCurrent() // let the launched coroutine start and reach the gate
+        assertTrue(vm.isRefreshingStations.value, "flag must be true while fetch is in flight")
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(vm.isRefreshingStations.value, "flag must be reset after fetch completes")
+    }
+
+    /**
+     * Regression guard for auto-backfill: after the very first load triggers backfill,
+     * subsequent reloads (e.g. refreshData() after a download) must not re-fire the
+     * station fetch — that would be an unintended extra API call.
+     */
+    @Test
+    fun autoBackfill_doesNotRefireOnReloadAfterStationsArePersisted() = runTest {
+        var fetchCalled = 0
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = emptyList(),
+            fetchStationsResult = {
+                fetchCalled++
+                StationsResult.Success(listOf(sampleStation))
+            }
+        )
+
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+        assertEquals(1, fetchCalled, "auto-backfill should fire once on initial load")
+
+        // Trigger a reload — stations are now persisted, so backfill must NOT fire again.
+        vm.refreshData()
+        advanceUntilIdle()
+        assertEquals(1, fetchCalled, "auto-backfill must not re-fire on subsequent loads")
+    }
+
+    /**
+     * Documents current behaviour for StationsResult.Empty when prior stations exist.
+     * The impl returns Pair(emptyList(), null), which clears the displayed list on refresh.
+     * If product later decides Empty should preserve prior rows, this test will flag it.
+     */
+    @Test
+    fun emptyResult_onRefreshWithPriorStations_clearsDisplayedList() = runTest {
+        // Prior stations persisted, so initial load won't fetch. Refresh returns Empty.
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = { StationsResult.Empty }
+        )
+
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        vm.refreshStations()
+        advanceUntilIdle()
+
+        val state = vm.uiState.value as? WeatherSummaryUiState.Success
+        assertNotNull(state)
+        assertTrue(
+            state.stations.isEmpty(),
+            "Current impl: Empty result on refresh replaces displayed list with empty"
+        )
+        assertNull(state.stationsError)
+    }
+
+    /**
+     * Concurrent / repeated refreshStations() calls must not crash or corrupt state.
+     * Each call launches its own coroutine; final state should reflect a successful fetch
+     * and isRefreshingStations should settle to false.
+     */
+    @Test
+    fun refreshStations_repeatedRapidCallsSettleCleanly() = runTest {
+        var callCount = 0
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = {
+                callCount++
+                StationsResult.Success(listOf(sampleStation.copy(id = "call-$callCount")))
+            }
+        )
+
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        // Fire three refreshes back-to-back without awaiting between them.
+        vm.refreshStations()
+        vm.refreshStations()
+        vm.refreshStations()
+        advanceUntilIdle()
+
+        assertEquals(3, callCount, "each refreshStations call should reach the repo")
+        assertFalse(vm.isRefreshingStations.value, "refreshing flag must settle to false")
+        val state = vm.uiState.value as? WeatherSummaryUiState.Success
+        assertNotNull(state)
+        assertEquals(1, state.stations.size, "final state should hold the last fetch's single station")
+    }
+
+    /**
+     * Defense-in-depth: the ViewModel's toDisplayData() also drops stations with null
+     * lat/lon (the repository is the primary filter, but this protects against any
+     * future code path that hands the VM raw stations).
+     */
+    @Test
+    fun viewModel_dropsStationsWithNullLatOrLon() = runTest {
+        val good = sampleStation
+        val noLat = sampleStation.copy(id = "noLat", latitude = null)
+        val noLon = sampleStation.copy(id = "noLon", longitude = null)
+        val noBoth = sampleStation.copy(id = "noBoth", latitude = null, longitude = null)
+
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(good, noLat, noLon, noBoth),
+            fetchStationsResult = { StationsResult.Success(listOf(good)) }
+        )
+
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        val state = vm.uiState.value as? WeatherSummaryUiState.Success
+        assertNotNull(state)
+        assertEquals(1, state.stations.size, "stations with null lat/lon must be filtered out")
+        assertEquals("Tarifa Airport", state.stations[0].name)
+    }
+
+    // ─── Map visibility (KIM-259) ────────────────────────────────────────────────
+
+    @Test
+    fun showStationMap_startsHidden() = runTest {
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = { StationsResult.Success(listOf(sampleStation)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        assertFalse(vm.showStationMap.value, "map should be hidden on init")
+    }
+
+    @Test
+    fun openStationMap_makesShowStationMapTrue() = runTest {
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = { StationsResult.Success(listOf(sampleStation)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        vm.openStationMap()
+
+        assertTrue(vm.showStationMap.value, "openStationMap() should set showStationMap to true")
+    }
+
+    @Test
+    fun closeStationMap_makesShowStationMapFalse() = runTest {
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(sampleStation),
+            fetchStationsResult = { StationsResult.Success(listOf(sampleStation)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        advanceUntilIdle()
+
+        vm.openStationMap()
+        assertTrue(vm.showStationMap.value)
+
+        vm.closeStationMap()
+        assertFalse(vm.showStationMap.value, "closeStationMap() should set showStationMap to false")
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private fun makePlaceSummaryViewModel(repo: WeatherRepository): PlaceSummaryViewModel {
@@ -227,7 +423,8 @@ class PlaceSummaryViewModelStationTest {
 private class FakeWeatherRepository(
     private val data: WeatherResponse,
     private var persistedStations: List<Station>,
-    private val fetchStationsResult: () -> StationsResult
+    private val fetchStationsResult: () -> StationsResult,
+    private val preFetchSuspend: (suspend () -> Unit)? = null
 ) : WeatherRepository {
 
     override suspend fun getSavedPlaceNames(): List<String> = listOf(data.resolvedAddress)
@@ -244,6 +441,7 @@ private class FakeWeatherRepository(
     override suspend fun getPersistedStations(place: String): List<Station> = persistedStations
 
     override suspend fun fetchAndPersistStations(place: String): StationsResult {
+        preFetchSuspend?.invoke()
         val result = fetchStationsResult()
         // Mirror the real impl: on success, update the in-memory persisted list
         if (result is StationsResult.Success) {
