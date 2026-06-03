@@ -58,6 +58,21 @@
 - Modal visibility state (`showStationMap: StateFlow<Boolean>`) lives on ViewModel, not in View
 - `openStationMap()` / `closeStationMap()` on ViewModel (renamed in KIM-259 from showMapModal/dismissMapModal)
 
+## Visual Crossing API JSON shape
+- `stations` is a JSON **object keyed by station ID**, NOT a JSON array
+- `WeatherResponse.stations: Map<String, Station>?` — already the correct Kotlin type
+- Deserializes correctly with `Json { ignoreUnknownKeys = true }`
+- Fakes bypass JSON deserialization — always add a JSON-layer test for new API response shapes:
+  `Json { ignoreUnknownKeys = true }.decodeFromString<WeatherResponse>(rawJson)`
+- See `StationsJsonDeserializationTest.kt` for the Ermatingen regression test pattern
+
+## htmlToBase64 bug (fixed in KIM-259)
+- Original code computed `hasSecond`/`hasThird` from `i` AFTER advancing the index
+- Produced wrong padding: `bytes.size % 3 == 0` lost last byte; `% 3 == 1` added phantom byte
+- iOS WKWebView is strict — rejects malformed base64 data-URIs → blank map, no station markers
+- Fix: capture `hasB2 = i < bytes.size` BEFORE the `if (hasB2) bytes[i++]` call
+- See `StationMapBase64Test.kt` for RFC-4648 regression coverage
+
 ## Test isolation gotcha
 
 - `StandardTestDispatcher` + `viewModelScope.launch` coroutines: uncaught exceptions in `.map {}` operators leak to next test as `UncaughtExceptionsBeforeTest`
