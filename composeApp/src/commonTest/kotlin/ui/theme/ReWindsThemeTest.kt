@@ -1,40 +1,37 @@
 package ui.theme
 
+import androidx.compose.ui.graphics.Color
+import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertEquals
 
-/**
- * Compile-time / runtime assertions that the palette token object is properly
- * initialised and that key colour values match the design spec exactly.
- */
 class ReWindsThemeTest {
+
+    private fun Color.toArgbInt(): Int =
+        ((alpha * 255).roundToInt() shl 24) or
+        ((red   * 255).roundToInt() shl 16) or
+        ((green * 255).roundToInt() shl  8) or
+         (blue  * 255).roundToInt()
 
     @Test
     fun tokenObjectIsNonNull() {
-        // If the object failed to initialise this would NPE before reaching the assertion.
         assertNotNull(ReWindsColors)
     }
 
     @Test
     fun pageBgMatchesSpec() {
-        // #030810 → ARGB 0xFF030810
-        assertEquals(0xFF030810.toInt(), ReWindsColors.pageBg.value.toInt().and(0xFFFFFFFF.toInt()).or(0xFF000000.toInt()))
+        assertEquals(0xFF030810.toInt(), ReWindsColors.pageBg.toArgbInt())
     }
 
     @Test
     fun accentBlueMatchesSpec() {
-        // #8ECFF0 → ARGB 0xFF8ECFF0
-        val expected = 0xFF8ECFF0.toInt()
-        val actual = ReWindsColors.accentBlue.value.toInt().and(0xFFFFFFFF.toInt()).or(0xFF000000.toInt())
-        assertEquals(expected, actual)
+        assertEquals(0xFF8ECFF0.toInt(), ReWindsColors.accentBlue.toArgbInt())
     }
 
     @Test
     fun allTokensHaveFullOpacity() {
-        // Every named palette colour must be fully opaque (alpha = 0xFF).
-        // Derived transparent tokens (containers) are excluded.
-        val opaqueTokens = listOf(
+        listOf(
             ReWindsColors.pageBg,
             ReWindsColors.surface,
             ReWindsColors.surfaceRaised,
@@ -46,10 +43,8 @@ class ReWindsThemeTest {
             ReWindsColors.accentBluePressed,
             ReWindsColors.attention,
             ReWindsColors.error,
-        )
-        opaqueTokens.forEach { color ->
-            val alpha = (color.value shr 56).and(0xFFu).toInt()
-            assertEquals(0xFF, alpha, "Expected full opacity for $color")
+        ).forEach { color ->
+            assertEquals(1.0f, color.alpha, "Expected full opacity for $color")
         }
     }
 }
