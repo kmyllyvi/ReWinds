@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReWinds — Design System</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; color: #fff; padding: 40px 28px; }
+  h1 { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #555; margin-bottom: 36px; }
+
+  .layout { display: flex; gap: 48px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* ── Phone ── */
+  .phone {
+    width: 280px;
+    flex-shrink: 0;
+    border-radius: 40px;
+    overflow: hidden;
+    border: 1px solid #1a3050;
+    background: #030810;
+    position: relative;
+  }
+  .isobar-bg {
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .phone > *:not(.isobar-bg) { position: relative; z-index: 1; }
+
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 12px; font-weight: 600; color: #7ab8d8; }
+  .nav-header { padding: 4px 20px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 26px; font-weight: 700; letter-spacing: -0.6px; color: #ddeef8; display: flex; align-items: center; gap: 10px; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(13,27,46,0.8); color: #8ecff0; }
+  .icon-btn.primary { background: #8ecff0; color: #030810; }
+  .header-icons { display: flex; gap: 8px; }
+  .search-bar { margin: 0 16px 20px; height: 44px; border-radius: 12px; display: flex; align-items: center; padding: 0 14px; font-size: 14px; color: #4a7a9b; background: rgba(13,27,46,0.85); border: 1px solid #1a3050; }
+  .section-label { padding: 0 20px 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4a7a9b; }
+  .list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .list-item { border-radius: 13px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; background: rgba(13,27,46,0.75); }
+  .item-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 8px; background: #8ecff0; }
+  .item-dot.warn { background: #e8a030; }
+  .item-dot.err  { background: #d95060; }
+  .item-name { font-size: 15px; font-weight: 600; color: #c8e8f8; }
+  .item-sub  { font-size: 11px; color: #5a90b0; margin-top: 2px; }
+  .item-arrow { font-size: 14px; color: #2a5070; }
+  .banner { margin: 0 16px 14px; padding: 11px 14px; border-radius: 12px; background: rgba(232,160,48,0.12); border: 1px solid rgba(232,160,48,0.28); font-size: 12px; color: #e8a030; line-height: 1.5; }
+  .err-banner { margin: 0 16px 14px; padding: 11px 14px; border-radius: 12px; background: rgba(217,80,96,0.12); border: 1px solid rgba(217,80,96,0.28); font-size: 12px; color: #d95060; line-height: 1.5; }
+
+  /* ── Palette panel ── */
+  .palette { flex: 1; min-width: 300px; }
+  .group { margin-bottom: 30px; }
+  .group-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #444; margin-bottom: 12px; }
+  .swatch-row { display: flex; flex-direction: column; gap: 8px; }
+  .swatch { display: flex; align-items: center; gap: 14px; }
+  .chip { width: 44px; height: 44px; border-radius: 11px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.07); }
+  .s-name { font-size: 13px; font-weight: 600; color: #bbb; }
+  .s-hex  { font-size: 11px; color: #555; font-family: monospace; margin-top: 1px; }
+  .s-role { font-size: 11px; color: #3a3a3a; margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<h1>ReWinds — Design System v1</h1>
+
+<div class="layout">
+
+  <!-- Phone -->
+  <div class="phone">
+    <!-- Isobar texture: eye anchored top-right off-screen -->
+    <svg class="isobar-bg" style="top:-700px;right:-600px;width:1400px;height:1400px;opacity:0.06" viewBox="0 0 1024 1024">
+      <ellipse cx="512" cy="512" rx="410" ry="296" fill="none" stroke="#8ecff0" stroke-width="9"/>
+      <ellipse cx="512" cy="512" rx="324" ry="233" fill="none" stroke="#8ecff0" stroke-width="9" transform="rotate(28,512,512)"/>
+      <ellipse cx="512" cy="512" rx="239" ry="171" fill="none" stroke="#8ecff0" stroke-width="8" transform="rotate(56,512,512)"/>
+      <ellipse cx="512" cy="512" rx="154" ry="108" fill="none" stroke="#8ecff0" stroke-width="7" transform="rotate(84,512,512)"/>
+      <ellipse cx="512" cy="512" rx="74"  ry="51"  fill="none" stroke="#8ecff0" stroke-width="6" transform="rotate(112,512,512)"/>
+    </svg>
+
+    <div class="status-bar"><span>12:47</span><span>● ▲ ▐▐</span></div>
+    <div class="nav-header">
+      <div class="nav-title">
+        <svg width="24" height="24" viewBox="0 0 1024 1024">
+          <defs><radialGradient id="logo" cx="50%" cy="45%" r="75%"><stop offset="0%" stop-color="#19304d"/><stop offset="100%" stop-color="#030810"/></radialGradient></defs>
+          <rect width="1024" height="1024" rx="200" fill="url(#logo)"/>
+          <ellipse cx="512" cy="512" rx="410" ry="296" fill="none" stroke="#8ecff0" stroke-width="44" opacity="0.40"/>
+          <ellipse cx="512" cy="512" rx="280" ry="200" fill="none" stroke="#8ecff0" stroke-width="40" opacity="0.65" transform="rotate(42,512,512)"/>
+          <ellipse cx="512" cy="512" rx="140" ry="96"  fill="none" stroke="#8ecff0" stroke-width="34" opacity="0.90" transform="rotate(84,512,512)"/>
+          <circle cx="512" cy="512" r="60" fill="#8ecff0"/>
+        </svg>
+        ReWinds
+      </div>
+      <div class="header-icons">
+        <div class="icon-btn">⚙</div>
+        <div class="icon-btn primary">💬</div>
+      </div>
+    </div>
+
+    <div class="search-bar">Search for new locations…</div>
+
+    <div class="banner">⚠ Strong wind warning — Tarifa · 68 km/h gusts forecast</div>
+
+    <div class="section-label">Saved Locations</div>
+    <div class="list">
+      <div class="list-item"><div><div class="item-name"><span class="item-dot"></span>Colico</div><div class="item-sub">48 days stored data</div></div><div class="item-arrow">›</div></div>
+      <div class="list-item"><div><div class="item-name"><span class="item-dot warn"></span>Tarifa</div><div class="item-sub">192 days · wind alert</div></div><div class="item-arrow">›</div></div>
+      <div class="list-item"><div><div class="item-name"><span class="item-dot"></span>Konstanz</div><div class="item-sub">1066 days stored data</div></div><div class="item-arrow">›</div></div>
+      <div class="list-item"><div><div class="item-name"><span class="item-dot err"></span>Helsinki Airport</div><div class="item-sub" style="color:#d95060">Sync failed</div></div><div class="item-arrow">›</div></div>
+    </div>
+
+    <div class="err-banner">✕ Could not refresh Helsinki Airport — check connection</div>
+  </div>
+
+  <!-- Palette -->
+  <div class="palette">
+
+    <div class="group">
+      <div class="group-title">Backgrounds</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#030810"></div><div><div class="s-name">Page BG</div><div class="s-hex">#030810</div><div class="s-role">App background, deepest layer</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#0d1b2e"></div><div><div class="s-name">Surface</div><div class="s-hex">#0d1b2e</div><div class="s-role">Cards, list items, inputs</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#19304d"></div><div><div class="s-name">Raised surface</div><div class="s-hex">#19304d</div><div class="s-role">Selected, hover, modals</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#1a3050"></div><div><div class="s-name">Border</div><div class="s-hex">#1a3050</div><div class="s-role">Dividers, input outlines</div></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Text</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#ddeef8"></div><div><div class="s-name">Primary</div><div class="s-hex">#ddeef8</div><div class="s-role">Headlines, item names</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#7ab8d8"></div><div><div class="s-name">Secondary</div><div class="s-hex">#7ab8d8</div><div class="s-role">Subtitles, metadata</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#4a7a9b"></div><div><div class="s-name">Tertiary / placeholder</div><div class="s-hex">#4a7a9b</div><div class="s-role">Placeholders, section headers, disabled</div></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Accent — Primary</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#8ecff0"></div><div><div class="s-name">Sky Blue</div><div class="s-hex">#8ecff0</div><div class="s-role">CTAs, active states, interactive icons</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#5bb3e0"></div><div><div class="s-name">Sky Blue pressed</div><div class="s-hex">#5bb3e0</div><div class="s-role">Button tap / press state</div></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Accent — Attention</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#e8a030"></div><div><div class="s-name">Amber</div><div class="s-hex">#e8a030</div><div class="s-role">Wind/weather alerts, warnings, highlights</div></div></div>
+        <div class="swatch"><div class="chip" style="background:rgba(232,160,48,0.15);border-color:rgba(232,160,48,0.3)"></div><div><div class="s-name">Amber tint</div><div class="s-hex">rgba(232,160,48, 15%)</div><div class="s-role">Alert banner backgrounds</div></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Semantic — Error</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#d95060"></div><div><div class="s-name">Error Red</div><div class="s-hex">#d95060</div><div class="s-role">Sync failures, destructive actions</div></div></div>
+        <div class="swatch"><div class="chip" style="background:rgba(217,80,96,0.15);border-color:rgba(217,80,96,0.3)"></div><div><div class="s-name">Error tint</div><div class="s-hex">rgba(217,80,96, 15%)</div><div class="s-role">Error banner backgrounds</div></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Background texture</div>
+      <div style="font-size:12px;color:#555;line-height:1.7">
+        Isobar spiral from logo — 1400px SVG, 6% opacity<br>
+        Eye anchored <strong style="color:#666">top-right, off-screen</strong><br>
+        Only outer curves visible → abstract flowing lines<br>
+        Stroke color: <span style="color:#8ecff0;font-family:monospace">#8ecff0</span> (same as primary accent)
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
