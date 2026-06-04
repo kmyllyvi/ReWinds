@@ -57,6 +57,7 @@ import core.GeoSearchResult
 import core.LocalAppStrings
 import core.isAndroid
 import core.Navigator
+import ui.components.IsobarBackground
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -109,6 +110,10 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             onDismiss = vm::onDeleteCancelled
         )
     }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Decorative isobar background — rendered first so it sits below all content.
+        IsobarBackground()
 
     Column(
         modifier = Modifier
@@ -238,7 +243,8 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 }
             }
         }
-    }
+    } // Column
+    } // Box
 }
 
 /**

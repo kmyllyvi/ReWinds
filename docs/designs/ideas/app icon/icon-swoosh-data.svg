@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="1024" x2="1024" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#180f40"/>
+      <stop offset="55%"  stop-color="#0d1f44"/>
+      <stop offset="100%" stop-color="#091830"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0" y1="654" x2="0" y2="882" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#4DD9C0" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#289787" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+
+  <!-- Trailing echo lines -->
+  <path d="M 80,842 C 250,410 717,353 922,387" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" opacity="0.12"/>
+  <path d="M 91,774 C 239,319 694,262 922,296" fill="none" stroke="white" stroke-width="20" stroke-linecap="round" opacity="0.28"/>
+
+  <!-- Main swoosh -->
+  <path d="M 91,705 C 228,216 671,159 922,205" fill="none" stroke="white" stroke-width="34" stroke-linecap="round"/>
+
+  <!-- Data bars (rounded top, increasing height left to right) -->
+  <!-- Bar 0: h=64 -->
+  <path d="M 114,882 L 114,835 A 17,17 0 0,1 131,818 L 177,818 A 17,17 0 0,1 194,835 L 194,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+  <!-- Bar 1: h=100 -->
+  <path d="M 222,882 L 222,799 A 17,17 0 0,1 239,782 L 285,782 A 17,17 0 0,1 302,799 L 302,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+  <!-- Bar 2: h=128 -->
+  <path d="M 330,882 L 330,771 A 17,17 0 0,1 347,754 L 393,754 A 17,17 0 0,1 410,771 L 410,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+  <!-- Bar 3: h=160 -->
+  <path d="M 438,882 L 438,739 A 17,17 0 0,1 455,722 L 501,722 A 17,17 0 0,1 518,739 L 518,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+  <!-- Bar 4: h=192 -->
+  <path d="M 546,882 L 546,707 A 17,17 0 0,1 563,690 L 609,690 A 17,17 0 0,1 626,707 L 626,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+  <!-- Bar 5: h=228 -->
+  <path d="M 654,882 L 654,671 A 17,17 0 0,1 671,654 L 717,654 A 17,17 0 0,1 734,671 L 734,882 Z" fill="url(#barGrad)" opacity="0.85"/>
+</svg>

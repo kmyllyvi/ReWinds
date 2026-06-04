@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReWinds — Screen Mockups</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; color: #fff; padding: 40px 28px 80px; }
+
+  h1 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #444; margin-bottom: 40px; }
+
+  .row { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .col-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #3a3a3a; padding: 0 2px; }
+
+  /* ── Phone shell ── */
+  .phone {
+    width: 280px;
+    height: 607px; /* ~390×844 ratio, scaled */
+    border-radius: 36px;
+    overflow: hidden;
+    border: 1px solid #1c3555;
+    background: #030810;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* isobar bg — reused across all screens */
+  .isobar {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 680px; height: 680px;
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .screen { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; }
+
+  /* ── Tab bar ── */
+  .tabbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 72px;
+    background: rgba(7,15,28,0.96);
+    border-top: 1px solid #1a3050;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    z-index: 10;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .tab-icon { font-size: 20px; line-height: 1; opacity: 0.35; }
+  .tab-icon.active { opacity: 1; }
+  .tab-label { font-size: 9px; letter-spacing: 0.04em; color: #4a7a9b; font-weight: 500; }
+  .tab-label.active { color: #8ecff0; }
+
+  /* ── Shared components ── */
+  .status-bar {
+    height: 38px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 18px;
+    font-size: 11px; font-weight: 600; color: #7ab8d8; flex-shrink: 0;
+  }
+  .nav-header {
+    padding: 2px 16px 12px; display: flex;
+    align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .nav-title {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.4px;
+    color: #ddeef8; display: flex; align-items: center; gap: 7px;
+  }
+  .nav-back {
+    font-size: 13px; color: #8ecff0; display: flex; align-items: center; gap: 4px; font-weight: 500;
+  }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; background: rgba(13,27,46,0.8); color: #8ecff0;
+  }
+  .icon-btn.accent { background: #8ecff0; color: #030810; }
+  .header-icons { display: flex; gap: 7px; }
+
+  .content { flex: 1; overflow: hidden; padding-bottom: 72px; }
+
+  .search-bar {
+    margin: 0 14px 14px; height: 40px; border-radius: 11px;
+    display: flex; align-items: center; padding: 0 12px;
+    font-size: 12px; color: #4a7a9b;
+    background: rgba(13,27,46,0.9); border: 1px solid #1a3050;
+  }
+  .section-label {
+    padding: 0 16px 8px; font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #4a7a9b;
+  }
+  .list { padding: 0 12px; display: flex; flex-direction: column; gap: 7px; }
+  .list-item {
+    border-radius: 12px; padding: 10px 13px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(13,27,46,0.8);
+  }
+  .item-left { display: flex; flex-direction: column; gap: 2px; }
+  .item-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block; margin-right: 6px; background: #8ecff0;
+    position: relative; top: -1px;
+  }
+  .item-dot.warn { background: #e8a030; }
+  .item-dot.err  { background: #d95060; }
+  .item-name { font-size: 13px; font-weight: 600; color: #c8e8f8; }
+  .item-sub  { font-size: 10px; color: #5a90b0; padding-left: 12px; }
+  .item-sub.err { color: #d95060; }
+  .item-arrow { font-size: 16px; color: #2a5070; }
+
+  .banner {
+    margin: 0 12px 12px; padding: 9px 12px; border-radius: 10px;
+    font-size: 10.5px; line-height: 1.5;
+  }
+  .banner.warn { background: rgba(232,160,48,0.12); border: 1px solid rgba(232,160,48,0.3); color: #e8a030; }
+  .banner.err  { background: rgba(217,80,96,0.12);  border: 1px solid rgba(217,80,96,0.3);  color: #d95060; }
+
+  /* ── Place detail specific ── */
+  .year-strip {
+    display: flex; gap: 6px; padding: 0 12px 14px; overflow: hidden;
+  }
+  .year-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    background: rgba(13,27,46,0.8); color: #5a90b0; white-space: nowrap;
+  }
+  .year-chip.active { background: #8ecff0; color: #030810; }
+
+  .month-grid { padding: 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .month-card {
+    border-radius: 12px; padding: 10px 11px 11px;
+    background: rgba(13,27,46,0.8);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .month-card.partial { background: rgba(25,40,60,0.6); }
+  .month-card.empty { background: rgba(13,27,46,0.35); opacity: 0.5; }
+  .month-name { font-size: 12px; font-weight: 700; color: #c8e8f8; }
+  .month-stat { font-size: 10px; color: #5a90b0; }
+  .month-days { font-size: 9px; color: #4a7a9b; margin-top: 2px; }
+
+  /* ── Month summary specific ── */
+  .summary-header {
+    padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .summary-month { font-size: 20px; font-weight: 700; color: #ddeef8; letter-spacing: -0.3px; }
+  .summary-sub { font-size: 11px; color: #5a90b0; }
+
+  .stat-grid { padding: 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+  .stat-card { border-radius: 11px; padding: 10px 11px; background: rgba(13,27,46,0.8); }
+  .stat-label { font-size: 9px; color: #4a7a9b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .stat-value { font-size: 18px; font-weight: 700; color: #c8e8f8; letter-spacing: -0.3px; }
+  .stat-unit { font-size: 10px; color: #5a90b0; font-weight: 400; }
+
+  .day-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; }
+  .day-row {
+    border-radius: 10px; padding: 8px 12px;
+    background: rgba(13,27,46,0.7);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .day-date { font-size: 11px; font-weight: 600; color: #c8e8f8; width: 54px; }
+  .day-bar-wrap { flex: 1; height: 4px; background: rgba(142,207,240,0.1); border-radius: 2px; margin: 0 10px; }
+  .day-bar { height: 4px; border-radius: 2px; background: #8ecff0; }
+  .day-bar.amber { background: #e8a030; }
+  .day-val { font-size: 11px; color: #7ab8d8; width: 44px; text-align: right; }
+
+  /* ── Map specific ── */
+  .map-canvas {
+    flex: 1;
+    background: #071420;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Fake map grid lines */
+  .map-canvas::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(142,207,240,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(142,207,240,0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  /* Fake map roads */
+  .map-road {
+    position: absolute;
+    background: rgba(142,207,240,0.08);
+    border-radius: 2px;
+  }
+  .map-pin {
+    position: absolute;
+    display: flex; flex-direction: column; align-items: center;
+    transform: translate(-50%, -100%);
+  }
+  .map-pin-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #030810;
+  }
+  .map-pin-stem {
+    width: 2px; height: 8px;
+    background: currentColor;
+    opacity: 0.7;
+  }
+  .map-pin.primary .map-pin-dot { background: #8ecff0; color: #8ecff0; }
+  .map-pin.secondary .map-pin-dot { background: #7ab8d8; color: #7ab8d8; opacity: 0.6; }
+  .map-station-banner {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 10px 14px 12px;
+    background: rgba(7,15,28,0.92);
+    border-top: 1px solid #1a3050;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .station-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(142,207,240,0.1); border: 1px solid rgba(142,207,240,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .station-text { font-size: 11px; color: #7ab8d8; line-height: 1.4; }
+  .station-text strong { color: #c8e8f8; font-weight: 600; }
+
+  /* ── Settings specific ── */
+  .settings-section { margin-bottom: 6px; }
+  .settings-section-label {
+    padding: 10px 14px 6px; font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #4a7a9b;
+  }
+  .settings-group {
+    margin: 0 12px; border-radius: 12px;
+    overflow: hidden; background: rgba(13,27,46,0.8);
+  }
+  .settings-row {
+    padding: 11px 14px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid rgba(26,48,80,0.6);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 13px; color: #c8e8f8; }
+  .settings-value { font-size: 12px; color: #5a90b0; display: flex; align-items: center; gap: 6px; }
+  .settings-chevron { color: #2a5070; font-size: 14px; }
+  .toggle {
+    width: 36px; height: 20px; border-radius: 10px; background: #8ecff0;
+    position: relative;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; right: 2px;
+    width: 16px; height: 16px; border-radius: 50%; background: #030810;
+  }
+  .toggle.off { background: #1a3050; }
+  .toggle.off::after { right: auto; left: 2px; }
+  .key-status {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; padding: 3px 8px; border-radius: 20px;
+  }
+  .key-status.ok { background: rgba(142,207,240,0.1); color: #8ecff0; border: 1px solid rgba(142,207,240,0.2); }
+  .key-status.missing { background: rgba(232,160,48,0.1); color: #e8a030; border: 1px solid rgba(232,160,48,0.2); }
+
+  /* ── Chat specific ── */
+  .chat-messages { padding: 0 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .msg { max-width: 80%; }
+  .msg.ai { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+  .msg-bubble {
+    padding: 9px 12px; border-radius: 14px; font-size: 11.5px; line-height: 1.5;
+  }
+  .msg.ai .msg-bubble { background: rgba(13,27,46,0.9); color: #c8e8f8; border-bottom-left-radius: 4px; }
+  .msg.user .msg-bubble { background: #8ecff0; color: #030810; border-bottom-right-radius: 4px; font-weight: 500; }
+  .msg-time { font-size: 9px; color: #3a5a70; margin-top: 3px; padding: 0 2px; }
+  .msg.user .msg-time { text-align: right; }
+
+  .chat-input-area {
+    position: absolute; bottom: 72px; left: 0; right: 0;
+    padding: 8px 12px;
+    background: rgba(7,15,28,0.95);
+    border-top: 1px solid #1a3050;
+  }
+  .chat-input {
+    height: 38px; border-radius: 20px; background: rgba(13,27,46,0.9);
+    border: 1px solid #1a3050; display: flex; align-items: center;
+    padding: 0 12px; justify-content: space-between;
+  }
+  .chat-input-txt { font-size: 12px; color: #4a7a9b; }
+  .send-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #8ecff0; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; color: #030810;
+  }
+</style>
+</head>
+<body>
+
+<h1>ReWinds · Screen Mockups v1 · Midnight Blue</h1>
+
+<!-- Isobar SVG template (reused inline per screen) -->
+<svg style="display:none">
+  <symbol id="iso" viewBox="0 0 1024 1024">
+    <ellipse cx="512" cy="512" rx="410" ry="296" fill="none" stroke="#8ecff0" stroke-width="9"/>
+    <ellipse cx="512" cy="512" rx="324" ry="233" fill="none" stroke="#8ecff0" stroke-width="9" transform="rotate(28,512,512)"/>
+    <ellipse cx="512" cy="512" rx="239" ry="171" fill="none" stroke="#8ecff0" stroke-width="8" transform="rotate(56,512,512)"/>
+    <ellipse cx="512" cy="512" rx="154" ry="108" fill="none" stroke="#8ecff0" stroke-width="7" transform="rotate(84,512,512)"/>
+    <ellipse cx="512" cy="512" rx="74"  ry="51"  fill="none" stroke="#8ecff0" stroke-width="6" transform="rotate(112,512,512)"/>
+  </symbol>
+</svg>
+
+<div class="row">
+
+  <!-- ══════════════════════════════════════════
+       1. HOME — Places
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">1 · Home — Places</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header">
+          <div class="nav-title">
+            <svg width="20" height="20" viewBox="0 0 1024 1024" style="flex-shrink:0">
+              <defs><radialGradient id="lg" cx="50%" cy="45%" r="75%"><stop offset="0%" stop-color="#19304d"/><stop offset="100%" stop-color="#030810"/></radialGradient></defs>
+              <rect width="1024" height="1024" rx="200" fill="url(#lg)"/>
+              <ellipse cx="512" cy="512" rx="410" ry="296" fill="none" stroke="#8ecff0" stroke-width="50" opacity="0.4"/>
+              <ellipse cx="512" cy="512" rx="260" ry="185" fill="none" stroke="#8ecff0" stroke-width="46" opacity="0.7" transform="rotate(40,512,512)"/>
+              <circle cx="512" cy="512" r="65" fill="#8ecff0"/>
+            </svg>
+            ReWinds
+          </div>
+          <div class="header-icons">
+            <!-- no extra icons; settings is a tab now -->
+          </div>
+        </div>
+        <div class="content">
+          <div class="search-bar">🔍 &nbsp;Search for new locations…</div>
+          <div class="banner warn">⚠&nbsp; Strong wind warning — Tarifa · 68 km/h gusts</div>
+          <div class="section-label">Saved Locations</div>
+          <div class="list">
+            <div class="list-item">
+              <div class="item-left">
+                <div class="item-name"><span class="item-dot"></span>Colico</div>
+                <div class="item-sub">48 days stored data</div>
+              </div>
+              <div class="item-arrow">›</div>
+            </div>
+            <div class="list-item">
+              <div class="item-left">
+                <div class="item-name"><span class="item-dot warn"></span>Tarifa</div>
+                <div class="item-sub">192 days · wind alert</div>
+              </div>
+              <div class="item-arrow">›</div>
+            </div>
+            <div class="list-item">
+              <div class="item-left">
+                <div class="item-name"><span class="item-dot"></span>Konstanz</div>
+                <div class="item-sub">1066 days stored data</div>
+              </div>
+              <div class="item-arrow">›</div>
+            </div>
+            <div class="list-item">
+              <div class="item-left">
+                <div class="item-name"><span class="item-dot err"></span>Helsinki Airport</div>
+                <div class="item-sub err">Sync failed</div>
+              </div>
+              <div class="item-arrow">›</div>
+            </div>
+            <div class="list-item">
+              <div class="item-left">
+                <div class="item-name"><span class="item-dot"></span>Melkbosstrand</div>
+                <div class="item-sub">32 days stored data</div>
+              </div>
+              <div class="item-arrow">›</div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab">
+            <div class="tab-icon active">📍</div>
+            <div class="tab-label active">Places</div>
+          </div>
+          <div class="tab">
+            <div class="tab-icon">💬</div>
+            <div class="tab-label">Chat</div>
+          </div>
+          <div class="tab">
+            <div class="tab-icon">⚙</div>
+            <div class="tab-label">Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       2. PLACE DETAIL — monthly grid
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">2 · Place Detail</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header">
+          <div class="nav-back">‹ &nbsp;Places</div>
+          <div class="nav-title" style="font-size:17px">Konstanz</div>
+          <div class="header-icons">
+            <div class="icon-btn accent">💬</div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="year-strip">
+            <div class="year-chip active">2026</div>
+            <div class="year-chip">2025</div>
+            <div class="year-chip">2024</div>
+            <div class="year-chip">2023</div>
+          </div>
+          <div class="month-grid">
+            <div class="month-card">
+              <div class="month-name">Jan 2026</div>
+              <div class="month-stat">Avg −0.2°C</div>
+              <div class="month-days">31 days</div>
+            </div>
+            <div class="month-card">
+              <div class="month-name">Feb 2026</div>
+              <div class="month-stat">Avg 4.8°C</div>
+              <div class="month-days">28 days</div>
+            </div>
+            <div class="month-card">
+              <div class="month-name">Mar 2026</div>
+              <div class="month-stat">Avg 5.9°C</div>
+              <div class="month-days">31 days</div>
+            </div>
+            <div class="month-card">
+              <div class="month-name">Apr 2026</div>
+              <div class="month-stat">Avg 11.4°C</div>
+              <div class="month-days">30 days</div>
+            </div>
+            <div class="month-card partial">
+              <div class="month-name">May 2026</div>
+              <div class="month-stat">Avg 15.1°C</div>
+              <div class="month-days">31 days</div>
+            </div>
+            <div class="month-card partial">
+              <div class="month-name">Jun 2026</div>
+              <div class="month-stat">Avg 18.3°C</div>
+              <div class="month-days" style="color:#e8a030">4 / 30 days</div>
+            </div>
+            <div class="month-card empty"><div class="month-name">Jul 2026</div><div class="month-days">No data</div></div>
+            <div class="month-card empty"><div class="month-name">Aug 2026</div><div class="month-days">No data</div></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><div class="tab-icon active">📍</div><div class="tab-label active">Places</div></div>
+          <div class="tab"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+          <div class="tab"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       3. MONTH SUMMARY
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">3 · Month Summary</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header">
+          <div class="nav-back">‹ &nbsp;Konstanz</div>
+          <div style="display:flex;gap:7px">
+            <div class="icon-btn">‹</div>
+            <div class="icon-btn">›</div>
+          </div>
+        </div>
+        <div class="summary-header">
+          <div class="summary-month">January 2026</div>
+          <div class="summary-sub">Konstanz · 31 days recorded</div>
+        </div>
+        <div class="content">
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Avg Temp</div>
+              <div class="stat-value">−0.2<span class="stat-unit">°C</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Max Wind</div>
+              <div class="stat-value">34<span class="stat-unit"> km/h</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Rainfall</div>
+              <div class="stat-value">48<span class="stat-unit"> mm</span></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Sunshine</div>
+              <div class="stat-value">62<span class="stat-unit"> hrs</span></div>
+            </div>
+          </div>
+          <div class="section-label" style="margin-top:8px">Daily Wind</div>
+          <div class="day-list">
+            <div class="day-row">
+              <div class="day-date">Jan 1</div>
+              <div class="day-bar-wrap"><div class="day-bar" style="width:30%"></div></div>
+              <div class="day-val">18 km/h</div>
+            </div>
+            <div class="day-row">
+              <div class="day-date">Jan 2</div>
+              <div class="day-bar-wrap"><div class="day-bar amber" style="width:72%"></div></div>
+              <div class="day-val" style="color:#e8a030">34 km/h</div>
+            </div>
+            <div class="day-row">
+              <div class="day-date">Jan 3</div>
+              <div class="day-bar-wrap"><div class="day-bar" style="width:20%"></div></div>
+              <div class="day-val">12 km/h</div>
+            </div>
+            <div class="day-row">
+              <div class="day-date">Jan 4</div>
+              <div class="day-bar-wrap"><div class="day-bar" style="width:45%"></div></div>
+              <div class="day-val">22 km/h</div>
+            </div>
+            <div class="day-row">
+              <div class="day-date">Jan 5</div>
+              <div class="day-bar-wrap"><div class="day-bar" style="width:15%"></div></div>
+              <div class="day-val">9 km/h</div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><div class="tab-icon active">📍</div><div class="tab-label active">Places</div></div>
+          <div class="tab"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+          <div class="tab"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       4. CHAT
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">4 · Chat</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header" style="padding-bottom:8px">
+          <div class="nav-title">Chat</div>
+          <div class="header-icons">
+            <div class="icon-btn" style="font-size:12px;color:#4a7a9b">✕</div>
+          </div>
+        </div>
+        <!-- context chip -->
+        <div style="padding:0 12px 10px;display:flex;gap:6px">
+          <div style="padding:4px 10px;border-radius:20px;background:rgba(142,207,240,0.1);border:1px solid rgba(142,207,240,0.2);font-size:10px;color:#8ecff0;font-weight:500">📍 Konstanz</div>
+          <div style="padding:4px 10px;border-radius:20px;background:rgba(13,27,46,0.8);border:1px solid #1a3050;font-size:10px;color:#4a7a9b">All places</div>
+        </div>
+        <div class="content" style="padding-bottom:110px">
+          <div class="chat-messages">
+            <div class="msg ai">
+              <div class="msg-bubble">Want to compare October across any of your current saved spots instead?</div>
+              <div class="msg-time">12:44</div>
+            </div>
+            <div class="msg user">
+              <div class="msg-bubble">what was the hottest day in 2025 in Konstanz?</div>
+              <div class="msg-time">12:45</div>
+            </div>
+            <div class="msg ai">
+              <div class="msg-bubble"><strong>Hottest day in Konstanz 2025:</strong><br>June 29 — 33.5°C<br><br>Runners-up: Aug 13 at 32.8°C, Aug 14 at 31.8°C.<br><br>Summer heat peaked late June/August — typical continental lakeside pattern.</div>
+              <div class="msg-time">12:45</div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input">
+            <div class="chat-input-txt">Ask about Konstanz…</div>
+            <div class="send-btn">▶</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><div class="tab-icon">📍</div><div class="tab-label">Places</div></div>
+          <div class="tab"><div class="tab-icon active">💬</div><div class="tab-label active">Chat</div></div>
+          <div class="tab"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       5. MAP
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">5 · Map</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header">
+          <div class="nav-back">‹ &nbsp;Konstanz</div>
+          <div class="nav-title" style="font-size:17px">Map</div>
+          <div style="width:32px"></div>
+        </div>
+        <!-- Map canvas -->
+        <div class="map-canvas" style="flex:1;margin-bottom:72px">
+          <!-- Road shapes -->
+          <div class="map-road" style="width:180px;height:3px;top:38%;left:10%;transform:rotate(-8deg)"></div>
+          <div class="map-road" style="width:3px;height:140px;top:20%;left:42%"></div>
+          <div class="map-road" style="width:220px;height:3px;top:62%;left:5%;transform:rotate(4deg)"></div>
+          <div class="map-road" style="width:3px;height:100px;top:48%;left:68%"></div>
+          <div class="map-road" style="width:130px;height:2px;top:80%;left:30%;transform:rotate(-5deg)"></div>
+          <!-- Water body hint -->
+          <div style="position:absolute;bottom:18%;left:-10%;width:55%;height:35%;background:rgba(142,207,240,0.04);border-radius:40% 60% 50% 30%"></div>
+          <!-- Place pin — Konstanz (selected) -->
+          <div class="map-pin primary" style="left:44%;top:54%">
+            <div class="map-pin-dot"></div>
+            <div class="map-pin-stem" style="background:#8ecff0"></div>
+          </div>
+          <!-- Weather station pins -->
+          <div class="map-pin secondary" style="left:38%;top:42%">
+            <div class="map-pin-dot" style="width:8px;height:8px;background:rgba(122,184,216,0.5);border-color:transparent"></div>
+            <div class="map-pin-stem" style="background:#7ab8d8;height:5px"></div>
+          </div>
+          <div class="map-pin secondary" style="left:55%;top:48%">
+            <div class="map-pin-dot" style="width:8px;height:8px;background:rgba(122,184,216,0.5);border-color:transparent"></div>
+            <div class="map-pin-stem" style="background:#7ab8d8;height:5px"></div>
+          </div>
+          <div class="map-pin secondary" style="left:50%;top:68%">
+            <div class="map-pin-dot" style="width:8px;height:8px;background:rgba(122,184,216,0.5);border-color:transparent"></div>
+            <div class="map-pin-stem" style="background:#7ab8d8;height:5px"></div>
+          </div>
+          <!-- Station info banner (above tab bar) -->
+          <div class="map-station-banner">
+            <div class="station-icon">📡</div>
+            <div class="station-text">
+              <strong>Data from 3 weather stations</strong><br>
+              Closest station 2.3 km away
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><div class="tab-icon active">📍</div><div class="tab-label active">Places</div></div>
+          <div class="tab"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+          <div class="tab"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       6. SETTINGS
+  ══════════════════════════════════════════ -->
+  <div class="col">
+    <div class="col-label">6 · Settings</div>
+    <div class="phone">
+      <svg class="isobar"><use href="#iso"/></svg>
+      <div class="screen">
+        <div class="status-bar"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+        <div class="nav-header">
+          <div class="nav-title">Settings</div>
+        </div>
+        <div class="content">
+          <div class="settings-section">
+            <div class="settings-section-label">General</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-label">Language</div>
+                <div class="settings-value">English <span class="settings-chevron">›</span></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Units</div>
+                <div class="settings-value">Metric <span class="settings-chevron">›</span></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Wind speed</div>
+                <div class="settings-value">km/h <span class="settings-chevron">›</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-label">API Keys</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div>
+                  <div class="settings-label">Anthropic</div>
+                  <div style="font-size:10px;color:#4a7a9b;margin-top:2px">AI chat feature</div>
+                </div>
+                <div class="key-status ok">✓ Configured</div>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-label">Visual Crossing</div>
+                  <div style="font-size:10px;color:#4a7a9b;margin-top:2px">Weather data</div>
+                </div>
+                <div class="key-status ok">✓ Configured</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-label">Data</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-label">Auto-refresh</div>
+                <div class="toggle"></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Refresh on Wi-Fi only</div>
+                <div class="toggle off"></div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label">Export data</div>
+                <div class="settings-value"><span class="settings-chevron">›</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-label">About</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-label">Version</div>
+                <div class="settings-value">1.0.0</div>
+              </div>
+              <div class="settings-row">
+                <div class="settings-label" style="color:#d95060">Delete all data</div>
+                <div class="settings-chevron">›</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><div class="tab-icon">📍</div><div class="tab-label">Places</div></div>
+          <div class="tab"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+          <div class="tab"><div class="tab-icon active">⚙</div><div class="tab-label active">Settings</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

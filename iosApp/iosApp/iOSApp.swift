@@ -62,7 +62,10 @@ struct iOSApp: App {
 
 	var body: some Scene {
 		WindowGroup {
+			// Force dark mode so system chrome (status bar, home indicator) always matches
+			// the Midnight Blue theme regardless of the device's system light/dark setting.
 			ContentView()
+				.preferredColorScheme(.dark)
 		}
 	}
 }

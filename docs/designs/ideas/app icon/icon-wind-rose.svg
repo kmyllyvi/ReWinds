@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1c4480"/>
+      <stop offset="100%" stop-color="#081525"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+
+  <!-- Decorative rings -->
+  <circle cx="512" cy="512" r="410" fill="none" stroke="white" stroke-width="6" opacity="0.10"/>
+  <circle cx="512" cy="512" r="319" fill="none" stroke="white" stroke-width="6" opacity="0.06"/>
+
+  <!-- Cardinal petals (white) — N, E, S, W -->
+  <!-- N -->
+  <polygon points="512,142 449,265 512,387 575,265" fill="white" opacity="1.00"/>
+  <!-- E -->
+  <polygon points="512,142 449,265 512,387 575,265" fill="white" opacity="0.95" transform="rotate(90,512,512)"/>
+  <!-- S -->
+  <polygon points="512,142 449,265 512,387 575,265" fill="white" opacity="0.45" transform="rotate(180,512,512)"/>
+  <!-- W -->
+  <polygon points="512,142 449,265 512,387 575,265" fill="white" opacity="0.45" transform="rotate(270,512,512)"/>
+
+  <!-- Intercardinal petals (teal) — NE, SE, SW, NW -->
+  <!-- NE -->
+  <polygon points="512,239 466,325 512,410 558,325" fill="#3DD9C0" opacity="0.95" transform="rotate(45,512,512)"/>
+  <!-- SE -->
+  <polygon points="512,239 466,325 512,410 558,325" fill="#3DD9C0" opacity="0.55" transform="rotate(135,512,512)"/>
+  <!-- SW -->
+  <polygon points="512,239 466,325 512,410 558,325" fill="#3DD9C0" opacity="0.45" transform="rotate(225,512,512)"/>
+  <!-- NW -->
+  <polygon points="512,239 466,325 512,410 558,325" fill="#3DD9C0" opacity="0.70" transform="rotate(315,512,512)"/>
+
+  <!-- Center bullseye -->
+  <circle cx="512" cy="512" r="80" fill="#0d1f3c"/>
+  <circle cx="512" cy="512" r="80" fill="none" stroke="white" stroke-width="8" opacity="0.65"/>
+  <circle cx="512" cy="512" r="26" fill="white"/>
+</svg>

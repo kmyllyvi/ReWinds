@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -336,11 +335,11 @@ private fun MonthCardForGrid(
     val isPartiallyLoaded = missingDaysCount > 0 && presentDaysCount > 0
     val hasNoData = presentDaysCount == 0
 
-    // Color based on completion status
+    // Background tint reflects data completeness: accent / attention / muted surface.
     val backgroundColor = when {
-        isFullyLoaded -> Color(0xFFe2f2ce) // Light green - fully loaded
-        isPartiallyLoaded -> Color(0xFFf5e6cc) // Light tan/orange - partially loaded
-        else -> Color(0xFFF0F0F0) // Light gray - no data
+        isFullyLoaded    -> MaterialTheme.colorScheme.primaryContainer
+        isPartiallyLoaded -> MaterialTheme.colorScheme.tertiaryContainer
+        else             -> MaterialTheme.colorScheme.surfaceVariant
     }
 
     Box(

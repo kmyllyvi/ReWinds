@@ -49,6 +49,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     viewModelOf(::MonthlyStatisticsViewModel)
     viewModelOf(::ChatViewModel)
     viewModelOf(::SettingsViewModel)
+    viewModelOf(::TabNavigationViewModel)
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {
