@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import components.AppTheme
+import ui.theme.ReWindsTheme
 import core.AppStrings
 import core.Language
 import core.LanguageManager
@@ -32,7 +32,7 @@ fun AppContent(viewModel: AppViewModel = koinViewModel()) {
     val strings = if (language == Language.GERMAN) AppStrings.German else AppStrings.English
 
     CompositionLocalProvider(LocalAppStrings provides strings) {
-        AppTheme {
+        ReWindsTheme {
             Column(
                 modifier = Modifier
                     .fillMaxSize(),
