@@ -101,7 +101,8 @@ fun PlaceSummaryView(
     vm: PlaceSummaryViewModel = koinViewModel(key = route.placeName) { org.koin.core.parameter.parametersOf(route) }
 ) {
     val uiState by vm.uiState.collectAsState()
-    val showMapModal by vm.isMapModalVisible.collectAsState()
+    val showMapModal by vm.showStationMap.collectAsState()
+    val isRefreshingStations by vm.isRefreshingStations.collectAsState()
     val currentPlaceName = vm.placeName
     val strings = LocalAppStrings.current
 
@@ -141,7 +142,7 @@ fun PlaceSummaryView(
                     )
                 }
                 IconButton(
-                    onClick = { vm.showMapModal() },
+                    onClick = { vm.openStationMap() },
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.primary)
@@ -186,7 +187,11 @@ fun PlaceSummaryView(
                 lat = success.latitude,
                 lon = success.longitude,
                 placeName = currentPlaceName,
-                onDismiss = { vm.dismissMapModal() }
+                stations = success.stations,
+                isRefreshingStations = isRefreshingStations,
+                stationsError = success.stationsError,
+                onRefreshStations = { vm.refreshStations() },
+                onDismiss = { vm.closeStationMap() }
             )
         }
     }
