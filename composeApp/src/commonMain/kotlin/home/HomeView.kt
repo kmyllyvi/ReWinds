@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
@@ -36,13 +35,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -190,35 +186,10 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 // Places list
                 if (uiState.placeDisplayData.isNotEmpty()) {
                     items(uiState.placeDisplayData, key = { it.name }) { place ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    vm.onDeleteRequest(place.name)
-                                }
-                                false // always snap back — dialog handles actual deletion
-                            }
+                        PlaceRow(
+                            place = place,
+                            onClick = { vm.onSavedPlaceSelected(place.name) }
                         )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            enableDismissFromStartToEnd = false,
-                            backgroundContent = {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                                        .background(MaterialTheme.colorScheme.error, RoundedCornerShape(13.dp))
-                                        .padding(horizontal = 20.dp),
-                                    contentAlignment = Alignment.CenterEnd
-                                ) {
-                                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.White)
-                                }
-                            }
-                        ) {
-                            PlaceRow(
-                                place = place,
-                                onClick = { vm.onSavedPlaceSelected(place.name) }
-                            )
-                        }
                     }
                 }
 
@@ -362,7 +333,7 @@ private fun PlacesSearchBar(
     onSuggestionSelected: (GeoSearchResult) -> Unit
 ) {
     val strings = LocalAppStrings.current
-    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 0.dp, bottom = 4.dp)) {
         TextField(
             value = searchText,
             onValueChange = onSearchTextChange,
