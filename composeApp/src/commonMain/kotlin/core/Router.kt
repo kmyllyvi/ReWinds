@@ -3,6 +3,7 @@ package core
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -133,11 +134,10 @@ private fun TabBar(activeTab: AppTab, onTabSelected: (AppTab) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
         NavigationBar(
-            modifier = Modifier.height(TabBarHeight),
+            modifier = Modifier.heightIn(min = TabBarHeight),
             containerColor = TabBarBg,
             contentColor = TabBarActive,
-            tonalElevation = 0.dp,
-            windowInsets = WindowInsets(0)
+            tonalElevation = 0.dp
         ) {
             tabItems.forEach { item ->
                 NavigationBarItem(
