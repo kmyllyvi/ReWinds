@@ -35,7 +35,8 @@ data class CalculatedStats(
     val daysOfInterestCount: Int = 0,
     val filterSummary: String = "",
     val totalRainfall: Double? = null,
-    val totalSolarEnergy: Double? = null
+    val totalSolarEnergy: Double? = null,
+    val averageSustainedWindSpeed: Double? = null
 )
 
 class MonthlyStatisticsViewModel(
@@ -57,6 +58,16 @@ class MonthlyStatisticsViewModel(
 
     private val _isDownloading = MutableStateFlow(false)
     val isDownloading: StateFlow<Boolean> = _isDownloading.asStateFlow()
+
+    private val _year = MutableStateFlow(route.year)
+    val year: StateFlow<Int> = _year.asStateFlow()
+
+    private val _month = MutableStateFlow(route.month)
+    val month: StateFlow<Int> = _month.asStateFlow()
+
+    /** Index into [dailySummaries] of the day with the peak sustained wind speed, or -1 when none. */
+    private val _peakWindDayIndex = MutableStateFlow(-1)
+    val peakWindDayIndex: StateFlow<Int> = _peakWindDayIndex.asStateFlow()
 
     private var filter: DaysOfInterestFilter = loadFilter()
 
@@ -81,14 +92,39 @@ class MonthlyStatisticsViewModel(
         loadStatistics()
     }
 
+    /** Steps the visible month one back, wrapping into the previous year at January. */
+    fun navigateToPreviousMonth() {
+        if (currentMonth == 1) {
+            currentMonth = 12
+            currentYear -= 1
+        } else {
+            currentMonth -= 1
+        }
+        loadStatistics()
+    }
+
+    /** Steps the visible month one forward, wrapping into the next year at December. */
+    fun navigateToNextMonth() {
+        if (currentMonth == 12) {
+            currentMonth = 1
+            currentYear += 1
+        } else {
+            currentMonth += 1
+        }
+        loadStatistics()
+    }
+
     private fun loadStatistics() {
         filter = loadFilter()
+        _year.value = currentYear
+        _month.value = currentMonth
         viewModelScope.launch {
 
             // Now use the 'this.placeName', 'this.currentYear', 'this.currentMonth' properties
             val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)
             val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, currentYear, currentMonth)
             _dailySummaries.value = relevantDaysSummary
+            _peakWindDayIndex.value = peakSustainedWindIndex(relevantDaysSummary)
 
             if (relevantDaysSummary.isNotEmpty()) {
                 _statistics.value = calculateStatsInternal(relevantDaysSummary)
@@ -171,6 +207,26 @@ class MonthlyStatisticsViewModel(
     }
 
 
+    /**
+     * Index of the day holding the peak [DayWeatherSummary.sustainedWindSpeed] value.
+     *
+     * Returns -1 when no day carries a sustained-wind reading. On ties the earliest
+     * day wins, so a single bar is highlighted in the chart. Kept here (not in the
+     * composable) so peak selection is unit-testable per MV* rules.
+     */
+    internal fun peakSustainedWindIndex(daysData: List<DayWeatherSummary>): Int {
+        var peakIndex = -1
+        var peakValue = Double.NEGATIVE_INFINITY
+        daysData.forEachIndexed { index, day ->
+            val wind = day.sustainedWindSpeed ?: return@forEachIndexed
+            if (wind > peakValue) {
+                peakValue = wind
+                peakIndex = index
+            }
+        }
+        return peakIndex
+    }
+
     private fun calculateStatsInternal(daysData: List<DayWeatherSummary>): CalculatedStats {
         if (daysData.isEmpty()) return CalculatedStats()
 
@@ -186,6 +242,7 @@ class MonthlyStatisticsViewModel(
         val avgTemps = validDays.mapNotNull { it.avgTemp }
         val totalSolarEnergy = validDays.mapNotNull { it.solarenergy }.sum()
         val totalRainfall = validDays.mapNotNull { it.precipitation }.sum()
+        val sustainedWinds = validDays.mapNotNull { it.sustainedWindSpeed }
 
 
         var absMinTemp: Double? = null
@@ -222,7 +279,8 @@ class MonthlyStatisticsViewModel(
             daysOfInterestCount = kiteableDaysCount,
             filterSummary = filter.filterSummary(),
             totalRainfall = if (totalRainfall > 0) totalRainfall else null,
-            totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null
+            totalSolarEnergy = if(totalSolarEnergy > 0) totalSolarEnergy else null,
+            averageSustainedWindSpeed = if (sustainedWinds.isNotEmpty()) sustainedWinds.average() else null
         )
     }
 

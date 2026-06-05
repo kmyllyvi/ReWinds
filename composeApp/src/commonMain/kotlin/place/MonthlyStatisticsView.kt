@@ -1,6 +1,8 @@
 package place
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,9 +14,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,24 +26,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import core.LocalAppStrings
 import core.MonthlyStatisticsRoute
+import core.isIOS
+import core.utils.formatDecimal
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import place.components.DailyWindBarChart
 import place.components.DaySummaryRow
+import place.components.MonthStatCard
+import ui.components.IsobarBackground
+import ui.theme.rewinds
 import kotlin.math.roundToInt
-import components.AppHeader
-import core.utils.formatDecimal
 
-// Helper function to format temperature consistently
-private fun formatTemperature(value: Double?): String {
+// Rounds to one decimal place for display; KMP-safe (no String.format).
+private fun formatTempValue(value: Double?): String {
     if (value == null) return "--"
-    return "${(value * 10).roundToInt() / 10.0}\u00B0C"
+    return formatDecimal((value * 10).roundToInt() / 10.0)
+}
+
+private fun formatWholeNumber(value: Double?): String {
+    if (value == null) return "--"
+    return value.roundToInt().toString()
 }
 
 @Composable
@@ -56,148 +69,225 @@ fun MonthlyStatisticsView(
     val statistics by vm.statistics.collectAsState()
     val dailySummaries by vm.dailySummaries.collectAsState()
     val isDownloading by vm.isDownloading.collectAsState()
+    val currentYear by vm.year.collectAsState()
+    val currentMonth by vm.month.collectAsState()
+    val peakWindDayIndex by vm.peakWindDayIndex.collectAsState()
     val strings = LocalAppStrings.current
 
-    key(placeName, year, month) {
-        // Reload data when place, month or year changes
-        LaunchedEffect(placeName, year, month) {
-            vm.reloadStatistics(year = year, month = month)
-        }
+    LaunchedEffect(placeName, year, month) {
+        vm.reloadStatistics(year = year, month = month)
+    }
 
-        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
-            AppHeader(
-                title = "$placeName - ${monthName(month)} $year Stats",
-                onBackClick = onBackClick
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Decorative isobar background — rendered first so it sits below all content.
+        IsobarBackground()
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            MonthSummaryHeader(
+                placeName = placeName,
+                monthTitle = "${monthName(currentMonth)} $currentYear",
+                daysRecorded = dailySummaries.size,
+                onBackClick = onBackClick,
+                onPreviousMonth = { vm.navigateToPreviousMonth() },
+                onNextMonth = { vm.navigateToNextMonth() }
             )
-            Box(
-                modifier = Modifier
-                    .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp)
-                    .fillMaxSize()
-            ) {
-                val currentStats = statistics
-                if (currentStats == null) {
+
+            val currentStats = statistics
+            if (currentStats == null) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item {
-                            Text(strings.monthlySummary, style = MaterialTheme.typography.headlineSmall)
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Show download button if data is incomplete
-                            val missingDaysCount = vm.getMissingDaysCount(dailySummaries)
-                            if (missingDaysCount > 0) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
-                                        8.dp
-                                    )
-                                ) {
-                                    Button(
-                                        onClick = { vm.downloadFullMonth() },
-                                        enabled = !isDownloading
-                                    ) {
-                                        if (isDownloading) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier
-                                                    .width(16.dp)
-                                                    .height(16.dp),
-                                                strokeWidth = 2.dp
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                        }
-                                        Text(
-                                            if (isDownloading) strings.downloading
-                                            else strings.downloadMissingDays(missingDaysCount)
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-
-                            if (currentStats.numberOfDaysWithData > 0) {
-                                // Display Kiteable Days count prominently
-                                Text(
-                                    text = strings.daysOfInterest(currentStats.daysOfInterestCount),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                if (currentStats.filterSummary.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = currentStats.filterSummary,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider()
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Text(strings.generalStats, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Text(strings.daysWithData(currentStats.numberOfDaysWithData.toString()), color = MaterialTheme.colorScheme.onSurface)
-                                currentStats.averageMinTemp?.let {
-                                    Text(
-                                        strings.avgMinTemp(formatTemperature(it)),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.averageMaxTemp?.let {
-                                    Text(
-                                        strings.avgMaxTemp(formatTemperature(it)),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.overallAverageTemp?.let {
-                                    Text(
-                                        strings.overallAvgTemp(formatTemperature(it)),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.absoluteMinTemp?.let {
-                                    Text(
-                                        strings.coldestDay(formatTemperature(it), currentStats.coldestDate ?: ""),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.absoluteMaxTemp?.let {
-                                    Text(
-                                        strings.hottestDay(formatTemperature(it), currentStats.hottestDate ?: ""),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.totalRainfall?.let {
-                                    Text(
-                                        strings.totalRainfall(formatDecimal(it)),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                currentStats.totalSolarEnergy?.let {
-                                    Text(
-                                        strings.totalSolarEnergy("${it.roundToInt()}"),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            } else {
-                                Text(strings.noWeatherData, color = MaterialTheme.colorScheme.onSurface)
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-                            HorizontalDivider()
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(strings.dailyBreakdown, style = MaterialTheme.typography.titleMedium)
-                            Spacer(modifier = Modifier.height(8.dp))
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp)
+                ) {
+                    item {
+                        val missingDaysCount = vm.getMissingDaysCount(dailySummaries)
+                        if (missingDaysCount > 0) {
+                            DownloadMissingDaysRow(
+                                count = missingDaysCount,
+                                isDownloading = isDownloading,
+                                onDownload = { vm.downloadFullMonth() }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        items(dailySummaries) { daySummary ->
-                            DaySummaryRow(daySummary)
+                        if (currentStats.numberOfDaysWithData > 0) {
+                            StatCardGrid(stats = currentStats)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = strings.dailyWind,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.rewinds.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            DailyWindBarChart(
+                                summaries = dailySummaries,
+                                peakIndex = peakWindDayIndex
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Text(
+                                text = strings.dailyBreakdown,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.rewinds.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        } else {
+                            Text(
+                                text = strings.noWeatherData,
+                                color = MaterialTheme.rewinds.textSecondary
+                            )
                         }
                     }
+
+                    items(dailySummaries) { daySummary ->
+                        DaySummaryRow(daySummary)
+                    }
+
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MonthSummaryHeader(
+    placeName: String,
+    monthTitle: String,
+    daysRecorded: Int,
+    onBackClick: () -> Unit,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val topMargin = if (isIOS()) 0.dp else 35.dp
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, top = topMargin, end = 12.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = strings.back,
+                        tint = MaterialTheme.rewinds.textPrimary
+                    )
+                }
+                Text(
+                    text = placeName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.rewinds.textSecondary
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPreviousMonth) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = strings.previousMonth,
+                        tint = MaterialTheme.rewinds.accentBlue
+                    )
+                }
+                IconButton(onClick = onNextMonth) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = strings.nextMonth,
+                        tint = MaterialTheme.rewinds.accentBlue
+                    )
+                }
+            }
+        }
+
+        Column(modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp)) {
+            Text(
+                text = monthTitle,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.rewinds.textPrimary
+            )
+            Text(
+                text = "$placeName · ${strings.daysRecorded(daysRecorded)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.rewinds.textSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatCardGrid(stats: CalculatedStats) {
+    val strings = LocalAppStrings.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            MonthStatCard(
+                label = strings.statTempLabel,
+                value = strings.statTempValue(
+                    formatTempValue(stats.averageMinTemp),
+                    formatTempValue(stats.averageMaxTemp)
+                ),
+                unit = strings.unitCelsius,
+                modifier = Modifier.weight(1f)
+            )
+            MonthStatCard(
+                label = strings.statWindLabel,
+                value = formatWholeNumber(stats.averageSustainedWindSpeed),
+                unit = strings.unitKmh,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            MonthStatCard(
+                label = strings.statRainfallLabel,
+                value = formatWholeNumber(stats.totalRainfall),
+                unit = strings.unitMm,
+                modifier = Modifier.weight(1f)
+            )
+            MonthStatCard(
+                label = strings.statKiteableDaysLabel,
+                value = stats.daysOfInterestCount.toString(),
+                unit = strings.unitDays,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DownloadMissingDaysRow(
+    count: Int,
+    isDownloading: Boolean,
+    onDownload: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(onClick = onDownload, enabled = !isDownloading) {
+            if (isDownloading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .width(16.dp)
+                        .height(16.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                if (isDownloading) strings.downloading
+                else strings.downloadMissingDays(count)
+            )
         }
     }
 }
