@@ -315,7 +315,7 @@ private fun MonthCell(
     val monthName = getMonthShortName(cell.month)
     val shape = RoundedCornerShape(16.dp)
 
-    val base = Modifier
+    val base = modifier
         .height(96.dp)
         .clip(shape)
         .clickable(onClick = onClick)

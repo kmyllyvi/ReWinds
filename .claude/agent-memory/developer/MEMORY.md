@@ -82,8 +82,27 @@
 ## Build command notes
 
 - `./gradlew buildAndroidOnly` may fail with config-cache error (pre-existing, unrelated to code)
-- Use `./gradlew :composeApp:compileDebugKotlinAndroid` for a clean compile check
-- `./gradlew :composeApp:testDebugUnitTest` for unit tests
+- It also drags in `linkReleaseFrameworkIosSimulatorArm64`, which OOMs locally (exit 137) — NOT a code failure
+- For reliable Android-only verification skip buildAndroidOnly and run the leaf tasks directly:
+  - `./gradlew :composeApp:compileDebugKotlinAndroid --no-configuration-cache` (compile check)
+  - `./gradlew :composeApp:testDebugUnitTest --no-configuration-cache` for unit tests
+- Background gradle output piped through `tail` only flushes on completion; poll the
+  JUnit XML at `composeApp/build/test-results/testDebugUnitTest/TEST-*.xml` for pass/fail counts
+
+## Theme / Design system (Midnight Blue — KIM-265+)
+
+- `ReWindsColors` object in `ui/theme/ReWindsTheme.kt` — all palette tokens
+- `MaterialTheme.rewinds.xxx` to access extended tokens (accentBlue, attention, error, surface, border, textPrimary, textSecondary, textTertiary, etc.)
+- Never use hex literals in view code — always reference token
+- Isobar background: `IsobarBackground()` composable, renders as the lowest Box layer
+
+## Home / Places screen patterns (KIM-268)
+
+- `PlaceDisplayData(name, subtitle, status: PlaceStatus)` — PlaceStatus.NORMAL/WARNING/ERROR
+- Status dot colour computed in VM (when), rendered in `StatusDot` composable — never in view logic
+- `AlertBanner(message, isError: Boolean)` — isError → red (`error` token), else amber (`attention` token)
+- `HomeUiState.alertBanners: List<AlertBanner>` — empty by default
+- `AppHeader` accepts optional `titleSizeSp: Int?` to override typography sp (used for 26 sp on Home)
 
 ## Localization Pattern (KIM-57)
 

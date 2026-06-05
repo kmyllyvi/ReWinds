@@ -18,3 +18,7 @@ We provide API keys, users pay subscription. Needs auth (Supabase/KIM-74), payme
 **How to apply:** When triaging new ReWinds issues, assign to the right milestone. Anything requiring server-side infrastructure or payments is Milestone B. Anything a solo user can run with their own keys is Milestone A.
 
 Note: Stripe direct billing is NOT allowed for iOS digital goods — Apple IAP (StoreKit 2) is required for iOS subscriptions. Stripe can be used for web and Android.
+
+---
+
+**Visual redesign (added 2026-06-04):** Full Midnight Blue theme redesign underway. Tickets KIM-265–KIM-273 cover the 9-ticket sequence. Foundation order: tokens (KIM-265) → isobar texture (KIM-266) → tab nav (KIM-267) → 6 screen redesigns (KIM-268–KIM-273). All Backlog + spec-ready, awaiting Gate 1. Design artefacts: `docs/designs/color-themes.html` and `docs/designs/screens-v1.html`.
