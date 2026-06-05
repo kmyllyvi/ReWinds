@@ -46,6 +46,8 @@ fun AppHeader(
     showLogo: Boolean = false,
     /** When set, overrides the typography body size. Useful for screens that require a specific sp value. */
     titleSizeSp: Int? = null,
+    /** When set, overrides the title font weight. Defaults to Bold. */
+    titleFontWeight: FontWeight = FontWeight.Bold,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
     val strings = LocalAppStrings.current
@@ -80,7 +82,7 @@ fun AppHeader(
                     }
                 } else if (showLogo) {
                     // Logo for home screen
-                    IsobarLogo(modifier = Modifier.padding(end = 8.dp))
+                    IsobarLogo(size = 36.dp, modifier = Modifier.padding(end = 8.dp))
                 }
 
                 // Title
@@ -90,7 +92,7 @@ fun AppHeader(
                         MaterialTheme.typography.headlineSmall.copy(fontSize = titleSizeSp.sp)
                     else
                         MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = titleFontWeight,
                     color = MaterialTheme.rewinds.textPrimary
                 )
             }

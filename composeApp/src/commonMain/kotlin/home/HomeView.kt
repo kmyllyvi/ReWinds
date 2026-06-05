@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
@@ -112,23 +110,8 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
             AppHeader(
                 title = strings.appTitle,
                 showLogo = true,
-                titleSizeSp = 26,
-                rightContent = {
-                    IconButton(onClick = { navigator.navigateToSettings() }) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = strings.settingsIconDesc,
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: add-place action */ }) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = "Add place",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
+                titleSizeSp = 22,
+                titleFontWeight = FontWeight.Light
             )
 
             // Non-dismissible VC key nudge banner
