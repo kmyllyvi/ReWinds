@@ -1,6 +1,7 @@
 package place
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,25 +12,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,40 +32,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import components.AppHeader
 import core.LocalAppStrings
 import core.Navigator
 import core.PlaceSummaryRoute
-import io.github.aakira.napier.Napier
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
-import place.components.YearSelector
-import components.AppHeader
-import kotlin.time.ExperimentalTime
-
-// Define this outside or in a shared file if MonthSelector needs it directly
-// For now, keeping it local to SuccessStateView and MonthSelector will use the map
-data class MonthCompletionInfo(
-    val presentDaysCount: Int,
-    val totalDaysInMonth: Int,
-    val isFullyLoaded: Boolean
-)
-
-// Assuming DayWeatherSummary is defined in your model or another file in the 'place' package
-// e.g., data class DayWeatherSummary(val date: String?, ...)
-// Assuming PlaceSummaryViewModel is defined similarly
-// e.g., class PlaceSummaryViewModel(...) : ViewModel()
-// Assuming WeatherSummaryUiState is defined similarly
-// e.g., sealed interface WeatherSummaryUiState { object Loading; data class Success(...); data class Error(...); }
-
+import place.components.initialYear
+import ui.components.IsobarBackground
+import ui.theme.rewinds
 
 // Helper to parse year from "YYYY-MM-DD" string or return null if invalid
 internal fun parseYear(dateString: String?): Int? {
@@ -80,15 +57,6 @@ internal fun parseYear(dateString: String?): Int? {
 // Helper to parse month from "YYYY-MM-DD" string or return null if invalid
 internal fun parseMonth(dateString: String?): Int? {
     return dateString?.split("-")?.getOrNull(1)?.toIntOrNull()
-}
-
-// Helper to get days in month (accounting for leap years)
-internal fun getDaysInMonth(month: Int, year: Int): Int {
-    return when (month) {
-        2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28 // Leap year
-        4, 6, 9, 11 -> 30
-        else -> 31
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,61 +87,58 @@ fun PlaceSummaryView(
         }
     }
 
-    Column(
+    // IMPORTANT: pageBg on the root Box — KIM-270 missed this and shipped a white background.
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.rewinds.pageBg)
     ) {
-        // Header
-        AppHeader(
-            title = currentPlaceName,
-            onBackClick = {
-                vm.refreshData()
-                onBackClick()
-            },
-            rightContent = {
-                IconButton(
-                    onClick = { navigator.navigateToChat(initialMessage = "Chat about $currentPlaceName") }
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = "Chat about $currentPlaceName",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                IconButton(
-                    onClick = { vm.openStationMap() },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        Icons.Filled.Info,
-                        contentDescription = strings.infoIconDesc,
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-        )
+        // Decorative isobar texture — lowest layer, below all content.
+        IsobarBackground()
 
-        // Content
-        when (val state = uiState) {
-            is WeatherSummaryUiState.Loading -> {
-                LoadingStateView(modifier = Modifier.fillMaxSize())
-            }
-            is WeatherSummaryUiState.Success -> {
-                SuccessStateView(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    successState = state,
-                    viewModel = vm
-                )
-            }
-            is WeatherSummaryUiState.Error -> {
-                ErrorStateView(
-                    modifier = Modifier.fillMaxSize(),
-                    errorState = state
-                )
+        Column(modifier = Modifier.fillMaxSize()) {
+            AppHeader(
+                title = currentPlaceName,
+                onBackClick = {
+                    vm.refreshData()
+                    onBackClick()
+                },
+                rightContent = {
+                    TextButton(
+                        onClick = {
+                            // TODO: Chat tab does not yet support a place pre-filter / deep-link.
+                            // Navigate to Chat with a seeded message until that lands.
+                            navigator.navigateToChat(initialMessage = "Chat about $currentPlaceName")
+                        }
+                    ) {
+                        Text(
+                            text = strings.chatButton,
+                            color = MaterialTheme.rewinds.accentBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            )
+
+            when (val state = uiState) {
+                is WeatherSummaryUiState.Loading -> {
+                    LoadingStateView(modifier = Modifier.fillMaxSize())
+                }
+                is WeatherSummaryUiState.Success -> {
+                    SuccessStateView(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        successState = state,
+                        viewModel = vm
+                    )
+                }
+                is WeatherSummaryUiState.Error -> {
+                    ErrorStateView(
+                        modifier = Modifier.fillMaxSize(),
+                        errorState = state
+                    )
+                }
             }
         }
     }
@@ -232,219 +197,250 @@ private fun DownloadMissingDaysDialog(
     }
 }
 
+// ── Year selector strip ───────────────────────────────────────────────────────
+
+/**
+ * Horizontal scrollable year strip. The selected year is highlighted with
+ * [ui.theme.ReWindsColors.accentBlue] text plus a pill underline; the rest use
+ * [ui.theme.ReWindsColors.textSecondary]. Selection and scroll offset live in the
+ * ViewModel, not in composable [remember] state.
+ */
 @Composable
-private fun PlaceDetailsContent(
-    modifier: Modifier = Modifier,
-    currentPlaceDescription: String?,
+private fun YearSelectorStrip(
+    availableYears: List<Int>,
     selectedYear: Int?,
-    onYearSelected: (Int?) -> Unit,
-    selectedMonth: Int?,
-    onMonthSelected: (Int?) -> Unit,
-    monthCompletionStatusMap: Map<Int, Int>, // Map of month to missing days count
-    monthAverageTemps: Map<Int, Double?>, // Map of month to average temperature
-    onPromptForMissingDays: (Int, Int, Int) -> Unit, // (year, month, missingDaysCount)
-    viewModel: PlaceSummaryViewModel
+    initialScrollOffset: Int,
+    onYearSelected: (Int) -> Unit,
+    onScrollOffsetChanged: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val availableYears = remember { (2020..place.components.initialYear).toList().sortedDescending() }
+    val listState = rememberLazyListState(initialFirstVisibleItemScrollOffset = initialScrollOffset)
 
-    LazyColumn(modifier = modifier) {
-        currentPlaceDescription?.let {
-            item {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                )
-            }
-        }
+    // Persist the scroll offset back to the ViewModel so it survives navigation.
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemScrollOffset }.collect(onScrollOffsetChanged)
+    }
 
-        // Year selector scrolls with content
-        item {
-            YearSelector(
-                availableYears = availableYears,
-                selectedYear = selectedYear,
-                onYearSelected = { year -> onYearSelected(year) },
-                modifier = Modifier.fillMaxWidth()
+    LazyRow(
+        state = listState,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        items(availableYears) { year ->
+            YearTab(
+                year = year,
+                isSelected = year == selectedYear,
+                onClick = { onYearSelected(year) }
             )
-            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
 
-        // Months grid
-        if (selectedYear != null && selectedYear != Int.MIN_VALUE) {
-            item {
-                Text(
-                    "$selectedYear",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 8.dp)
+@Composable
+private fun YearTab(year: Int, isSelected: Boolean, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = year.toString(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.rewinds.accentBlue else MaterialTheme.rewinds.textSecondary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        // Pill indicator under the selected year only.
+        Box(
+            modifier = Modifier
+                .height(3.dp)
+                .width(20.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(
+                    if (isSelected) MaterialTheme.rewinds.accentBlue else Color.Transparent
                 )
-            }
+        )
+    }
+}
 
-            items((1..12).chunked(2)) { monthPair ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    monthPair.forEach { month ->
-                        MonthCardForGrid(
-                            month = month,
-                            year = selectedYear,
-                            missingDaysCount = monthCompletionStatusMap[month] ?: 0,
-                            temperature = monthAverageTemps[month],
-                            modifier = Modifier.weight(1f),
-                            onMonthSelected = {
-                                onMonthSelected(month)
-                                viewModel.onShowMonth(selectedYear, month)
-                            },
-                            onPromptForMissingDays = {
-                                onPromptForMissingDays(selectedYear, month, monthCompletionStatusMap[month] ?: 0)
-                            }
-                        )
-                    }
-                    if (monthPair.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+// ── Month grid ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun MonthGrid(
+    monthCells: List<MonthCellInfo>,
+    onMonthClick: (MonthCellInfo) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(monthCells.chunked(2)) { rowCells ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                rowCells.forEach { cell ->
+                    MonthCell(
+                        cell = cell,
+                        onClick = { onMonthClick(cell) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                if (rowCells.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
 }
 
-
+/**
+ * A single month grid cell. Appearance is a pure function of [MonthCellInfo.state]:
+ * - FULL: solid [ui.theme.ReWindsColors.surface] card, month in textPrimary, day count in textSecondary
+ * - PARTIAL: same card at reduced opacity, plus a "Partial" label
+ * - NO_DATA: outline-only card (border token), month in textTertiary
+ *
+ * The state itself is computed in the ViewModel, never here.
+ */
 @Composable
-private fun MonthCardForGrid(
-    month: Int,
-    year: Int,
-    missingDaysCount: Int,
-    temperature: Double?,
-    modifier: Modifier = Modifier,
-    onMonthSelected: () -> Unit,
-    onPromptForMissingDays: () -> Unit
+private fun MonthCell(
+    cell: MonthCellInfo,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val strings = LocalAppStrings.current
-    val monthName = getMonthShortName(month)
+    val monthName = getMonthShortName(cell.month)
+    val shape = RoundedCornerShape(16.dp)
 
-    // Calculate total days in month and present days
-    val totalDaysInMonth = getDaysInMonth(month, year)
-    val presentDaysCount = totalDaysInMonth - missingDaysCount
+    val base = Modifier
+        .height(96.dp)
+        .clip(shape)
+        .clickable(onClick = onClick)
 
-    // Determine data status
-    val isFullyLoaded = missingDaysCount == 0
-    val isPartiallyLoaded = missingDaysCount > 0 && presentDaysCount > 0
-    val hasNoData = presentDaysCount == 0
-
-    // Background tint reflects data completeness: accent / attention / muted surface.
-    val backgroundColor = when {
-        isFullyLoaded    -> MaterialTheme.colorScheme.primaryContainer
-        isPartiallyLoaded -> MaterialTheme.colorScheme.tertiaryContainer
-        else             -> MaterialTheme.colorScheme.surfaceVariant
+    val styled = when (cell.state) {
+        MonthCellState.FULL ->
+            base.background(MaterialTheme.rewinds.surface)
+        MonthCellState.PARTIAL ->
+            base.background(MaterialTheme.rewinds.surface.copy(alpha = 0.5f))
+        MonthCellState.NO_DATA ->
+            base.border(1.dp, MaterialTheme.rewinds.border, shape)
     }
 
-    Box(
-        modifier = modifier
-            .height(140.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
-            .clickable {
-                if (hasNoData) {
-                    // No data at all - prompt to download
-                    onPromptForMissingDays()
-                } else {
-                    // Has some data (full or partial) - show the data
-                    onMonthSelected()
-                }
-            }
-            .padding(16.dp)
-    ) {
+    val titleColor = when (cell.state) {
+        MonthCellState.NO_DATA -> MaterialTheme.rewinds.textTertiary
+        else -> MaterialTheme.rewinds.textPrimary
+    }
+
+    Box(modifier = styled.padding(14.dp)) {
         Column {
             Text(
-                "$monthName $year",
+                text = monthName,
                 style = MaterialTheme.typography.titleMedium,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = titleColor
             )
             Spacer(modifier = Modifier.height(4.dp))
-
-            if (isFullyLoaded && temperature != null) {
-                val tempStr = "${kotlin.math.round(temperature * 10) / 10.0}"
-                Text(strings.tempDisplay(tempStr), style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(2.dp))
-                // TODO: Show kiteable days count when available
-                Text("⭐ X days", style = MaterialTheme.typography.bodySmall)
-            } else {
-                Text(
-                    if (hasNoData) strings.noStoredDays else strings.daysFraction(presentDaysCount, totalDaysInMonth),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            when (cell.state) {
+                MonthCellState.NO_DATA -> {
+                    Text(
+                        text = strings.noStoredDays,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.textTertiary
+                    )
+                }
+                else -> {
+                    Text(
+                        text = strings.daysFraction(cell.presentDaysCount, cell.totalDaysInMonth),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.textSecondary
+                    )
+                    if (cell.state == MonthCellState.PARTIAL) {
+                        Text(
+                            text = strings.monthPartialLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.rewinds.attention,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+// ── Success state ─────────────────────────────────────────────────────────────
 
-
-@OptIn(ExperimentalTime::class)
 @Composable
 private fun SuccessStateView(
     modifier: Modifier = Modifier,
     successState: WeatherSummaryUiState.Success,
     viewModel: PlaceSummaryViewModel
 ) {
-    // Get selected year from ViewModel (persists across navigation)
     val selectedYear by viewModel.selectedYear.collectAsState()
-    var selectedMonth by remember { mutableStateOf<Int?>(null) }
+    val yearScrollOffset by viewModel.yearScrollOffset.collectAsState()
 
     var showMissingDaysDialog by remember { mutableStateOf(false) }
     var yearToDownloadForDialog by remember { mutableStateOf<Int?>(null) }
     var monthToDownloadForDialog by remember { mutableStateOf<Int?>(null) }
     var missingDaysCountForDialog by remember { mutableStateOf(0) }
 
-    // This map holds MonthCompletionInfo (detailed)
-    val detailedMonthCompletionStatusMap = remember(selectedYear, successState.storedDays) {
-        viewModel.calculateMonthCompletionStatusMap(selectedYear, successState.storedDays)
-    }
+    val availableYears = remember { (2020..initialYear).toList().sortedDescending() }
 
-    // Calculate missing days count for each month (0 = fully loaded, > 0 = missing days)
-    val missingDaysMap = remember(detailedMonthCompletionStatusMap) {
-        viewModel.calculateMissingDaysMap(detailedMonthCompletionStatusMap)
+    // Cell states come straight from the ViewModel; the grid only renders them.
+    val monthCells = remember(selectedYear, successState.storedDays) {
+        viewModel.calculateMonthCellStates(selectedYear, successState.storedDays)
     }
-
-    // Get average temperature for each month from ViewModel
-    val monthlyAverageTemps by viewModel.monthlyAverageTemps.collectAsState()
 
     LaunchedEffect(Unit) {
-        if (selectedYear == Int.MIN_VALUE) { // Using a sentinel for first load
-            viewModel.setSelectedYear(place.components.initialYear)
+        if (selectedYear == Int.MIN_VALUE) { // Sentinel for first load
+            viewModel.setSelectedYear(initialYear)
         }
     }
 
-    LaunchedEffect(selectedYear) {
-        selectedMonth = null // Reset month when year changes
-        // Update month temperatures for the selected year
-        if (selectedYear != Int.MIN_VALUE) {
-            viewModel.updateMonthTemperaturesForYear(selectedYear)
+    Column(modifier = modifier) {
+        successState.currentPlaceDescription?.let { description ->
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.rewinds.textSecondary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            )
         }
-    }
 
-    PlaceDetailsContent(
-        modifier = modifier, // Pass modifier from SuccessStateView
-        currentPlaceDescription = successState.currentPlaceDescription,
-        selectedYear = selectedYear,
-        onYearSelected = { year -> viewModel.setSelectedYear(year) },
-        selectedMonth = selectedMonth,
-        onMonthSelected = { month -> selectedMonth = month },
-        monthCompletionStatusMap = missingDaysMap,
-        monthAverageTemps = monthlyAverageTemps,
-        onPromptForMissingDays = { yearArg, monthArg, missingDaysArg ->
-            yearToDownloadForDialog = yearArg
-            monthToDownloadForDialog = monthArg
-            missingDaysCountForDialog = missingDaysArg
-            showMissingDaysDialog = true
-        },
-        viewModel = viewModel
-    )
+        YearSelectorStrip(
+            availableYears = availableYears,
+            selectedYear = selectedYear,
+            initialScrollOffset = yearScrollOffset,
+            onYearSelected = { viewModel.setSelectedYear(it) },
+            onScrollOffsetChanged = { viewModel.setYearScrollOffset(it) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        MonthGrid(
+            monthCells = monthCells,
+            onMonthClick = { cell ->
+                val year = selectedYear
+                if (year == null || year == Int.MIN_VALUE) return@MonthGrid
+                if (cell.state == MonthCellState.NO_DATA) {
+                    yearToDownloadForDialog = year
+                    monthToDownloadForDialog = cell.month
+                    missingDaysCountForDialog = cell.totalDaysInMonth - cell.presentDaysCount
+                    showMissingDaysDialog = true
+                } else {
+                    viewModel.onShowMonth(year, cell.month)
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 
     DownloadMissingDaysDialog(
         showDialog = showMissingDaysDialog,
@@ -453,17 +449,15 @@ private fun SuccessStateView(
         missingDaysCount = missingDaysCountForDialog,
         onDismissRequest = { showMissingDaysDialog = false },
         onConfirm = {
-            if (yearToDownloadForDialog != null && monthToDownloadForDialog != null) {
-                viewModel.onDownloadFullMonth( // Assuming this is the correct VM method
-                    yearToDownloadForDialog!!,
-                    monthToDownloadForDialog!!
-                )
+            val year = yearToDownloadForDialog
+            val month = monthToDownloadForDialog
+            if (year != null && month != null) {
+                viewModel.onDownloadFullMonth(year, month)
             }
             showMissingDaysDialog = false
         }
     )
 }
-
 
 @Composable
 fun LoadingStateView(modifier: Modifier = Modifier) {
@@ -473,8 +467,11 @@ fun LoadingStateView(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(strings.loadingSummary)
-        CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+        Text(strings.loadingSummary, color = MaterialTheme.rewinds.textSecondary)
+        CircularProgressIndicator(
+            modifier = Modifier.padding(16.dp),
+            color = MaterialTheme.rewinds.accentBlue
+        )
     }
 }
 
@@ -492,11 +489,11 @@ fun ErrorStateView(
         Text(
             text = strings.errorLabel,
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.error
+            color = MaterialTheme.rewinds.error
         )
         Text(
-            text = errorState.message, // Assuming Error state has a message
-            color = MaterialTheme.colorScheme.error
+            text = errorState.message,
+            color = MaterialTheme.rewinds.error
         )
     }
 }
