@@ -44,6 +44,39 @@ sealed interface WeatherSummaryUiState {
 }
 
 /**
+ * Per-month completion detail used to derive grid-cell state.
+ */
+data class MonthCompletionInfo(
+    val presentDaysCount: Int,
+    val totalDaysInMonth: Int,
+    val isFullyLoaded: Boolean
+)
+
+/**
+ * The three visual states a month cell in the grid can render.
+ * Determined in the ViewModel so the composable only maps state -> appearance.
+ */
+enum class MonthCellState {
+    /** Month has all (or effectively all) days stored. */
+    FULL,
+    /** Some days stored, but below the completeness threshold. */
+    PARTIAL,
+    /** No days stored for this month. */
+    NO_DATA
+}
+
+/**
+ * Per-month cell info for the grid: the visual state plus the stored-day counts
+ * used to render the day-count label. One entry per month (1-12).
+ */
+data class MonthCellInfo(
+    val month: Int,
+    val state: MonthCellState,
+    val presentDaysCount: Int,
+    val totalDaysInMonth: Int
+)
+
+/**
  * Sealed class representing navigation events.
  */
 sealed class NavigationEvent {
@@ -78,6 +111,15 @@ class PlaceSummaryViewModel(
 
     private val _selectedYear = MutableStateFlow<Int?>(Int.MIN_VALUE)
     val selectedYear: StateFlow<Int?> = _selectedYear.asStateFlow()
+
+    // Year-selector horizontal scroll offset, tracked here so it survives recomposition
+    // and navigation rather than living as remember-state in the composable.
+    private val _yearScrollOffset = MutableStateFlow(0)
+    val yearScrollOffset: StateFlow<Int> = _yearScrollOffset.asStateFlow()
+
+    fun setYearScrollOffset(offset: Int) {
+        _yearScrollOffset.value = offset
+    }
 
     private val _isRefreshingStations = MutableStateFlow(false)
     val isRefreshingStations: StateFlow<Boolean> = _isRefreshingStations.asStateFlow()
@@ -313,10 +355,31 @@ class PlaceSummaryViewModel(
         }
     }
 
-        // helper function to check month completion status (downloaded or not)
+    // Instance delegates to the pure companion helpers (kept for existing callers).
+    fun calculateMonthCompletionStatusMap(
+        selectedYear: Int?,
+        storedDays: List<DayWeatherSummary>
+    ): Map<Int, MonthCompletionInfo> = Companion.calculateMonthCompletionStatusMap(selectedYear, storedDays)
+
+    fun calculateMissingDaysMap(
+        detailedMap: Map<Int, MonthCompletionInfo>
+    ): Map<Int, Int> = Companion.calculateMissingDaysMap(detailedMap)
+
+    fun calculateMonthCellStates(
+        selectedYear: Int?,
+        storedDays: List<DayWeatherSummary>
+    ): List<MonthCellInfo> = Companion.calculateMonthCellStates(selectedYear, storedDays)
+
+    companion object {
+        // TODO(Kimmo): "partial vs full" threshold is a product decision not yet spec'd.
+        // Placeholder: a month with at least this many stored days (but not the whole
+        // month) renders as FULL; below it renders as PARTIAL. Review the value of 20.
+        const val PARTIAL_DAY_THRESHOLD = 20
+
+        // Counts stored days per month for [selectedYear]. Pure — no ViewModel state.
         fun calculateMonthCompletionStatusMap(
             selectedYear: Int?,
-            storedDays: List<DayWeatherSummary> // Make sure DayWeatherSummary is the correct type
+            storedDays: List<DayWeatherSummary>
         ): Map<Int, MonthCompletionInfo> {
             if (selectedYear == null || selectedYear == Int.MIN_VALUE) {
                 return emptyMap()
@@ -363,7 +426,6 @@ class PlaceSummaryViewModel(
             }
         }
 
-        // Helper function to calculate missing days count from MonthCompletionInfo map
         fun calculateMissingDaysMap(
             detailedMap: Map<Int, MonthCompletionInfo>
         ): Map<Int, Int> {
@@ -371,4 +433,33 @@ class PlaceSummaryViewModel(
                 maxOf(0, info.totalDaysInMonth - info.presentDaysCount)
             }
         }
+
+        /**
+         * Map each month (1-12) of [selectedYear] to its grid-cell state.
+         * Pure function over [storedDays] so it can be unit-tested without the ViewModel.
+         * The composable consumes the result and never decides the state itself.
+         */
+        fun calculateMonthCellStates(
+            selectedYear: Int?,
+            storedDays: List<DayWeatherSummary>
+        ): List<MonthCellInfo> {
+            val completion = calculateMonthCompletionStatusMap(selectedYear, storedDays)
+            return (1..12).map { month ->
+                val info = completion[month]
+                val present = info?.presentDaysCount ?: 0
+                val total = info?.totalDaysInMonth ?: 0
+                val state = when {
+                    present == 0 -> MonthCellState.NO_DATA
+                    present >= total || present >= PARTIAL_DAY_THRESHOLD -> MonthCellState.FULL
+                    else -> MonthCellState.PARTIAL
+                }
+                MonthCellInfo(
+                    month = month,
+                    state = state,
+                    presentDaysCount = present,
+                    totalDaysInMonth = total
+                )
+            }
+        }
+    }
 }

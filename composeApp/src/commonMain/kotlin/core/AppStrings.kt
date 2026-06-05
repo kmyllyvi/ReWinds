@@ -74,6 +74,8 @@ data class AppStrings(
 
     // PlaceSummaryView
     val infoIconDesc: String,
+    val chatButton: String,
+    val monthPartialLabel: String,
     val downloadFullMonth: String,
     val loadingSummary: String,
     val errorLabel: String,
@@ -234,6 +236,8 @@ data class AppStrings(
 
             // PlaceSummaryView
             infoIconDesc = "Info",
+            chatButton = "Chat",
+            monthPartialLabel = "Partial",
             downloadFullMonth = "Download full month?",
             loadingSummary = "Loading weather summary...",
             errorLabel = "Error:",
@@ -394,6 +398,8 @@ data class AppStrings(
 
             // PlaceSummaryView
             infoIconDesc = "Info",
+            chatButton = "Chat",
+            monthPartialLabel = "Teilweise",
             downloadFullMonth = "Ganzen Monat herunterladen?",
             loadingSummary = "Wetterzusammenfassung wird geladen...",
             errorLabel = "Fehler:",
