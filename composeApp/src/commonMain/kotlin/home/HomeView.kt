@@ -103,15 +103,6 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
         )
     }
 
-    // Show delete confirmation dialog
-    if (uiState.showDeleteConfirmation) {
-        DeleteConfirmationDialog(
-            placeName = uiState.placeToDelete ?: "",
-            onConfirm = vm::onDeleteConfirmed,
-            onDismiss = vm::onDeleteCancelled
-        )
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         // Decorative isobar background — rendered first so it sits below all content.
         IsobarBackground()
@@ -510,22 +501,6 @@ private fun ErrorDialog(error: String, onDismiss: () -> Unit) {
         text    = { Text(error) },
         confirmButton = {
             Button(onClick = onDismiss) { Text(strings.ok) }
-        }
-    )
-}
-
-@Composable
-private fun DeleteConfirmationDialog(placeName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    val strings = LocalAppStrings.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title   = { Text(strings.deletePlaceTitle) },
-        text    = { Text(strings.deletePlaceMessage(placeName)) },
-        confirmButton = {
-            Button(onClick = onConfirm) { Text(strings.delete) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
     )
 }
