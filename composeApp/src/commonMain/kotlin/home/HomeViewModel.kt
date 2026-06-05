@@ -25,15 +25,38 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Visual health indicator shown as a coloured dot on each place row. */
+enum class PlaceStatus {
+    /** Normal — data looks healthy. */
+    NORMAL,
+    /** Warning — data may be stale or partially missing. */
+    WARNING,
+    /** Error — data is absent or significantly out of date. */
+    ERROR
+}
+
 /**
- * Data class representing the display data for a place.
+ * A dismissible alert banner surfaced to the user above the places list.
  *
- * @property name The name of the place.
- * @property dayCount The number of days for which weather data is available.
+ * @property message Human-readable banner text.
+ * @property isError True → red error banner; false → amber attention banner.
+ */
+data class AlertBanner(
+    val message: String,
+    val isError: Boolean
+)
+
+/**
+ * Display data for a single place row.
+ *
+ * @property name The place name.
+ * @property subtitle Secondary line shown below the name (e.g. day count).
+ * @property status Dot colour driven by ViewModel, never computed in the composable.
  */
 data class PlaceDisplayData(
     val name: String,
-    val dayCount: Int
+    val subtitle: String,
+    val status: PlaceStatus = PlaceStatus.NORMAL
 )
 
 /**
@@ -67,7 +90,10 @@ data class HomeUiState(
     val importFilePath: String = "",
     // True when WeatherApiKeyManager reports a valid VC key is present.
     // Drives the onboarding nudge banner on the home screen.
-    val isWeatherKeyConfigured: Boolean = false
+    val isWeatherKeyConfigured: Boolean = false,
+    // Alert banners displayed above the places list. ViewModel populates these;
+    // composable only renders what's here — no logic in the view.
+    val alertBanners: List<AlertBanner> = emptyList()
 )
 
 /**
@@ -167,7 +193,12 @@ class HomeViewModel(
             val placeNames = weatherRepository.getSavedPlaceNames()
             val displayData = placeNames.map { name ->
                 val data = weatherRepository.getSavedDataFor(name)
-                PlaceDisplayData(name, data?.days?.size ?: 0)
+                val dayCount = data?.days?.size ?: 0
+                val subtitle = if (dayCount > 0) "$dayCount days stored" else "No data yet"
+                // A place with no data at all is treated as a warning so the user knows
+                // they need to fetch before they can explore it.
+                val status = if (dayCount == 0) PlaceStatus.WARNING else PlaceStatus.NORMAL
+                PlaceDisplayData(name = name, subtitle = subtitle, status = status)
             }
             _uiState.update { it.copy(placeDisplayData = displayData) }
         }

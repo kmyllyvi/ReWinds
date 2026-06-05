@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import core.LocalAppStrings
 import core.isIOS
 
@@ -41,6 +42,8 @@ fun AppHeader(
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null,
     showLogo: Boolean = false,
+    /** When set, overrides the typography body size. Useful for screens that require a specific sp value. */
+    titleSizeSp: Int? = null,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
     val strings = LocalAppStrings.current
@@ -86,7 +89,10 @@ fun AppHeader(
                 // Title
                 Text(
                     title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = if (titleSizeSp != null)
+                        MaterialTheme.typography.headlineSmall.copy(fontSize = titleSizeSp.sp)
+                    else
+                        MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
