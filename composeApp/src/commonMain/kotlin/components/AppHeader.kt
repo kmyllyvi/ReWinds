@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Air
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,11 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import core.LocalAppStrings
 import core.isIOS
+import ui.components.IsobarLogo
+import ui.theme.rewinds
 
 /**
  * Reusable app header component used across all screens.
@@ -44,6 +46,8 @@ fun AppHeader(
     showLogo: Boolean = false,
     /** When set, overrides the typography body size. Useful for screens that require a specific sp value. */
     titleSizeSp: Int? = null,
+    /** When set, overrides the title font weight. Defaults to Bold. */
+    titleFontWeight: FontWeight = FontWeight.Bold,
     rightContent: @Composable (() -> Unit)? = null,
 ) {
     val strings = LocalAppStrings.current
@@ -73,17 +77,12 @@ fun AppHeader(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = strings.back,
-                            tint = MaterialTheme.colorScheme.onBackground
+                            tint = MaterialTheme.rewinds.textPrimary
                         )
                     }
                 } else if (showLogo) {
                     // Logo for home screen
-                    Icon(
-                        Icons.Filled.Air,
-                        contentDescription = strings.appTitle,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
+                    IsobarLogo(size = 36.dp, modifier = Modifier.padding(end = 8.dp))
                 }
 
                 // Title
@@ -93,8 +92,8 @@ fun AppHeader(
                         MaterialTheme.typography.headlineSmall.copy(fontSize = titleSizeSp.sp)
                     else
                         MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontWeight = titleFontWeight,
+                    color = MaterialTheme.rewinds.textPrimary
                 )
             }
 
@@ -117,8 +116,8 @@ fun AppHeader(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0f)
+                            MaterialTheme.rewinds.border.copy(alpha = 0.2f),
+                            Color.Transparent
                         )
                     )
                 )

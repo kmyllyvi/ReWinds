@@ -352,20 +352,25 @@ private fun MonthCell(
                         color = MaterialTheme.rewinds.textTertiary
                     )
                 }
-                else -> {
+                MonthCellState.FULL -> {
+                    Text(
+                        text = strings.monthDownloadedLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.textSecondary
+                    )
+                }
+                MonthCellState.PARTIAL -> {
                     Text(
                         text = strings.daysFraction(cell.presentDaysCount, cell.totalDaysInMonth),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.rewinds.textSecondary
                     )
-                    if (cell.state == MonthCellState.PARTIAL) {
-                        Text(
-                            text = strings.monthPartialLabel,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.rewinds.attention,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
+                    Text(
+                        text = strings.monthPartialLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.rewinds.attention,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
             }
         }
