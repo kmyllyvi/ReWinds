@@ -86,6 +86,7 @@ data class AppStrings(
 
     // PlaceSummaryView
     val infoIconDesc: String,
+    val openMapButton: String,
     val chatButton: String,
     val monthPartialLabel: String,
     val monthDownloadedLabel: String,
@@ -269,6 +270,7 @@ data class AppStrings(
 
             // PlaceSummaryView
             infoIconDesc = "Info",
+            openMapButton = "Open station map",
             chatButton = "Chat",
             monthPartialLabel = "Partial",
             monthDownloadedLabel = "Downloaded",
@@ -452,6 +454,7 @@ data class AppStrings(
 
             // PlaceSummaryView
             infoIconDesc = "Info",
+            openMapButton = "Stationskarte öffnen",
             chatButton = "Chat",
             monthPartialLabel = "Teilweise",
             monthDownloadedLabel = "Heruntergeladen",
