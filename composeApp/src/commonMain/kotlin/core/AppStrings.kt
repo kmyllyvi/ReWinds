@@ -73,6 +73,16 @@ data class AppStrings(
     val refreshStationsDesc: String,
     val unknownStation: String,
     val stationRefreshError: (String) -> String,
+    val closeMap: String,
+    val mapStationIconDesc: String,
+    // Sheet subtitle, e.g. "3 weather stations · closest 2.3 km"
+    val mapSheetSubtitle: (Int, String) -> String,
+    val mapSheetSubtitleNoDistance: (Int) -> String,
+    // Info panel primary line, e.g. "3 weather stations nearby"
+    val stationsNearby: (Int) -> String,
+    // Info panel secondary line, e.g. "Closest station 2.3 km away"
+    val closestStationAway: (String) -> String,
+    val noStationsNearby: String,
 
     // PlaceSummaryView
     val infoIconDesc: String,
@@ -249,6 +259,13 @@ data class AppStrings(
             refreshStationsDesc = "Refresh weather station data",
             unknownStation = "Unknown station",
             stationRefreshError = { msg -> "Station refresh failed: $msg" },
+            closeMap = "Close map",
+            mapStationIconDesc = "Weather stations",
+            mapSheetSubtitle = { count, km -> "$count weather stations · closest $km km" },
+            mapSheetSubtitleNoDistance = { count -> "$count weather stations" },
+            stationsNearby = { count -> "$count weather stations nearby" },
+            closestStationAway = { km -> "Closest station $km km away" },
+            noStationsNearby = "No weather stations nearby",
 
             // PlaceSummaryView
             infoIconDesc = "Info",
@@ -425,6 +442,13 @@ data class AppStrings(
             refreshStationsDesc = "Wetterstationsdaten aktualisieren",
             unknownStation = "Unbekannte Station",
             stationRefreshError = { msg -> "Aktualisierung fehlgeschlagen: $msg" },
+            closeMap = "Karte schließen",
+            mapStationIconDesc = "Wetterstationen",
+            mapSheetSubtitle = { count, km -> "$count Wetterstationen · nächste $km km" },
+            mapSheetSubtitleNoDistance = { count -> "$count Wetterstationen" },
+            stationsNearby = { count -> "$count Wetterstationen in der Nähe" },
+            closestStationAway = { km -> "Nächste Station $km km entfernt" },
+            noStationsNearby = "Keine Wetterstationen in der Nähe",
 
             // PlaceSummaryView
             infoIconDesc = "Info",

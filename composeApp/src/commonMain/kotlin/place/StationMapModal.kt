@@ -1,45 +1,67 @@
 package place
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.multiplatform.webview.web.WebView
 import com.multiplatform.webview.web.rememberWebViewState
 import core.LocalAppStrings
 import core.Log
+import ui.theme.rewinds
 
+/**
+ * Dark-themed station map presented as a bottom-sheet modal.
+ *
+ * The sheet covers ~88 % of the screen with the host tab bar still visible (dimmed) behind the
+ * backdrop. The handle row is the only top chrome — there is no nav-header. Markers and tiles are
+ * rendered inside a Leaflet WebView; all Compose chrome (vignette, info panel) sits above it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StationMapModal(
     lat: Double,
     lon: Double,
     placeName: String,
     stations: List<StationDisplayData>,
-    isRefreshingStations: Boolean,
-    stationsError: String?,
-    onRefreshStations: () -> Unit,
+    summary: StationMapSummary,
     onDismiss: () -> Unit
 ) {
     val strings = LocalAppStrings.current
     val htmlContent = generateMapHtml(lat, lon, placeName, stations, strings.noStationData, strings.unknownStation)
     val safeHtmlUri = createSafeDataUri(htmlContent)
     val webViewState = rememberWebViewState(url = safeHtmlUri)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         Log.d("=== STATION MAP MODAL OPENED ===")
@@ -48,74 +70,195 @@ fun StationMapModal(
         Log.d("=====================================")
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        containerColor = MaterialTheme.rewinds.surface,
+        // The handle row provides our own chrome, so suppress the default M3 drag handle.
+        dragHandle = null
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Error banner — shown when a refresh returned an error; keeps the map markers intact
-            if (stationsError != null) {
-                Text(
-                    text = strings.stationRefreshError(stationsError),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
+        Column(modifier = Modifier.fillMaxHeight(0.88f)) {
+            SheetHandleRow(onClose = onDismiss, closeDesc = strings.closeMap)
+            SheetTitleRow(placeName = placeName, summary = summary)
 
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 WebView(
                     state = webViewState,
                     modifier = Modifier.fillMaxSize()
                 )
+                TileVignette()
+                StationInfoPanel(
+                    summary = summary,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+        }
+    }
+}
 
-                // Refresh button — top-start corner so it doesn't overlap the close button
-                IconButton(
-                    onClick = onRefreshStations,
-                    enabled = !isRefreshingStations,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.secondary,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                        )
-                ) {
-                    if (isRefreshingStations) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onSecondary,
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.padding(4.dp)
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = strings.refreshStationsDesc,
-                            tint = MaterialTheme.colorScheme.onSecondary
-                        )
-                    }
-                }
+/** Top chrome of the sheet: centred drag handle with a close button at the trailing edge. */
+@Composable
+private fun SheetHandleRow(onClose: () -> Unit, closeDesc: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(36.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.rewinds.accentBlue.copy(alpha = 0.25f))
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 12.dp)
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.rewinds.accentBlue.copy(alpha = 0.08f))
+                .border(1.dp, MaterialTheme.rewinds.accentBlue.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                .clickable(onClick = onClose),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = closeDesc,
+                tint = MaterialTheme.rewinds.textSecondary,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+    }
+}
 
-                // Close button — top-end corner
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onPrimary
+/** Place name plus the "N weather stations · closest X km" subtitle. */
+@Composable
+private fun SheetTitleRow(placeName: String, summary: StationMapSummary) {
+    val strings = LocalAppStrings.current
+    val subtitle = summary.closestDistanceKm
+        ?.let { strings.mapSheetSubtitle(summary.stationCount, it) }
+        ?: strings.mapSheetSubtitleNoDistance(summary.stationCount)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = placeName,
+            color = MaterialTheme.rewinds.textPrimary,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = subtitle,
+            color = MaterialTheme.rewinds.textMuted,
+            fontSize = 10.sp
+        )
+    }
+}
+
+/**
+ * Four-edge pageBg → transparent gradient over the tile area. Anchors the info panel and darkens
+ * the tile edges. Non-interactive so map gestures pass through.
+ */
+@Composable
+private fun TileVignette() {
+    val edge = MaterialTheme.rewinds.pageBg
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Top
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.18f)
+                .align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(edge.copy(alpha = 0.72f), edge.copy(alpha = 0f))))
+        )
+        // Bottom — deeper to seat the info panel
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.22f)
+                .align(Alignment.BottomCenter)
+                .background(Brush.verticalGradient(listOf(edge.copy(alpha = 0f), edge.copy(alpha = 0.82f))))
+        )
+        // Left
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(0.14f)
+                .align(Alignment.CenterStart)
+                .background(Brush.horizontalGradient(listOf(edge.copy(alpha = 0.55f), edge.copy(alpha = 0f))))
+        )
+        // Right
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(0.14f)
+                .align(Alignment.CenterEnd)
+                .background(Brush.horizontalGradient(listOf(edge.copy(alpha = 0f), edge.copy(alpha = 0.55f))))
+        )
+    }
+}
+
+/**
+ * Floating panel above the tiles showing station count and closest distance.
+ * Solid surface fill (never semi-transparent) so it stays legible over any map content.
+ */
+@Composable
+private fun StationInfoPanel(summary: StationMapSummary, modifier: Modifier = Modifier) {
+    val strings = LocalAppStrings.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.rewinds.surface)
+            .border(1.dp, MaterialTheme.rewinds.border, RoundedCornerShape(14.dp))
+            .padding(horizontal = 13.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(MaterialTheme.rewinds.accentBlue.copy(alpha = 0.10f))
+                .border(1.dp, MaterialTheme.rewinds.accentBlue.copy(alpha = 0.20f), RoundedCornerShape(9.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Place,
+                contentDescription = strings.mapStationIconDesc,
+                tint = MaterialTheme.rewinds.accentBlue,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (summary.stationCount > 0) {
+                Text(
+                    text = strings.stationsNearby(summary.stationCount),
+                    color = MaterialTheme.rewinds.textPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                summary.closestDistanceKm?.let { km ->
+                    Text(
+                        text = strings.closestStationAway(km),
+                        color = MaterialTheme.rewinds.textSecondary,
+                        fontSize = 11.sp
                     )
                 }
+            } else {
+                Text(
+                    text = strings.noStationsNearby,
+                    color = MaterialTheme.rewinds.textSecondary,
+                    fontSize = 11.sp
+                )
             }
         }
     }
@@ -123,8 +266,9 @@ fun StationMapModal(
 
 /**
  * Generates the Leaflet map HTML with:
- *  - A blue default marker at the saved-place centre
- *  - Orange markers for each weather station (visually distinct from the place marker)
+ *  - CartoDB Dark Matter raster tiles (dark schematic style)
+ *  - An accent-blue teardrop pin at the saved-place centre
+ *  - Lower-opacity teardrop pins for each nearby weather station
  *  - A "no station data" note overlaid on the map when the station list is empty
  */
 private fun generateMapHtml(
@@ -137,6 +281,7 @@ private fun generateMapHtml(
 ): String {
     val stationMarkersJs = buildStationMarkersJs(stations, unknownStationText)
     val noDataOverlay = if (stations.isEmpty()) buildNoDataOverlayJs(noStationDataText) else ""
+    val placeMarkerSvg = teardropSvg(fill = PLACE_PIN_FILL, stroke = MARKER_STROKE, width = 28, height = 36)
 
     return """
         <!DOCTYPE html>
@@ -149,11 +294,12 @@ private fun generateMapHtml(
             <style>
                 * { margin: 0; padding: 0; }
                 html, body, #map { width: 100%; height: 100%; }
-                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+                body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: $PAGE_BG_HEX; }
+                .leaflet-container { background: $PAGE_BG_HEX; }
                 #no-data-overlay {
                     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                    background: rgba(255,255,255,0.85); border-radius: 8px;
-                    padding: 12px 20px; font-size: 14px; color: #555;
+                    background: rgba(13,27,46,0.92); border: 1px solid $BORDER_HEX; border-radius: 8px;
+                    padding: 12px 20px; font-size: 14px; color: $TEXT_SECONDARY_HEX;
                     pointer-events: none; z-index: 1000; white-space: nowrap;
                 }
             </style>
@@ -162,14 +308,19 @@ private fun generateMapHtml(
             <div id="map"></div>
             <script>
                 (function() {
-                    var map = L.map('map').setView([$lat, $lon], 13);
-                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap',
-                        maxZoom: 19
+                    var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([$lat, $lon], 13);
+                    L.tileLayer('https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+                        maxZoom: 20
                     }).addTo(map);
 
-                    // Saved-place centre: default blue marker
-                    L.marker([$lat, $lon]).addTo(map).bindPopup('$placeName');
+                    var placeIcon = L.icon({
+                        iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent($placeMarkerSvg),
+                        iconSize: [28, 36],
+                        iconAnchor: [14, 36],
+                        popupAnchor: [0, -30]
+                    });
+                    L.marker([$lat, $lon], { icon: placeIcon }).addTo(map);
 
                     $stationMarkersJs
                     $noDataOverlay
@@ -181,33 +332,40 @@ private fun generateMapHtml(
 }
 
 /**
- * Builds JS that adds one orange marker per station.
- * Orange is achieved via a small inline SVG data-URL icon so we need no external assets.
+ * Builds JS that adds one lower-opacity teardrop marker per station. Each marker is an inline SVG
+ * data-URL icon so no external assets are needed.
  */
 private fun buildStationMarkersJs(stations: List<StationDisplayData>, unknownStationText: String): String {
     if (stations.isEmpty()) return ""
 
-    // Orange marker SVG (matches Leaflet's default shape/size, distinct colour)
-    val orangeIconJs = """
-        var orangeIcon = L.icon({
-            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">' +
-                '<path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 9.375 12.5 28.5 12.5 28.5S25 21.875 25 12.5C25 5.596 19.404 0 12.5 0z" fill="#FF7A00" stroke="#CC5500" stroke-width="1"/>' +
-                '<circle cx="12.5" cy="12.5" r="5" fill="white"/>' +
-                '</svg>'
-            ),
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34]
+    val stationSvg = teardropSvg(fill = STATION_PIN_FILL, stroke = MARKER_STROKE, width = 20, height = 26)
+    val iconJs = """
+        var stationIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent($stationSvg),
+            iconSize: [20, 26],
+            iconAnchor: [10, 26],
+            popupAnchor: [0, -22]
         });
     """.trimIndent()
 
     val markerStatements = stations.joinToString("\n") { station ->
         val displayName = station.name?.replace("'", "\\'") ?: unknownStationText
-        "L.marker([${station.latitude}, ${station.longitude}], { icon: orangeIcon }).addTo(map).bindPopup('$displayName');"
+        "L.marker([${station.latitude}, ${station.longitude}], { icon: stationIcon }).addTo(map).bindPopup('$displayName');"
     }
 
-    return "$orangeIconJs\n$markerStatements"
+    return "$iconJs\n$markerStatements"
+}
+
+/**
+ * Returns a single-quoted JS string literal containing a teardrop marker SVG
+ * (circular head + pointed tail) with the given fill and stroke.
+ */
+private fun teardropSvg(fill: String, stroke: String, width: Int, height: Int): String {
+    val svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"$width\" height=\"$height\" viewBox=\"0 0 28 36\">" +
+        "<path d=\"M14 1C7.4 1 2 6.4 2 13c0 9 12 22 12 22s12-13 12-22C26 6.4 20.6 1 14 1z\" " +
+        "fill=\"$fill\" stroke=\"$stroke\" stroke-width=\"2\"/>" +
+        "</svg>"
+    return "'$svg'"
 }
 
 private fun buildNoDataOverlayJs(message: String): String {
@@ -219,6 +377,14 @@ private fun buildNoDataOverlayJs(message: String): String {
         document.getElementById('map').appendChild(overlay);
     """.trimIndent()
 }
+
+// Marker colours mirror the Midnight Blue tokens (kept as hex strings for inline SVG).
+private const val PLACE_PIN_FILL = "#8ECFF0"      // accentBlue
+private const val STATION_PIN_FILL = "rgba(122,184,216,0.55)"  // textSecondary @ ~55 %
+private const val MARKER_STROKE = "#030810"       // pageBg
+private const val PAGE_BG_HEX = "#030810"
+private const val BORDER_HEX = "#1A3050"
+private const val TEXT_SECONDARY_HEX = "#7AB8D8"
 
 // Create a data URI that works on iOS by using base64 encoding
 private fun createSafeDataUri(html: String): String {

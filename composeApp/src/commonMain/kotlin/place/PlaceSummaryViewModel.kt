@@ -14,9 +14,13 @@ import core.WeatherResponse
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -77,6 +81,18 @@ data class MonthCellInfo(
 )
 
 /**
+ * Derived summary of the nearby weather stations, shown in the map sheet header and info panel.
+ *
+ * The View renders these pre-computed values directly — count and the closest distance are derived
+ * here (in km, one decimal) rather than in the composable, per the MV* boundary.
+ */
+data class StationMapSummary(
+    val stationCount: Int,
+    /** Closest station distance in kilometres, formatted to one decimal (e.g. "2.3"); null if unknown. */
+    val closestDistanceKm: String?
+)
+
+/**
  * Sealed class representing navigation events.
  */
 sealed class NavigationEvent {
@@ -129,6 +145,14 @@ class PlaceSummaryViewModel(
 
     fun openStationMap() { _showStationMap.value = true }
     fun closeStationMap() { _showStationMap.value = false }
+
+    /**
+     * Station count and closest-distance summary, derived from the current station list.
+     * Kept in the ViewModel so the map sheet only renders pre-computed values.
+     */
+    val stationMapSummary: StateFlow<StationMapSummary> = uiState
+        .map { state -> (state as? WeatherSummaryUiState.Success)?.stations.orEmpty().toMapSummary() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StationMapSummary(0, null))
 
     fun setSelectedYear(year: Int?) {
         _selectedYear.value = year
@@ -238,6 +262,19 @@ class PlaceSummaryViewModel(
             }
             _isRefreshingStations.value = false
         }
+    }
+
+    /**
+     * Reduces the station list to a count plus the closest distance, formatted to one decimal.
+     * Station distances are already expressed in km (the app's existing convention), so the value
+     * is only rounded for display — no unit conversion.
+     */
+    private fun List<StationDisplayData>.toMapSummary(): StationMapSummary {
+        val closestKm = mapNotNull { it.distance }.minOrNull()?.let { km ->
+            val tenths = (km * 10).roundToInt()
+            "${tenths / 10}.${tenths % 10}"
+        }
+        return StationMapSummary(stationCount = size, closestDistanceKm = closestKm)
     }
 
     private fun List<Station>.toDisplayData(): List<StationDisplayData> =
