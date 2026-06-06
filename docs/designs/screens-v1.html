@@ -295,6 +295,119 @@
     background: #8ecff0; display: flex; align-items: center;
     justify-content: center; font-size: 12px; color: #030810;
   }
+
+  /* ── Map modal shell ── */
+  .map-modal-host {
+    position: absolute; inset: 0; z-index: 20;
+    background: rgba(3,8,16,0.72);
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .map-sheet {
+    background: #0D1B2E;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    height: 88%;
+  }
+  .map-sheet-handle-row {
+    height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+    background: #0D1B2E;
+  }
+  .map-sheet-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: rgba(142,207,240,0.25);
+  }
+  .map-sheet-close {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(142,207,240,0.08); border: 1px solid rgba(142,207,240,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #7ab8d8; cursor: pointer;
+  }
+  .map-sheet-title-row {
+    padding: 0 16px 12px;
+    display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;
+    background: #0D1B2E;
+  }
+  .map-sheet-title {
+    font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: #ddeef8;
+  }
+  .map-sheet-subtitle {
+    font-size: 10px; color: #5a90b0; letter-spacing: 0.04em;
+  }
+  .map-tile-area {
+    flex: 1; position: relative; overflow: hidden;
+    background: #071420;
+  }
+  .map-tile-area::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(142,207,240,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(142,207,240,0.03) 1px, transparent 1px),
+      radial-gradient(ellipse 160% 80% at 40% 110%, rgba(10,30,50,0.9) 0%, transparent 70%);
+    background-size: 24px 24px, 24px 24px, 100% 100%;
+  }
+  .map-vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background:
+      linear-gradient(to bottom,  rgba(3,8,16,0.72) 0%, transparent 18%),
+      linear-gradient(to top,     rgba(3,8,16,0.82) 0%, transparent 22%),
+      linear-gradient(to right,   rgba(3,8,16,0.55) 0%, transparent 14%),
+      linear-gradient(to left,    rgba(3,8,16,0.55) 0%, transparent 14%);
+  }
+  .map-pin-drop {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    display: flex; flex-direction: column; align-items: center;
+    z-index: 10;
+  }
+  .map-pin-drop-body {
+    width: 14px; height: 18px;
+    background: #8ecff0;
+    border: 2px solid #030810;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    position: relative;
+  }
+  .map-pin-drop-body::after {
+    content: '';
+    position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #8ecff0;
+  }
+  .map-pin-drop-body.selected {
+    background: #e8a030;
+  }
+  .map-pin-drop-body.selected::after {
+    border-top-color: #e8a030;
+  }
+  .map-info-panel {
+    position: absolute; bottom: 14px; left: 16px; right: 16px;
+    z-index: 15;
+    background: #0D1B2E;
+    border: 1px solid #1a3050;
+    border-radius: 14px;
+    padding: 10px 13px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .map-info-icon {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: rgba(142,207,240,0.1); border: 1px solid rgba(142,207,240,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .map-info-text { font-size: 11px; color: #7ab8d8; line-height: 1.4; }
+  .map-info-text strong { color: #c8e8f8; font-weight: 600; }
+  .map-road-v2 {
+    position: absolute;
+    background: rgba(142,207,240,0.07);
+    border-radius: 2px;
+  }
 </style>
 </head>
 <body>
@@ -744,6 +857,139 @@
       </div>
     </div>
   </div>
+
+<!-- ══════════════════════════════════════════
+     7. MAP MODAL — sheet presentation
+     Entry: "Map" icon-btn on Place Detail nav-header.
+     Dismiss: drag handle / swipe down / backdrop tap / ✕ button.
+══════════════════════════════════════════════ -->
+<div class="col">
+  <div class="col-label">7 · Map Modal — sheet presentation</div>
+  <div class="phone">
+    <svg class="isobar"><use href="#iso"/></svg>
+    <!-- Host screen (Place Detail, dimmed) -->
+    <div class="screen">
+      <div class="status-bar" style="opacity:0.4"><span>12:47</span><span>◼ ▲ ▐▐</span></div>
+      <div class="nav-header" style="opacity:0.4">
+        <div class="nav-back">‹ &nbsp;Places</div>
+        <div class="nav-title" style="font-size:17px">Konstanz</div>
+        <div class="header-icons">
+          <div class="icon-btn" style="font-size:12px">🗺</div>
+          <div class="icon-btn accent">💬</div>
+        </div>
+      </div>
+      <div class="content" style="opacity:0.4">
+        <div class="year-strip">
+          <div class="year-chip active">2026</div>
+          <div class="year-chip">2025</div>
+          <div class="year-chip">2024</div>
+        </div>
+        <div class="month-grid">
+          <div class="month-card"><div class="month-name">Jan 2026</div><div class="month-stat">Avg −0.2°C</div><div class="month-days">31 days</div></div>
+          <div class="month-card"><div class="month-name">Feb 2026</div><div class="month-stat">Avg 4.8°C</div><div class="month-days">28 days</div></div>
+          <div class="month-card"><div class="month-name">Mar 2026</div><div class="month-stat">Avg 5.9°C</div><div class="month-days">31 days</div></div>
+          <div class="month-card"><div class="month-name">Apr 2026</div><div class="month-stat">Avg 11.4°C</div><div class="month-days">30 days</div></div>
+        </div>
+      </div>
+      <div class="tabbar" style="opacity:0.3">
+        <div class="tab"><div class="tab-icon active">📍</div><div class="tab-label active">Places</div></div>
+        <div class="tab"><div class="tab-icon">💬</div><div class="tab-label">Chat</div></div>
+        <div class="tab"><div class="tab-icon">⚙</div><div class="tab-label">Settings</div></div>
+      </div>
+    </div>
+    <!-- Modal backdrop + sheet -->
+    <div class="map-modal-host">
+      <div class="map-sheet">
+        <div class="map-sheet-handle-row">
+          <div class="map-sheet-handle"></div>
+          <div class="map-sheet-close">✕</div>
+        </div>
+        <div class="map-sheet-title-row">
+          <div class="map-sheet-title">Konstanz</div>
+          <div class="map-sheet-subtitle">3 weather stations · closest 2.3 km</div>
+        </div>
+        <div class="map-tile-area">
+          <div class="map-vignette"></div>
+          <div class="map-road-v2" style="width:160px;height:3px;top:36%;left:8%;transform:rotate(-6deg)"></div>
+          <div class="map-road-v2" style="width:3px;height:120px;top:18%;left:41%"></div>
+          <div class="map-road-v2" style="width:200px;height:3px;top:60%;left:5%;transform:rotate(3deg)"></div>
+          <div class="map-road-v2" style="width:3px;height:90px;top:45%;left:66%"></div>
+          <div class="map-road-v2" style="width:110px;height:2px;top:75%;left:28%;transform:rotate(-4deg)"></div>
+          <div style="position:absolute;bottom:20%;left:-8%;width:50%;height:30%;background:rgba(142,207,240,0.035);border-radius:40% 60% 50% 30%"></div>
+          <div class="map-pin-drop" style="left:44%;top:54%">
+            <div class="map-pin-drop-body"></div>
+          </div>
+          <div class="map-pin-drop" style="left:37%;top:42%">
+            <div class="map-pin-drop-body" style="width:10px;height:13px;background:rgba(122,184,216,0.55);border-color:rgba(3,8,16,0.6)"></div>
+          </div>
+          <div class="map-pin-drop" style="left:55%;top:47%">
+            <div class="map-pin-drop-body" style="width:10px;height:13px;background:rgba(122,184,216,0.55);border-color:rgba(3,8,16,0.6)"></div>
+          </div>
+          <div class="map-pin-drop" style="left:50%;top:67%">
+            <div class="map-pin-drop-body" style="width:10px;height:13px;background:rgba(122,184,216,0.55);border-color:rgba(3,8,16,0.6)"></div>
+          </div>
+          <div class="map-info-panel">
+            <div class="map-info-icon">📡</div>
+            <div class="map-info-text">
+              <strong>3 weather stations nearby</strong><br>
+              Closest station 2.3 km away
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     8. MAP MODAL — selected marker state
+══════════════════════════════════════════════ -->
+<div class="col">
+  <div class="col-label">8 · Map Modal — selected marker</div>
+  <div class="phone">
+    <svg class="isobar"><use href="#iso"/></svg>
+    <div class="screen" style="opacity:0.18"><div class="status-bar"><span>12:47</span></div></div>
+    <div class="map-modal-host">
+      <div class="map-sheet">
+        <div class="map-sheet-handle-row">
+          <div class="map-sheet-handle"></div>
+          <div class="map-sheet-close">✕</div>
+        </div>
+        <div class="map-sheet-title-row">
+          <div class="map-sheet-title">Konstanz</div>
+          <div class="map-sheet-subtitle">3 weather stations · closest 2.3 km</div>
+        </div>
+        <div class="map-tile-area">
+          <div class="map-vignette"></div>
+          <div class="map-road-v2" style="width:160px;height:3px;top:36%;left:8%;transform:rotate(-6deg)"></div>
+          <div class="map-road-v2" style="width:3px;height:120px;top:18%;left:41%"></div>
+          <div class="map-road-v2" style="width:200px;height:3px;top:60%;left:5%;transform:rotate(3deg)"></div>
+          <div class="map-road-v2" style="width:3px;height:90px;top:45%;left:66%"></div>
+          <div style="position:absolute;bottom:20%;left:-8%;width:50%;height:30%;background:rgba(142,207,240,0.035);border-radius:40% 60% 50% 30%"></div>
+          <div class="map-pin-drop" style="left:44%;top:54%">
+            <div class="map-pin-drop-body"></div>
+          </div>
+          <div class="map-pin-drop" style="left:37%;top:42%">
+            <div class="map-pin-drop-body selected" style="width:12px;height:16px"></div>
+          </div>
+          <div class="map-pin-drop" style="left:55%;top:47%">
+            <div class="map-pin-drop-body" style="width:10px;height:13px;background:rgba(122,184,216,0.55);border-color:rgba(3,8,16,0.6)"></div>
+          </div>
+          <div class="map-pin-drop" style="left:50%;top:67%">
+            <div class="map-pin-drop-body" style="width:10px;height:13px;background:rgba(122,184,216,0.55);border-color:rgba(3,8,16,0.6)"></div>
+          </div>
+          <div class="map-info-panel">
+            <div class="map-info-icon" style="background:rgba(232,160,48,0.1);border-color:rgba(232,160,48,0.25)">📡</div>
+            <div class="map-info-text">
+              <strong style="color:#e8a030">Konstanz-Wallhausen</strong><br>
+              1.1 km away · selected
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </div>
 </body>
