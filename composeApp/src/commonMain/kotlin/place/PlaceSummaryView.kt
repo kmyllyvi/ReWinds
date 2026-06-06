@@ -18,10 +18,14 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,6 +108,14 @@ fun PlaceSummaryView(
                     onBackClick()
                 },
                 rightContent = {
+                    // Map entry point — non-accent icon button, opens the station map sheet.
+                    IconButton(onClick = { vm.openStationMap() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Map,
+                            contentDescription = strings.openMapButton,
+                            tint = MaterialTheme.rewinds.textPrimary
+                        )
+                    }
                     TextButton(
                         onClick = {
                             // TODO: Chat tab does not yet support a place pre-filter / deep-link.
