@@ -419,8 +419,9 @@ class PlaceSummaryViewModelStationTest {
 
     @Test
     fun stationMapSummary_exposesCountAndClosestDistance() = runTest {
-        val near = sampleStation.copy(id = "near", distance = 2.34)
-        val far = sampleStation.copy(id = "far", distance = 15.2)
+        // KIM-277: Visual Crossing distances are in metres. 2340 m → "2.3 km", 15200 m → "15.2 km".
+        val near = sampleStation.copy(id = "near", distance = 2340.0)
+        val far = sampleStation.copy(id = "far", distance = 15200.0)
         val repo = FakeWeatherRepository(
             data = weatherResponse,
             persistedStations = listOf(far, near),
@@ -433,7 +434,24 @@ class PlaceSummaryViewModelStationTest {
 
         val summary = vm.stationMapSummary.value
         assertEquals(2, summary.stationCount)
-        assertEquals("2.3", summary.closestDistanceKm, "closest distance rounded to one decimal")
+        assertEquals("2.3", summary.closestDistanceKm, "closest distance converted from metres and rounded to one decimal")
+    }
+
+    @Test
+    fun stationMapSummary_convertsMetresToKilometres() = runTest {
+        // Regression for KIM-277: a 9705 m station (real Konstanz value from the API) must
+        // render as "9.7" km, not "9705" km.
+        val konstanz = sampleStation.copy(id = "06272", distance = 9705.0)
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(konstanz),
+            fetchStationsResult = { StationsResult.Success(listOf(konstanz)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        backgroundScope.launch { vm.stationMapSummary.collect {} }
+        advanceUntilIdle()
+
+        assertEquals("9.7", vm.stationMapSummary.value.closestDistanceKm)
     }
 
     @Test

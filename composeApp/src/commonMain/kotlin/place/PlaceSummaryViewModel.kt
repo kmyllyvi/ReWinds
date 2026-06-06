@@ -266,12 +266,13 @@ class PlaceSummaryViewModel(
 
     /**
      * Reduces the station list to a count plus the closest distance, formatted to one decimal.
-     * Station distances are already expressed in km (the app's existing convention), so the value
-     * is only rounded for display — no unit conversion.
+     * Visual Crossing reports station `distance` in **metres**, so it is divided by 1000 for the
+     * km value the UI shows. (KIM-277: previously displayed raw metres labelled as km, e.g. a
+     * 2177 m station read as "2177 km".)
      */
     private fun List<StationDisplayData>.toMapSummary(): StationMapSummary {
-        val closestKm = mapNotNull { it.distance }.minOrNull()?.let { km ->
-            val tenths = (km * 10).roundToInt()
+        val closestKm = mapNotNull { it.distance }.minOrNull()?.let { metres ->
+            val tenths = (metres / METRES_PER_KM * 10).roundToInt()
             "${tenths / 10}.${tenths % 10}"
         }
         return StationMapSummary(stationCount = size, closestDistanceKm = closestKm)
@@ -412,6 +413,9 @@ class PlaceSummaryViewModel(
         // Placeholder: a month with at least this many stored days (but not the whole
         // month) renders as FULL; below it renders as PARTIAL. Review the value of 20.
         const val PARTIAL_DAY_THRESHOLD = 20
+
+        // Visual Crossing reports station distance in metres; the UI shows kilometres.
+        const val METRES_PER_KM = 1000.0
 
         // Counts stored days per month for [selectedYear]. Pure — no ViewModel state.
         fun calculateMonthCompletionStatusMap(
