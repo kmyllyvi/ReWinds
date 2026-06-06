@@ -22,3 +22,8 @@ Pods/
 # Secrets - don't commit real API keys
 # If you add real keys to gradle.properties, use: git update-index --assume-unchanged gradle.properties
 iosApp/Config.local.xcconfig
+
+# Claude Code agent runtime artefacts — never commit
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
