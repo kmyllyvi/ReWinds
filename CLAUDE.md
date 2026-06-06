@@ -44,12 +44,27 @@ xcodebuild -workspace iosApp/iosApp.xcworkspace \
 
 #### Both Platforms
 ```bash
-# Full Gradle build (slow, for CI only)
-./gradlew build --no-daemon
+# Android + iOS Gradle build (CI only — iOS is normally built via Xcode)
+./gradlew build -PincludeAllTargets=true --no-daemon
+
+# Or use the convenience task:
+./gradlew buildWithIos
+```
+
+> **Note**: Plain `./gradlew build` (no flag) now builds **Android only** by default.
+> Kotlin/Native iOS targets are skipped unless `-PincludeAllTargets=true` is passed.
+> This is intentional — Xcode is the iOS build tool; Gradle iOS compilation was just overhead.
+
+#### Code Coverage
+```bash
+# Coverage is opt-in to avoid instrumentation overhead on every test run
+./gradlew coverageReport -PenableCoverage=true
 ```
 
 ### Key Configuration
-- **Gradle Heap**: 6GB (set in `gradle.properties`)
+- **Gradle Heap**: 8GB (set in `gradle.properties`)
+- **iOS targets**: `iosArm64` + `iosSimulatorArm64` (iosX64/Intel removed — Apple Silicon only)
+- **Kotlin/Native daemon**: enabled (warm between tasks; `disableCompilerDaemon` removed)
 - **Kotlin/Native**: Devirtualization disabled (`-Xno-devirtualization` flag)
 - **iOS**: Cocoapods manages sqlite3 dependency
 - **Database**: SQLDelight with sqlite3 driver
@@ -120,7 +135,7 @@ iosApp/
 - All 32+ tests passing ✅
 
 ### ⚠️ Known Issues
-- Gradle iOS build tasks unreliable (use Xcode instead)
+- Gradle iOS build tasks unreliable (use Xcode instead) — mitigated: iOS targets now excluded from default Gradle builds
 - Device ARM64 builds OOM (needs 8GB+ or architectural changes)
 - XCFramework builds have KLIB resolver conflicts
 

@@ -158,11 +158,11 @@ Your MEMORY.md is currently empty. When you notice a pattern worth preserving ac
 
 # Linear workflow (handover)
 
-You act on issues in statuses: Planned or **In Progress** only - additionally check ticket Labels. Labels must include "spec-ready" . Follow the Linear handover protocol in  
+You act on issues in statuses: **Todo**, Planned, or **In Progress** — additionally check ticket Labels. Labels must include "spec-ready". Follow the Linear handover protocol in  
 docs/agent/WORKFLOW.md.
 
 - On dispatch, read the issue (spec, acceptance criteria, definition of done) via
-  mcp**linear-server**get_issue. If it isn't In Progress, stop and say so — don't work out of turn.
+  mcp**linear-server**get_issue. If it isn't in Todo, Planned, or In Progress, stop and say so — don't work out of turn.
 - Work on a branch named kim--.
 - Pilot build/test is **Android only**: ./gradlew buildAndroidOnly and
   ./gradlew :composeApp:testDebugUnitTest. Do not attempt Gradle iOS builds; iOS is verified
