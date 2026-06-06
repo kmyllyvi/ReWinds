@@ -19,7 +19,9 @@ repositories {
     mavenCentral()
 }
 
-val includeAllTargets: Boolean = project.findProperty("includeAllTargets")?.toString()?.toBoolean() ?: true
+// Default false so plain `./gradlew build` skips Kotlin/Native iOS compilation.
+// iOS is built via Xcode; pass -PincludeAllTargets=true or use `buildWithIos` task when needed.
+val includeAllTargets: Boolean = project.findProperty("includeAllTargets")?.toString()?.toBoolean() ?: false
 
 kotlin {
     androidTarget {
@@ -29,9 +31,10 @@ kotlin {
         }
     }
     // add ios targets
+    // iosX64 (Intel-Mac simulator) removed — Apple Silicon machines use iosSimulatorArm64.
+    // Re-add if Intel CI runners are introduced.
     listOf(
         iosArm64(),
-        iosX64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
@@ -106,38 +109,34 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
         }
 
-        if (includeAllTargets) {
+        // iOS source sets — always configured because iosArm64/iosSimulatorArm64 targets are
+        // always declared above. The Kotlin Gradle plugin skips native compilation automatically
+        // on non-Mac hosts (see "Disabled Kotlin/Native Targets" warnings in CI logs), so there
+        // is no need to gate these on includeAllTargets.
+        // https://stackoverflow.com/questions/72474284/unresolved-reference-iosmain-kotlin-multiplatform
+        val iosMain by creating {
+            dependsOn(commonMain.get())
 
-            // https://stackoverflow.com/questions/72474284/unresolved-reference-iosmain-kotlin-multiplatform
-            val iosMain by creating {
-                dependsOn(commonMain.get())
-
-                dependencies {
-                    implementation(libs.ktor.client.darwin)
-                    implementation(libs.sqldelight.native.driver)
-                }
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+                implementation(libs.sqldelight.native.driver)
             }
-
-            // Excluding watchOS (maybe there's a better way)
-            val iosArm64Main by getting {
-                dependsOn(iosMain)
-            }
-            val iosX64Main by getting {
-                dependsOn(iosMain)
-            }
-            val iosSimulatorArm64Main by getting {
-                dependsOn(iosMain)
-            }
-
-            // iOS test source set
-            val iosTest by creating {
-                dependsOn(commonTest.get())
-            }
-
-            val iosArm64Test by getting { dependsOn(iosTest) }
-            val iosX64Test by getting { dependsOn(iosTest) }
-            val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
         }
+
+        val iosArm64Main by getting {
+            dependsOn(iosMain)
+        }
+        val iosSimulatorArm64Main by getting {
+            dependsOn(iosMain)
+        }
+
+        // iOS test source set
+        val iosTest by creating {
+            dependsOn(commonTest.get())
+        }
+
+        val iosArm64Test by getting { dependsOn(iosTest) }
+        val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
     }
 
     cocoapods {
@@ -252,9 +251,14 @@ jacoco {
     toolVersion = "0.8.11"
 }
 
+// Only instrument bytecode when coverage is explicitly requested.
+// Normal builds and test runs skip the overhead.
+// Usage: ./gradlew coverageReport -PenableCoverage=true
+val enableCoverage: Boolean = project.findProperty("enableCoverage")?.toString()?.toBoolean() ?: false
+
 android {
     buildTypes.all {
-        enableUnitTestCoverage = true
+        enableUnitTestCoverage = enableCoverage
     }
 }
 
