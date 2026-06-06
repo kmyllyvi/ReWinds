@@ -6,9 +6,11 @@ import core.Station
 import core.StationsResult
 import core.WeatherRepository
 import core.WeatherResponse
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -39,6 +41,7 @@ class PlaceSummaryViewModelStationTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val placeName = "Tarifa"
+    private val createdViewModels = mutableListOf<PlaceSummaryViewModel>()
 
     private val weatherResponse = WeatherResponse(
         resolvedAddress = placeName,
@@ -68,7 +71,11 @@ class PlaceSummaryViewModelStationTest {
 
     @AfterTest
     fun tearDown() {
-        testDispatcher.scheduler.advanceUntilIdle() // drain pending ViewModel coroutines before resetting
+        // Cancel all ViewModel scopes first — turns pending work into CancellationException
+        // (which is NOT an uncaught exception) rather than letting it run and potentially throw.
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
+        testDispatcher.scheduler.advanceUntilIdle() // process the cancellations cleanly
         Dispatchers.resetMain()
     }
 
@@ -469,7 +476,7 @@ class PlaceSummaryViewModelStationTest {
         return PlaceSummaryViewModel(
             route = core.PlaceSummaryRoute(placeName = placeName),
             weatherRepository = repo
-        )
+        ).also { createdViewModels.add(it) }
     }
 }
 
