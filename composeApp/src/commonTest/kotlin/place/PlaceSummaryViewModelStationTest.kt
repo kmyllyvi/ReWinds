@@ -68,6 +68,7 @@ class PlaceSummaryViewModelStationTest {
 
     @AfterTest
     fun tearDown() {
+        testDispatcher.scheduler.advanceUntilIdle() // drain pending ViewModel coroutines before resetting
         Dispatchers.resetMain()
     }
 
