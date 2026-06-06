@@ -19,6 +19,8 @@ object ReWindsColors {
     val textPrimary      = Color(0xFFDDEEF8)
     val textSecondary    = Color(0xFF7AB8D8)
     val textTertiary     = Color(0xFF4A7A9B)
+    // Muted subtitle tone used under titles (e.g. map sheet subtitle)
+    val textMuted        = Color(0xFF5A90B0)
     val accentBlue       = Color(0xFF8ECFF0)
     val accentBluePressed = Color(0xFF5BB3E0)
     val attention        = Color(0xFFE8A030)

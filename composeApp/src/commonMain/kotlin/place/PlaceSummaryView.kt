@@ -69,7 +69,7 @@ fun PlaceSummaryView(
 ) {
     val uiState by vm.uiState.collectAsState()
     val showMapModal by vm.showStationMap.collectAsState()
-    val isRefreshingStations by vm.isRefreshingStations.collectAsState()
+    val stationMapSummary by vm.stationMapSummary.collectAsState()
     val currentPlaceName = vm.placeName
     val strings = LocalAppStrings.current
 
@@ -152,9 +152,7 @@ fun PlaceSummaryView(
                 lon = success.longitude,
                 placeName = currentPlaceName,
                 stations = success.stations,
-                isRefreshingStations = isRefreshingStations,
-                stationsError = success.stationsError,
-                onRefreshStations = { vm.refreshStations() },
+                summary = stationMapSummary,
                 onDismiss = { vm.closeStationMap() }
             )
         }

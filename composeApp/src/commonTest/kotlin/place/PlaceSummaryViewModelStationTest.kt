@@ -9,6 +9,7 @@ import core.WeatherResponse
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -404,6 +405,61 @@ class PlaceSummaryViewModelStationTest {
 
         vm.closeStationMap()
         assertFalse(vm.showStationMap.value, "closeStationMap() should set showStationMap to false")
+    }
+
+    // ─── Station map summary (KIM-272) ────────────────────────────────────────────
+
+    @Test
+    fun stationMapSummary_exposesCountAndClosestDistance() = runTest {
+        val near = sampleStation.copy(id = "near", distance = 2.34)
+        val far = sampleStation.copy(id = "far", distance = 15.2)
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(far, near),
+            fetchStationsResult = { StationsResult.Success(listOf(far, near)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        // WhileSubscribed flow only emits with an active collector.
+        backgroundScope.launch { vm.stationMapSummary.collect {} }
+        advanceUntilIdle()
+
+        val summary = vm.stationMapSummary.value
+        assertEquals(2, summary.stationCount)
+        assertEquals("2.3", summary.closestDistanceKm, "closest distance rounded to one decimal")
+    }
+
+    @Test
+    fun stationMapSummary_isEmptyWhenNoStations() = runTest {
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = emptyList(),
+            // Auto-backfill also returns nothing → stations stay empty.
+            fetchStationsResult = { StationsResult.Success(emptyList()) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        backgroundScope.launch { vm.stationMapSummary.collect {} }
+        advanceUntilIdle()
+
+        val summary = vm.stationMapSummary.value
+        assertEquals(0, summary.stationCount)
+        assertNull(summary.closestDistanceKm, "no stations means no closest distance")
+    }
+
+    @Test
+    fun stationMapSummary_handlesNullDistances() = runTest {
+        val noDistance = sampleStation.copy(id = "nd", distance = null)
+        val repo = FakeWeatherRepository(
+            data = weatherResponse,
+            persistedStations = listOf(noDistance),
+            fetchStationsResult = { StationsResult.Success(listOf(noDistance)) }
+        )
+        val vm = makePlaceSummaryViewModel(repo)
+        backgroundScope.launch { vm.stationMapSummary.collect {} }
+        advanceUntilIdle()
+
+        val summary = vm.stationMapSummary.value
+        assertEquals(1, summary.stationCount, "station still counts even without a distance")
+        assertNull(summary.closestDistanceKm)
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
