@@ -19,9 +19,19 @@ repositories {
     mavenCentral()
 }
 
-// Default false so plain `./gradlew build` skips Kotlin/Native iOS compilation.
-// iOS is built via Xcode; pass -PincludeAllTargets=true or use `buildWithIos` task when needed.
-val includeAllTargets: Boolean = project.findProperty("includeAllTargets")?.toString()?.toBoolean() ?: false
+// Whether to declare the Kotlin/Native iOS targets. Declaring them makes a plain
+// `./gradlew build` on a Mac pull in the slow compileKotlinIos*/linkFrameworkIos* tasks,
+// so we keep them off by default and only enable them when actually building for iOS:
+//   * -PincludeAllTargets=true is passed explicitly (CI full builds), OR
+//   * the build is invoked from Xcode/CocoaPods — detected via PLATFORM_NAME, which Xcode
+//     sets for both the embedAndSign and the podspec syncFramework script phases. Detecting
+//     the env (rather than only a flag) keeps this working even after the generated
+//     composeApp.podspec is regenerated.
+// NOTE: manual CocoaPods setup run outside Xcode (e.g.
+//   ./gradlew :composeApp:generateDummyFramework) must pass -PincludeAllTargets=true.
+val includeAllTargets: Boolean =
+    project.findProperty("includeAllTargets")?.toString()?.toBoolean()
+        ?: (System.getenv("PLATFORM_NAME") != null)
 
 kotlin {
     androidTarget {
@@ -30,23 +40,25 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    // add ios targets
+    // iOS targets — only declared when includeAllTargets is true (see definition above).
+    // Gating the declaration keeps the default Gradle/IDE build Android-only and fast.
     // iosX64 (Intel-Mac simulator) removed — Apple Silicon machines use iosSimulatorArm64.
-    // Re-add if Intel CI runners are introduced.
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "ComposeApp"
-            isStatic = true
-            binaryOption("bundleId", "com.km.rewinds.ReWinds")
-            // Disable all memory-heavy optimizations
-            freeCompilerArgs += listOf(
-                "-Xno-devirtualization",
-                "-Xno-objc-generics",
-                "-Xallocator=std"
-            )
+    if (includeAllTargets) {
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64()
+        ).forEach { iosTarget ->
+            iosTarget.binaries.framework {
+                baseName = "ComposeApp"
+                isStatic = true
+                binaryOption("bundleId", "com.km.rewinds.ReWinds")
+                // Disable all memory-heavy optimizations
+                freeCompilerArgs += listOf(
+                    "-Xno-devirtualization",
+                    "-Xno-objc-generics",
+                    "-Xallocator=std"
+                )
+            }
         }
     }
 
@@ -109,34 +121,35 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
         }
 
-        // iOS source sets — always configured because iosArm64/iosSimulatorArm64 targets are
-        // always declared above. The Kotlin Gradle plugin skips native compilation automatically
-        // on non-Mac hosts (see "Disabled Kotlin/Native Targets" warnings in CI logs), so there
-        // is no need to gate these on includeAllTargets.
+        // iOS source sets — gated together with the target declaration above. The `by getting`
+        // accessors require the targets to exist, so these must only run when includeAllTargets
+        // is true; otherwise plain Android-only builds would fail to resolve iosArm64Main etc.
         // https://stackoverflow.com/questions/72474284/unresolved-reference-iosmain-kotlin-multiplatform
-        val iosMain by creating {
-            dependsOn(commonMain.get())
+        if (includeAllTargets) {
+            val iosMain by creating {
+                dependsOn(commonMain.get())
 
-            dependencies {
-                implementation(libs.ktor.client.darwin)
-                implementation(libs.sqldelight.native.driver)
+                dependencies {
+                    implementation(libs.ktor.client.darwin)
+                    implementation(libs.sqldelight.native.driver)
+                }
             }
-        }
 
-        val iosArm64Main by getting {
-            dependsOn(iosMain)
-        }
-        val iosSimulatorArm64Main by getting {
-            dependsOn(iosMain)
-        }
+            val iosArm64Main by getting {
+                dependsOn(iosMain)
+            }
+            val iosSimulatorArm64Main by getting {
+                dependsOn(iosMain)
+            }
 
-        // iOS test source set
-        val iosTest by creating {
-            dependsOn(commonTest.get())
-        }
+            // iOS test source set
+            val iosTest by creating {
+                dependsOn(commonTest.get())
+            }
 
-        val iosArm64Test by getting { dependsOn(iosTest) }
-        val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
+            val iosArm64Test by getting { dependsOn(iosTest) }
+            val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
+        }
     }
 
     cocoapods {
