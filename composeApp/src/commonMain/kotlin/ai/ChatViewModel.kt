@@ -40,6 +40,15 @@ data class ChatMessage(
 )
 
 /**
+ * A selectable context chip shown above the message list. [placeName] is null
+ * for the "All places" chip; a non-null value targets a specific saved place.
+ */
+data class ContextChip(
+    val placeName: String?,
+    val isSelected: Boolean
+)
+
+/**
  * Details about a pending data fetch that requires user permission.
  */
 data class PendingDataFetch(
@@ -63,8 +72,14 @@ data class ChatUiState(
     val inputText: String = "",
     val showApiKeyMissingDialog: Boolean = false,
     val showApiKeyInvalidError: Boolean = false,
-    val pendingDataFetch: PendingDataFetch? = null
-)
+    val pendingDataFetch: PendingDataFetch? = null,
+    /** Context chips above the message list. The "All places" chip is always present. */
+    val contextChips: List<ContextChip> = listOf(ContextChip(placeName = null, isSelected = true))
+) {
+    /** Send is enabled only when there is non-blank input and no request in flight. */
+    val isSendEnabled: Boolean
+        get() = inputText.isNotBlank() && !isLoading
+}
 
 /**
  * ViewModel for the chat interface.
@@ -104,6 +119,37 @@ class ChatViewModel(
             } else {
                 Log.d("ChatViewModel: new session $sessionId, starting fresh")
             }
+        }
+        loadContextChips()
+    }
+
+    /**
+     * Builds the context-chip row from the saved places. "All places" is always first
+     * and starts selected; each saved place becomes a selectable chip.
+     */
+    private fun loadContextChips() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val placeNames = runCatching { weatherRepository.getSavedPlaceNames() }
+                .getOrDefault(emptyList())
+            val chips = buildList {
+                add(ContextChip(placeName = null, isSelected = true))
+                placeNames.forEach { add(ContextChip(placeName = it, isSelected = false)) }
+            }
+            _uiState.update { it.copy(contextChips = chips) }
+        }
+    }
+
+    /**
+     * Selects a context chip by place name (null == "All places").
+     * Selection is mutually exclusive and lives in UI state, not local composable state.
+     */
+    fun selectContextChip(placeName: String?) {
+        _uiState.update { state ->
+            state.copy(
+                contextChips = state.contextChips.map { chip ->
+                    chip.copy(isSelected = chip.placeName == placeName)
+                }
+            )
         }
     }
 

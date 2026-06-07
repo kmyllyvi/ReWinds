@@ -51,6 +51,48 @@ class ChatViewModelErrorHandlingTest {
         assertFalse(cleared.showApiKeyInvalidError)
     }
 
+    // --- Send-button enablement (KIM-271) ---
+
+    @Test
+    fun sendDisabledWhenInputBlank() {
+        assertFalse(ChatUiState(inputText = "").isSendEnabled)
+        assertFalse(ChatUiState(inputText = "   ").isSendEnabled)
+    }
+
+    @Test
+    fun sendEnabledWhenInputPresentAndNotLoading() {
+        assertTrue(ChatUiState(inputText = "hello").isSendEnabled)
+    }
+
+    @Test
+    fun sendDisabledWhileLoading() {
+        assertFalse(ChatUiState(inputText = "hello", isLoading = true).isSendEnabled)
+    }
+
+    // --- Context chips (KIM-271) ---
+
+    @Test
+    fun defaultStateHasAllPlacesChipSelected() {
+        val chips = ChatUiState().contextChips
+        assertTrue(chips.size == 1)
+        val allPlaces = chips.single()
+        assertNull(allPlaces.placeName)
+        assertTrue(allPlaces.isSelected)
+    }
+
+    @Test
+    fun chipSelectionIsMutuallyExclusive() {
+        val chips = listOf(
+            ContextChip(placeName = null, isSelected = true),
+            ContextChip(placeName = "Konstanz", isSelected = false),
+            ContextChip(placeName = "Helsinki", isSelected = false)
+        )
+        // Mirrors ChatViewModel.selectContextChip mapping logic.
+        val updated = chips.map { it.copy(isSelected = it.placeName == "Konstanz") }
+        assertTrue(updated.single { it.isSelected }.placeName == "Konstanz")
+        assertFalse(updated.first { it.placeName == null }.isSelected)
+    }
+
     // --- AnthropicException HTTP status ---
 
     @Test

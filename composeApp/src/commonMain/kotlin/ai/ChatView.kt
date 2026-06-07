@@ -2,7 +2,9 @@ package ai
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +17,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -27,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
@@ -42,6 +46,8 @@ import core.LocalAppStrings
 import core.Navigator
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
+import ui.components.IsobarBackground
+import ui.theme.rewinds
 
 @Composable
 fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
@@ -64,15 +70,29 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .imePadding()
+            .background(MaterialTheme.rewinds.pageBg)
     ) {
+        // Decorative isobar background — rendered first so it sits below all content.
+        IsobarBackground()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+        ) {
         // Header at top of column - messages start below it
         AppHeader(
             title = strings.chatTitle,
             onBackClick = { navigator.navigateBack() }
+        )
+
+        // Context chips: which place the chat is scoped to (driven by ViewModel state)
+        ContextChipRow(
+            chips = uiState.contextChips,
+            onChipClick = vm::selectContextChip
         )
 
         // Messages area with keyboard dismissal on click
@@ -131,8 +151,9 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
             inputText = uiState.inputText,
             onInputChange = vm::onInputTextChange,
             onSendClick = { vm.sendMessage(uiState.inputText) },
-            isLoading = uiState.isLoading
+            isSendEnabled = uiState.isSendEnabled
         )
+        }
     }
 
     // API Key Missing Dialog — with "Go to Settings" primary action
@@ -196,6 +217,61 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
     }
 }
 
+/**
+ * Horizontal row of context chips scoping the chat to a saved place or "All places".
+ * Selection is owned by the ViewModel; chips never hold local state.
+ */
+@Composable
+private fun ContextChipRow(
+    chips: List<ContextChip>,
+    onChipClick: (String?) -> Unit
+) {
+    val strings = LocalAppStrings.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        chips.forEach { chip ->
+            ContextChip(
+                label = chip.placeName ?: strings.allPlacesChip,
+                isSelected = chip.isSelected,
+                onClick = { onChipClick(chip.placeName) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContextChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.rewinds.surfaceRaised)
+            .border(
+                width = 1.dp,
+                color = if (isSelected) MaterialTheme.rewinds.accentBlue else MaterialTheme.rewinds.border,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            color = MaterialTheme.rewinds.accentBlue,
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+}
+
 @Composable
 fun ChatMessageBubble(message: ChatMessage) {
     val isUser = message.role == MessageRole.USER
@@ -211,19 +287,16 @@ fun ChatMessageBubble(message: ChatMessage) {
                 .widthIn(max = 300.dp)
                 .background(
                     color = if (isUser)
-                        MaterialTheme.colorScheme.primary
+                        MaterialTheme.rewinds.surfaceRaised
                     else
-                        MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(12.dp)
+                        MaterialTheme.rewinds.surface,
+                    shape = RoundedCornerShape(14.dp)
                 )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 9.dp)
         ) {
             Text(
                 text = message.content,
-                color = if (isUser)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.rewinds.textPrimary,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -265,7 +338,7 @@ fun ChatInputArea(
     inputText: String,
     onInputChange: (String) -> Unit,
     onSendClick: () -> Unit,
-    isLoading: Boolean
+    isSendEnabled: Boolean
 ) {
     val strings = LocalAppStrings.current
     val focusManager = LocalFocusManager.current
@@ -273,6 +346,7 @@ fun ChatInputArea(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.rewinds.surface)
             .padding(12.dp),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -280,12 +354,22 @@ fun ChatInputArea(
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChange,
-            modifier = Modifier
-                .weight(1f),
-            placeholder = { Text(strings.messagePlaceholder) },
+            modifier = Modifier.weight(1f),
+            placeholder = {
+                Text(
+                    strings.messagePlaceholder,
+                    color = MaterialTheme.rewinds.textTertiary
+                )
+            },
             singleLine = false,
             maxLines = 3,
-            enabled = !isLoading
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.rewinds.border,
+                unfocusedBorderColor = MaterialTheme.rewinds.border,
+                focusedTextColor = MaterialTheme.rewinds.textPrimary,
+                unfocusedTextColor = MaterialTheme.rewinds.textPrimary,
+                cursorColor = MaterialTheme.rewinds.accentBlue
+            )
         )
 
         IconButton(
@@ -294,14 +378,16 @@ fun ChatInputArea(
                 // Dismiss keyboard after sending
                 focusManager.clearFocus()
             },
-            enabled = inputText.trim().isNotEmpty() && !isLoading,
-            modifier = Modifier
-                .padding(bottom = 4.dp)
+            enabled = isSendEnabled,
+            modifier = Modifier.padding(bottom = 4.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,
                 contentDescription = strings.sendMessageDesc,
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (isSendEnabled)
+                    MaterialTheme.rewinds.accentBlue
+                else
+                    MaterialTheme.rewinds.textTertiary
             )
         }
     }
