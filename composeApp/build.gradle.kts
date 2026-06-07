@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.sqlDelight)
-    alias(libs.plugins.kotlinCocoapods)
     jacoco
 }
 
@@ -33,21 +32,14 @@ val includeAllTargets: Boolean =
     project.findProperty("includeAllTargets")?.toString()?.toBoolean()
         ?: (System.getenv("PLATFORM_NAME") != null)
 
-// The kotlinCocoapods plugin is always applied (plugins {} is static, so it can't be
-// conditional), which means the podspec task is always registered. That task reads
-// frameworkName from the first iOS framework binary; if iOS targets are not declared
-// (Android-only build) the collection is empty and the task crashes.
-// Fix: mark all CocoaPods-related tasks onlyIf(includeAllTargets) so Gradle skips
-// them entirely (before property evaluation) in Android-only builds.
-afterEvaluate {
-    listOf("podspec", "generateDummyFramework").forEach { taskName ->
-        tasks.findByName(taskName)?.onlyIf("iOS targets not included — skipped in Android-only build") {
-            includeAllTargets
-        }
-    }
-    tasks.matching { it.name.startsWith("syncFramework") || it.name.startsWith("pod") }.configureEach {
-        onlyIf("iOS targets not included — skipped in Android-only build") { includeAllTargets }
-    }
+// kotlinCocoapods is intentionally NOT in plugins {} above. The plugins {} block is
+// static — the plugin would always be applied and its tasks (podspec, generateDummyFramework)
+// always created. Those tasks eagerly evaluate frameworkName from the first iOS framework
+// binary; when iOS targets are absent (Android-only build / Android Studio sync) the
+// collection is empty and Gradle crashes *before* any onlyIf guard is checked.
+// Applying the plugin imperatively here means it only exists when iOS targets are present.
+if (includeAllTargets) {
+    apply(plugin = "org.jetbrains.kotlin.native.cocoapods")
 }
 
 kotlin {
@@ -169,13 +161,15 @@ kotlin {
         }
     }
 
-    // CocoaPods block only applies when iOS targets are declared. Gradle's podspec task
-    // requires at least one iOS framework target to exist; evaluating it in an Android-only
-    // build (no iOS targets) causes "Collection is empty" during task-graph calculation.
-    // Xcode builds always pass -PincludeAllTargets=true (see Podfile / build phase scripts),
-    // so this guard does not affect iOS development.
+    // CocoaPods configuration — only reachable when the plugin was applied above.
+    // cocoapods { } is a generated Kotlin DSL accessor that only exists when the plugin
+    // is declared in plugins {}. Since we apply it imperatively, use getByName + cast.
     if (includeAllTargets) {
-        cocoapods {
+        @Suppress("UNCHECKED_CAST")
+        val cpe = (this as org.gradle.api.plugins.ExtensionAware)
+            .extensions.getByName("cocoapods")
+                as org.jetbrains.kotlin.gradle.plugin.cocoapods.CocoapodsExtension
+        cpe.apply {
             homepage = "https://github.com/kmyllyvi/ReWinds"
             summary = "The Weather History App"
             version = "1.0"
@@ -184,7 +178,6 @@ kotlin {
 
             framework {
                 baseName = "composeApp"
-                compilerOptions.optIn.add("-Xbinary=bundleId=com.km.rewinds.ReWinds")
                 isStatic = true
             }
 
