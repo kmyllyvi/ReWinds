@@ -152,22 +152,29 @@ kotlin {
         }
     }
 
-    cocoapods {
-        homepage = "https://github.com/kmyllyvi/ReWinds"
-        summary = "The Weather History App"
-        version = "1.0"
-        ios.deploymentTarget = "15.3"
-        podfile = project.file("../iosApp/Podfile")
+    // CocoaPods block only applies when iOS targets are declared. Gradle's podspec task
+    // requires at least one iOS framework target to exist; evaluating it in an Android-only
+    // build (no iOS targets) causes "Collection is empty" during task-graph calculation.
+    // Xcode builds always pass -PincludeAllTargets=true (see Podfile / build phase scripts),
+    // so this guard does not affect iOS development.
+    if (includeAllTargets) {
+        cocoapods {
+            homepage = "https://github.com/kmyllyvi/ReWinds"
+            summary = "The Weather History App"
+            version = "1.0"
+            ios.deploymentTarget = "15.3"
+            podfile = project.file("../iosApp/Podfile")
 
-        framework {
-            baseName = "composeApp"
-            compilerOptions.optIn.add("-Xbinary=bundleId=com.km.rewinds.ReWinds")
-            isStatic = true
-        }
+            framework {
+                baseName = "composeApp"
+                compilerOptions.optIn.add("-Xbinary=bundleId=com.km.rewinds.ReWinds")
+                isStatic = true
+            }
 
-        pod("sqlite3") {
-            version = "3.51.1"
-            extraOpts += listOf("-compiler-option", "-fmodules")
+            pod("sqlite3") {
+                version = "3.51.1"
+                extraOpts += listOf("-compiler-option", "-fmodules")
+            }
         }
     }
 }
