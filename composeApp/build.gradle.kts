@@ -33,6 +33,23 @@ val includeAllTargets: Boolean =
     project.findProperty("includeAllTargets")?.toString()?.toBoolean()
         ?: (System.getenv("PLATFORM_NAME") != null)
 
+// The kotlinCocoapods plugin is always applied (plugins {} is static, so it can't be
+// conditional), which means the podspec task is always registered. That task reads
+// frameworkName from the first iOS framework binary; if iOS targets are not declared
+// (Android-only build) the collection is empty and the task crashes.
+// Fix: mark all CocoaPods-related tasks onlyIf(includeAllTargets) so Gradle skips
+// them entirely (before property evaluation) in Android-only builds.
+afterEvaluate {
+    listOf("podspec", "generateDummyFramework").forEach { taskName ->
+        tasks.findByName(taskName)?.onlyIf("iOS targets not included — skipped in Android-only build") {
+            includeAllTargets
+        }
+    }
+    tasks.matching { it.name.startsWith("syncFramework") || it.name.startsWith("pod") }.configureEach {
+        onlyIf("iOS targets not included — skipped in Android-only build") { includeAllTargets }
+    }
+}
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
