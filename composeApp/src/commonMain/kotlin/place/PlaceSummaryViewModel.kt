@@ -185,26 +185,36 @@ class PlaceSummaryViewModel(
 
                     val newStoredDays = loadedData.days?.toDayWeatherSummaryList() ?: emptyList()
 
-                    // Check for persisted stations. If none exist, auto-backfill once.
+                    // Emit the core weather data immediately with whatever stations are already
+                    // persisted (no network wait). The auto-backfill network call runs separately
+                    // below and updates the state in a follow-up emission (KIM-278).
                     val persistedStations = weatherRepository.getPersistedStations(placeName)
-                    val (displayStations, stationsError) = if (persistedStations.isEmpty()) {
-                        Log.d("No stations persisted for $placeName — triggering auto-backfill")
-                        backfillStations()
-                    } else {
-                        Log.d("${persistedStations.size} station(s) already persisted for $placeName")
-                        Pair(persistedStations.toDisplayData(), null)
-                    }
 
-                    val newState = WeatherSummaryUiState.Success(
+                    _uiState.value = WeatherSummaryUiState.Success(
                         placeName = placeName,
                         storedDays = newStoredDays,
                         latitude = loadedData.latitude,
                         longitude = loadedData.longitude,
-                        stations = displayStations,
-                        stationsError = stationsError
+                        stations = persistedStations.toDisplayData(),
+                        stationsError = null
                     )
-                    _uiState.value = newState
                     _monthlyAverageTemps.value = calculateMonthlyAverageTemps(newStoredDays)
+
+                    // Auto-backfill only when nothing is stored yet. Fire-and-forget so the day
+                    // data above renders without blocking on the station network call.
+                    if (persistedStations.isEmpty()) {
+                        Log.d("No stations persisted for $placeName — triggering auto-backfill")
+                        viewModelScope.launch {
+                            val (displayStations, stationsError) = backfillStations()
+                            val current = _uiState.value
+                            if (current is WeatherSummaryUiState.Success) {
+                                _uiState.value = current.copy(
+                                    stations = displayStations,
+                                    stationsError = stationsError
+                                )
+                            }
+                        }
+                    }
 
                 } else {
                     Log.d("No weather data found for $placeName")
