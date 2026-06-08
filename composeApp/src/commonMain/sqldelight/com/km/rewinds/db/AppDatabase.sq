@@ -129,6 +129,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
 getDaysForWeatherResponse:
 SELECT * FROM Day WHERE weatherResponseResolvedAddress = ?;
 
+-- One row per place with its total stored-day count. Used by the Home screen, which
+-- only needs the day count and avoids loading every day/hour row per place (KIM-278).
+getAllPlaceDayCounts:
+SELECT weatherResponseResolvedAddress, COUNT(*) AS dayCount
+FROM Day GROUP BY weatherResponseResolvedAddress;
+
 deleteDaysAfterDate:
 DELETE FROM Day WHERE weatherResponseResolvedAddress = ? AND datetime > ?;
 

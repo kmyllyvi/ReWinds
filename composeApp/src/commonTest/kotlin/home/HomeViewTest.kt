@@ -27,6 +27,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 class MockWeatherRepository : WeatherRepository {
     override suspend fun searchForLocations(query: String): List<GeoSearchResult> = emptyList()
     override suspend fun getSavedPlaceNames(): List<String> = emptyList()
+    override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
     override suspend fun getSavedDataFor(resolvedPlace: String): core.WeatherResponse? = null
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): core.WeatherResponse {
         return core.WeatherResponse(resolvedAddress = "", address = "", queryCost = 0, latitude = 0.0, longitude = 0.0, timezone = "", tzoffset = 0.0, days = emptyList())
@@ -55,6 +56,9 @@ class MockDatabase : Database {
     private val savedPlaces = mutableMapOf<String, WeatherResponse>()
 
     override suspend fun getAllSavedPlaces(): List<String> = savedPlaces.keys.toList()
+
+    override suspend fun getPlaceDayCounts(): Map<String, Long> =
+        savedPlaces.mapValues { (_, response) -> (response.days?.size ?: 0).toLong() }
 
     override suspend fun getSavedPlaceFull(place: String): WeatherResponse? = savedPlaces[place]
 

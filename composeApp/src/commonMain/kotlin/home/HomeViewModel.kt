@@ -93,7 +93,9 @@ data class HomeUiState(
     val isWeatherKeyConfigured: Boolean = false,
     // Alert banners displayed above the places list. ViewModel populates these;
     // composable only renders what's here — no logic in the view.
-    val alertBanners: List<AlertBanner> = emptyList()
+    val alertBanners: List<AlertBanner> = emptyList(),
+    // True while the saved places are being loaded. Drives the skeleton rows on Home.
+    val isLoading: Boolean = false
 )
 
 /**
@@ -190,17 +192,20 @@ class HomeViewModel(
 
     private fun loadSavedPlaces() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            // Single GROUP BY query for stored-day counts instead of loading every
+            // day/hour row per place — the home row only needs name + count (KIM-278).
             val placeNames = weatherRepository.getSavedPlaceNames()
+            val dayCounts = weatherRepository.getPlaceDayCounts()
             val displayData = placeNames.map { name ->
-                val data = weatherRepository.getSavedDataFor(name)
-                val dayCount = data?.days?.size ?: 0
+                val dayCount = dayCounts[name]?.toInt() ?: 0
                 val subtitle = if (dayCount > 0) "$dayCount days stored" else "No data yet"
                 // A place with no data at all is treated as a warning so the user knows
                 // they need to fetch before they can explore it.
                 val status = if (dayCount == 0) PlaceStatus.WARNING else PlaceStatus.NORMAL
                 PlaceDisplayData(name = name, subtitle = subtitle, status = status)
             }
-            _uiState.update { it.copy(placeDisplayData = displayData) }
+            _uiState.update { it.copy(placeDisplayData = displayData, isLoading = false) }
         }
     }
 

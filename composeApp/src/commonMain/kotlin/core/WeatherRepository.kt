@@ -45,6 +45,12 @@ sealed class StationsResult {
 interface WeatherRepository {
     suspend fun getSavedPlaceNames(): List<String>
     suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse?
+
+    /**
+     * Stored-day count per place, resolved in a single GROUP BY query.
+     * The Home screen uses this instead of loading full per-place data (KIM-278).
+     */
+    suspend fun getPlaceDayCounts(): Map<String, Long>
     suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse
     suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse
     suspend fun deletePlace(placeName: String)
@@ -96,6 +102,12 @@ class WeatherRepositoryImpl(
     override suspend fun getSavedPlaceNames(): List<String> {
         return withContext(Dispatchers.IO) {
             database.getAllSavedPlaces()
+        }
+    }
+
+    override suspend fun getPlaceDayCounts(): Map<String, Long> {
+        return withContext(Dispatchers.IO) {
+            database.getPlaceDayCounts()
         }
     }
 
