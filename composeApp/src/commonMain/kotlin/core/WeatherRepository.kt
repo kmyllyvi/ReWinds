@@ -337,7 +337,10 @@ class WeatherRepositoryImpl(
         // Fetch weather for the location using its lat/lon from geo-search.
         // Include stations so we can persist the actual weather station coordinates (KIM-149).
         val locationString = "${place.latitude}%2C${place.longitude}"
-        val requestUrl = "$visualcrossingUrl$locationString/last0days$apiQuery&include=stations"
+        // Use a dedicated query string here — we only need stations, not hourly data.
+        // Appending &include=stations to apiQuery would produce include=hours&include=stations.
+        val stationQuery = "?unitGroup=metric&key=${getVisualCrossingApiKey()}&contentType=json&include=stations"
+        val requestUrl = "$visualcrossingUrl$locationString/last0days$stationQuery"
         val weatherResponse = doRequest(requestUrl)
 
         // Overwrite the address from the API response with the correct name from the search result
