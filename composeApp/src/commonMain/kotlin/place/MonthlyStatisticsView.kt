@@ -23,7 +23,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -74,9 +73,9 @@ fun MonthlyStatisticsView(
     val peakWindDayIndex by vm.peakWindDayIndex.collectAsState()
     val strings = LocalAppStrings.current
 
-    LaunchedEffect(placeName, year, month) {
-        vm.reloadStatistics(year = year, month = month)
-    }
+    // No LaunchedEffect to (re)load here: the ViewModel's init already loads the initial
+    // month, and month navigation is driven by navigateToPreviousMonth/navigateToNextMonth.
+    // A LaunchedEffect(placeName, year, month) double-fired on first entry (KIM-278).
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Decorative isobar background — rendered first so it sits below all content.
