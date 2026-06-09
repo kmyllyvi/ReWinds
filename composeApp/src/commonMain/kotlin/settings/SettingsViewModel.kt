@@ -6,6 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import core.AppSettingsStore
 import core.DaysOfInterestFilter
+import core.Language
+import core.LanguageManager
+import core.WeatherApiKeyManager
+import core.isAnthropicApiKeyConfigured
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +24,19 @@ sealed class DaysOfInterestUiState {
     data class Error(val message: String) : DaysOfInterestUiState()
 }
 
+/** Measurement system shown in the General group. Display-only for now. */
+enum class UnitSystem(val displayName: String) {
+    METRIC("Metric"),
+    IMPERIAL("Imperial")
+}
+
+/** Wind speed unit shown in the General group. Display-only for now. */
+enum class WindSpeedUnit(val displayName: String) {
+    KMH("km/h"),
+    KNOTS("knots"),
+    MPH("mph")
+}
+
 class SettingsViewModel(
     private val settingsRepo: AppSettingsStore,
     private val anthropicClient: AnthropicClient
@@ -31,8 +48,36 @@ class SettingsViewModel(
     private val _currentFilter = MutableStateFlow<DaysOfInterestFilter?>(null)
     val currentFilter: StateFlow<DaysOfInterestFilter?> = _currentFilter.asStateFlow()
 
+    // ── General group state ──────────────────────────────────────────────────
+    // Language mirrors the global LanguageManager so the row reflects the live choice.
+    private val _languageState = MutableStateFlow(LanguageManager.currentLanguage.value)
+    val languageState: StateFlow<Language> = _languageState.asStateFlow()
+
+    private val _unitsState = MutableStateFlow(UnitSystem.METRIC)
+    val unitsState: StateFlow<UnitSystem> = _unitsState.asStateFlow()
+
+    private val _windSpeedUnitState = MutableStateFlow(WindSpeedUnit.KMH)
+    val windSpeedUnitState: StateFlow<WindSpeedUnit> = _windSpeedUnitState.asStateFlow()
+
+    // ── API Keys group state ─────────────────────────────────────────────────
+    // Configured flags are exposed as state so the chip is driven by the ViewModel,
+    // not computed inline in the composable (per ARCHITECTURE-RULES + AC).
+    private val _anthropicKeyConfigured = MutableStateFlow(false)
+    val anthropicKeyConfigured: StateFlow<Boolean> = _anthropicKeyConfigured.asStateFlow()
+
+    private val _visualCrossingKeyConfigured = MutableStateFlow(false)
+    val visualCrossingKeyConfigured: StateFlow<Boolean> = _visualCrossingKeyConfigured.asStateFlow()
+
+    // ── Data group state ─────────────────────────────────────────────────────
+    private val _autoRefreshEnabled = MutableStateFlow(true)
+    val autoRefreshEnabled: StateFlow<Boolean> = _autoRefreshEnabled.asStateFlow()
+
+    private val _wifiOnlyEnabled = MutableStateFlow(false)
+    val wifiOnlyEnabled: StateFlow<Boolean> = _wifiOnlyEnabled.asStateFlow()
+
     init {
         loadSavedFilter()
+        refreshKeyStatus()
     }
 
     private fun loadSavedFilter() {
@@ -60,6 +105,41 @@ class SettingsViewModel(
 
     fun resetDoiState() {
         _doiState.value = DaysOfInterestUiState.Idle
+    }
+
+    /** Re-reads platform key stores into the configured flags. Call after save/delete. */
+    fun refreshKeyStatus() {
+        _anthropicKeyConfigured.value = isAnthropicApiKeyConfigured()
+        _visualCrossingKeyConfigured.value = WeatherApiKeyManager.hasValidKey()
+    }
+
+    fun setLanguage(language: Language) {
+        LanguageManager.setLanguage(language)
+        _languageState.value = language
+    }
+
+    fun setUnits(units: UnitSystem) {
+        _unitsState.value = units
+    }
+
+    fun setWindSpeedUnit(unit: WindSpeedUnit) {
+        _windSpeedUnitState.value = unit
+    }
+
+    fun setAutoRefreshEnabled(enabled: Boolean) {
+        _autoRefreshEnabled.value = enabled
+    }
+
+    fun toggleAutoRefresh() {
+        _autoRefreshEnabled.value = !_autoRefreshEnabled.value
+    }
+
+    fun setWifiOnlyEnabled(enabled: Boolean) {
+        _wifiOnlyEnabled.value = enabled
+    }
+
+    fun toggleWifiOnly() {
+        _wifiOnlyEnabled.value = !_wifiOnlyEnabled.value
     }
 
     companion object {
