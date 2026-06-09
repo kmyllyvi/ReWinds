@@ -532,7 +532,7 @@
           <td>Diagnose CI failures</td>
           <td>Failures sit silent; developer digs logs manually</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td><code>.github/workflows/ci-failure.yml</code> — fires on <code>workflow_run</code> failure, downloads JUnit XML, posts a structured diagnosis comment on the PR (or commit for direct pushes). Diagnostic only — no auto-fix.</td>
+          <td><code>.github/workflows/ci-failure.yml</code> — fires on <code>workflow_run</code> failure. Randy checks out the branch, reads JUnit XML, fixes the code, verifies locally, and pushes with <code>[auto-fix]</code> in the message. If the auto-fix itself fails CI, Randy posts a "needs human" comment instead of looping.</td>
         </tr>
         <tr>
           <td>Dispatch Marcy on PR open</td>

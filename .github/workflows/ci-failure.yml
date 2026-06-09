@@ -1,15 +1,16 @@
-name: CI Failure — Diagnose and notify
+name: CI Failure — Auto-fix
 
-# Fires whenever the CI workflow completes with a failure.
-# Downloads the test results artifact, runs a diagnostic agent, and posts
-# a clear summary comment on the associated PR (or on the commit for direct
-# pushes to develop/main).
+# Fires when CI fails on a PR or on develop.
+# Randy checks out the failing branch, reads the test output, fixes the
+# code, runs the tests to confirm, then pushes the fix back to the same
+# branch (or opens a PR if the failure is on develop/main directly).
 #
-# Diagnostic only — no code changes, no auto-fixes.
-# Randy or the developer reads the comment and decides what to do next.
+# Loop guard: if the failing commit was already a Randy auto-fix attempt
+# (message contains [auto-fix]) and it still failed, Randy posts a comment
+# instead of retrying — human attention needed at that point.
 #
 # Required secrets:
-#   ANTHROPIC_API_KEY — runs the Claude Code diagnostic agent
+#   ANTHROPIC_API_KEY — runs the Claude Code action
 
 on:
   workflow_run:
@@ -17,37 +18,18 @@ on:
     types: [completed]
 
 jobs:
-  diagnose:
-    name: Diagnose CI failure
+  auto-fix:
+    name: Auto-fix CI failure
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'failure'
 
     permissions:
-      pull-requests: write   # post comment on the PR
+      contents: write        # push fix commits
+      pull-requests: write   # post comments + open PRs for develop fixes
       actions: read          # download artifacts from the failed run
-      contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      # Download the JUnit XML + HTML test reports from the failed run.
-      # ci.yml uploads these with if: always(), so they exist even on failure.
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          name: android-test-results
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: test-results/
-        # If the build failed before tests ran, the artifact may not exist.
-        # continue-on-error lets us still post a "build failure" comment.
-        continue-on-error: true
-
-      # Resolve the PR number (empty for direct pushes to develop/main).
-      - name: Resolve PR number
+      - name: Resolve context
         id: ctx
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,87 +37,149 @@ jobs:
           RUN_ID="${{ github.event.workflow_run.id }}"
           HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
           HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
-          EVENT="${{ github.event.workflow_run.event }}"
 
-          echo "run_id=$RUN_ID"       >> "$GITHUB_OUTPUT"
-          echo "head_sha=$HEAD_SHA"   >> "$GITHUB_OUTPUT"
+          echo "run_id=$RUN_ID"           >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA"       >> "$GITHUB_OUTPUT"
           echo "head_branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
-          echo "event=$EVENT"         >> "$GITHUB_OUTPUT"
+          echo "run_url=https://github.com/${{ github.repository }}/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
 
-          # For pull_request-triggered runs the API returns the PR directly.
-          # For push-triggered runs pull_requests is empty.
           PR_NUM=$(gh api \
             "repos/${{ github.repository }}/actions/runs/$RUN_ID" \
             --jq '.pull_requests[0].number // empty')
-
           echo "pr_number=${PR_NUM:-none}" >> "$GITHUB_OUTPUT"
 
-          # Link to the failed run for the agent to reference
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
-          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
+          # Loop guard: check if the failing commit is already a Randy fix attempt
+          COMMIT_MSG=$(gh api "repos/${{ github.repository }}/commits/$HEAD_SHA" --jq '.commit.message')
+          if echo "$COMMIT_MSG" | grep -q '\[auto-fix\]'; then
+            echo "already_attempted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_attempted=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      # Run the diagnostic agent.
-      # It reads the test-results/ directory, identifies failures, and posts
-      # a comment on the PR (or on the commit if there is no PR).
-      - name: Run diagnostic agent
+      - name: Checkout failing branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ctx.outputs.head_branch }}
+          fetch-depth: 0
+          # Use a PAT or the default token — needs push permission
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "Randy[bot]"
+          git config user.email "randy-bot@users.noreply.github.com"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      # Download test results so Randy can read the exact failures
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: android-test-results
+          run-id: ${{ steps.ctx.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-results/
+        continue-on-error: true
+
+      # ── Case 1: Already tried once and still failing → human needed ──
+      - name: Post "needs human" comment
+        if: steps.ctx.outputs.already_attempted == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY="## 🔴 Auto-fix failed — human attention needed
+
+          Randy attempted an automatic fix on a previous commit but CI is still red.
+
+          **Failed run:** ${{ steps.ctx.outputs.run_url }}
+          **Branch:** \`${{ steps.ctx.outputs.head_branch }}\`
+
+          Please investigate manually. The test results artifact is attached to the failed run."
+
+          if [ "${{ steps.ctx.outputs.pr_number }}" != "none" ]; then
+            gh pr comment ${{ steps.ctx.outputs.pr_number }} --body "$BODY"
+          else
+            gh api "repos/${{ github.repository }}/commits/${{ steps.ctx.outputs.head_sha }}/comments" \
+              -f body="$BODY"
+          fi
+
+      # ── Case 2: First failure → Randy fixes it ──
+      - name: Randy — fix the CI failure
+        if: steps.ctx.outputs.already_attempted == 'false'
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           direct_prompt: |
-            The CI workflow just failed on this repo. Your job is to diagnose
-            the failure and post a clear, actionable comment so the developer
-            knows exactly what broke and what to look at.
+            You are Randy, the developer agent for the ReWinds Compose Multiplatform project.
+            CI just failed on branch `${{ steps.ctx.outputs.head_branch }}`.
+            Your job: diagnose the failure, fix it, verify tests pass, and push the fix.
 
-            Context:
-            - Failed run  : ${{ steps.ctx.outputs.run_url }}
-            - Branch      : ${{ steps.ctx.outputs.head_branch }}
-            - Commit SHA  : ${{ steps.ctx.outputs.head_sha }}
-            - PR number   : ${{ steps.ctx.outputs.pr_number }}
-            - Trigger     : ${{ steps.ctx.outputs.event }}
+            ## Context
+            - Branch     : ${{ steps.ctx.outputs.head_branch }}
+            - Commit     : ${{ steps.ctx.outputs.head_sha }}
+            - Failed run : ${{ steps.ctx.outputs.run_url }}
+            - PR         : ${{ steps.ctx.outputs.pr_number }}
 
-            Steps:
-            1. Look for JUnit XML files in test-results/ (find test-results/ -name "*.xml").
-               Parse them to identify which test classes and methods failed, and extract
-               the failure message + stack trace for each.
+            ## Step-by-step
 
-            2. If no XML files exist, the build itself failed before tests ran.
-               In that case, note "build failure — tests did not run" in your comment.
+            1. **Read the failures.**
+               Parse JUnit XML in test-results/ to find which tests failed and why:
+               `find test-results/ -name "*.xml" | xargs grep -l 'failure\|error' 2>/dev/null`
+               Read those files to get the class name, method, message, and stack trace.
+               If no XML files exist, the build failed before tests ran — check for
+               compilation errors in the source files on this branch.
 
-            3. Compose a concise GitHub comment in this format:
+            2. **Locate the broken code.**
+               Use the failure message and stack trace to find the exact file and line.
+               Read the relevant source files and test files to understand what changed.
 
-               ## ❌ CI failed on `<branch>`
+            3. **Fix it.**
+               Apply the minimal correct fix following all rules in CLAUDE.md and
+               docs/agent/ARCHITECTURE-RULES.md. If a test is wrong (e.g. it was
+               pinning a known bug that is now fixed), fix the test. If production
+               code is broken, fix the production code.
 
-               **Run:** <link to ${{ steps.ctx.outputs.run_url }}>
+            4. **Verify locally.**
+               Run: `./gradlew :composeApp:testDebugUnitTest -PincludeAllTargets=false --no-daemon`
+               If tests still fail, re-examine and fix again before committing.
+               Do not commit a fix that does not pass locally.
 
-               ### Test failures  (or: Build failure)
-               For each failing test:
-               - `ClassName.methodName` — one-line failure reason
-               <details><summary>Stack trace</summary>
+            5. **Commit and push.**
+               `git add <changed files>`
+               `git commit -m "fix: <what you fixed> [auto-fix]"`
+               `git push origin ${{ steps.ctx.outputs.head_branch }}`
 
-               ```
-               <trimmed stack trace, max 20 lines>
-               ```
+               The [auto-fix] marker in the commit message is mandatory — it prevents
+               this workflow from looping if CI fails again.
 
-               </details>
+            6. **Post a comment** summarising what you found and fixed:
+               - If PR is not "none":
+                 `gh pr comment ${{ steps.ctx.outputs.pr_number }} --body "..."`
+               - If PR is "none" (direct push to develop):
+                 `gh api repos/${{ github.repository }}/commits/${{ steps.ctx.outputs.head_sha }}/comments -f body="..."`
 
-               ### Likely cause
-               One paragraph: what probably broke and where in the codebase to look.
+               Comment format:
+               ## 🔧 Auto-fix applied
 
-               ### Suggested next step
-               One concrete action: which file to open, which assertion to fix, or
-               whether this looks like a flaky test vs a real regression.
+               **Failure:** one-line description of what was broken
+               **Fix:** one-line description of what was changed
+               **Files changed:** list
+               **Verification:** tests pass locally (`./gradlew testDebugUnitTest`)
 
                ---
-               *Posted automatically by the CI diagnostic agent. Human review required.*
+               *Applied automatically by Randy. Review the commit before merging.*
 
-            4. Post the comment:
-               - If PR number is not "none":
-                 gh pr comment ${{ steps.ctx.outputs.pr_number }} --body "<your comment>"
-               - If PR number is "none" (direct push):
-                 gh api repos/${{ github.repository }}/commits/${{ steps.ctx.outputs.head_sha }}/comments \
-                   -f body="<your comment>"
-
-            Be factual and brief. Do not attempt to fix code. Do not speculate
-            beyond what the failure messages show.
+            If you cannot determine a safe fix with confidence, post a comment
+            explaining what you found and why you did not attempt a fix. Do not
+            guess. Do not commit a fix that breaks other tests.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
