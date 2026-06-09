@@ -529,6 +529,12 @@
           <td>Scheduled agent or GitHub Action that reads Linear for <strong>Todo</strong> issues and dispatches Randy. Works once Randy is trusted end-to-end.</td>
         </tr>
         <tr>
+          <td>Diagnose CI failures</td>
+          <td>Failures sit silent; developer digs logs manually</td>
+          <td><span class="pill pill-auto">Automated ✓</span></td>
+          <td><code>.github/workflows/ci-failure.yml</code> — fires on <code>workflow_run</code> failure, downloads JUnit XML, posts a structured diagnosis comment on the PR (or commit for direct pushes). Diagnostic only — no auto-fix.</td>
+        </tr>
+        <tr>
           <td>Dispatch Marcy on PR open</td>
           <td>Kimmo dispatches Marcy manually</td>
           <td><span class="pill pill-deferred">v2 planned</span></td>

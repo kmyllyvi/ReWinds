@@ -1,0 +1,141 @@
+name: CI Failure — Diagnose and notify
+
+# Fires whenever the CI workflow completes with a failure.
+# Downloads the test results artifact, runs a diagnostic agent, and posts
+# a clear summary comment on the associated PR (or on the commit for direct
+# pushes to develop/main).
+#
+# Diagnostic only — no code changes, no auto-fixes.
+# Randy or the developer reads the comment and decides what to do next.
+#
+# Required secrets:
+#   ANTHROPIC_API_KEY — runs the Claude Code diagnostic agent
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  diagnose:
+    name: Diagnose CI failure
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+
+    permissions:
+      pull-requests: write   # post comment on the PR
+      actions: read          # download artifacts from the failed run
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # Download the JUnit XML + HTML test reports from the failed run.
+      # ci.yml uploads these with if: always(), so they exist even on failure.
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: android-test-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: test-results/
+        # If the build failed before tests ran, the artifact may not exist.
+        # continue-on-error lets us still post a "build failure" comment.
+        continue-on-error: true
+
+      # Resolve the PR number (empty for direct pushes to develop/main).
+      - name: Resolve PR number
+        id: ctx
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+          HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          EVENT="${{ github.event.workflow_run.event }}"
+
+          echo "run_id=$RUN_ID"       >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA"   >> "$GITHUB_OUTPUT"
+          echo "head_branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "event=$EVENT"         >> "$GITHUB_OUTPUT"
+
+          # For pull_request-triggered runs the API returns the PR directly.
+          # For push-triggered runs pull_requests is empty.
+          PR_NUM=$(gh api \
+            "repos/${{ github.repository }}/actions/runs/$RUN_ID" \
+            --jq '.pull_requests[0].number // empty')
+
+          echo "pr_number=${PR_NUM:-none}" >> "$GITHUB_OUTPUT"
+
+          # Link to the failed run for the agent to reference
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+          echo "run_url=$RUN_URL" >> "$GITHUB_OUTPUT"
+
+      # Run the diagnostic agent.
+      # It reads the test-results/ directory, identifies failures, and posts
+      # a comment on the PR (or on the commit if there is no PR).
+      - name: Run diagnostic agent
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            The CI workflow just failed on this repo. Your job is to diagnose
+            the failure and post a clear, actionable comment so the developer
+            knows exactly what broke and what to look at.
+
+            Context:
+            - Failed run  : ${{ steps.ctx.outputs.run_url }}
+            - Branch      : ${{ steps.ctx.outputs.head_branch }}
+            - Commit SHA  : ${{ steps.ctx.outputs.head_sha }}
+            - PR number   : ${{ steps.ctx.outputs.pr_number }}
+            - Trigger     : ${{ steps.ctx.outputs.event }}
+
+            Steps:
+            1. Look for JUnit XML files in test-results/ (find test-results/ -name "*.xml").
+               Parse them to identify which test classes and methods failed, and extract
+               the failure message + stack trace for each.
+
+            2. If no XML files exist, the build itself failed before tests ran.
+               In that case, note "build failure — tests did not run" in your comment.
+
+            3. Compose a concise GitHub comment in this format:
+
+               ## ❌ CI failed on `<branch>`
+
+               **Run:** <link to ${{ steps.ctx.outputs.run_url }}>
+
+               ### Test failures  (or: Build failure)
+               For each failing test:
+               - `ClassName.methodName` — one-line failure reason
+               <details><summary>Stack trace</summary>
+
+               ```
+               <trimmed stack trace, max 20 lines>
+               ```
+
+               </details>
+
+               ### Likely cause
+               One paragraph: what probably broke and where in the codebase to look.
+
+               ### Suggested next step
+               One concrete action: which file to open, which assertion to fix, or
+               whether this looks like a flaky test vs a real regression.
+
+               ---
+               *Posted automatically by the CI diagnostic agent. Human review required.*
+
+            4. Post the comment:
+               - If PR number is not "none":
+                 gh pr comment ${{ steps.ctx.outputs.pr_number }} --body "<your comment>"
+               - If PR number is "none" (direct push):
+                 gh api repos/${{ github.repository }}/commits/${{ steps.ctx.outputs.head_sha }}/comments \
+                   -f body="<your comment>"
+
+            Be factual and brief. Do not attempt to fix code. Do not speculate
+            beyond what the failure messages show.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
