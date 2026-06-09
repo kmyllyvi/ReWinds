@@ -68,6 +68,24 @@ data class AppStrings(
     val deleteKeyTitle: (String) -> String,
     val deleteKeyMessage: (String) -> String,
 
+    // SettingsView — grouped list (KIM-273)
+    val settingsGroupGeneral: String,
+    val settingsGroupApiKeys: String,
+    val settingsGroupData: String,
+    val settingsGroupAbout: String,
+    val settingsRowUnits: String,
+    val settingsRowWindSpeed: String,
+    val settingsRowAutoRefresh: String,
+    val settingsRowWifiOnly: String,
+    val settingsRowExportData: String,
+    val settingsRowVersion: String,
+    val settingsRowDeleteAllData: String,
+    val settingsKeyConfiguredChip: String,
+    val settingsKeyNotSetChip: String,
+    val settingsAnthropicSubLabel: String,
+    val settingsVisualCrossingSubLabel: String,
+    val settingsAppVersion: String,
+
     // StationMapModal
     val noStationData: String,
     val refreshStations: String,
@@ -256,6 +274,24 @@ data class AppStrings(
             deleteKeyTitle = { keyType -> "Delete $keyType?" },
             deleteKeyMessage = { keyType -> "This will remove your stored $keyType. You can add it again later from settings." },
 
+            // SettingsView — grouped list (KIM-273)
+            settingsGroupGeneral = "General",
+            settingsGroupApiKeys = "API Keys",
+            settingsGroupData = "Data",
+            settingsGroupAbout = "About",
+            settingsRowUnits = "Units",
+            settingsRowWindSpeed = "Wind speed",
+            settingsRowAutoRefresh = "Auto-refresh",
+            settingsRowWifiOnly = "Refresh on Wi-Fi only",
+            settingsRowExportData = "Export data",
+            settingsRowVersion = "Version",
+            settingsRowDeleteAllData = "Delete all data",
+            settingsKeyConfiguredChip = "✓ Configured",
+            settingsKeyNotSetChip = "Not set",
+            settingsAnthropicSubLabel = "AI chat feature",
+            settingsVisualCrossingSubLabel = "Weather data",
+            settingsAppVersion = "1.0.0",
+
             // StationMapModal
             noStationData = "No station data available",
             refreshStations = "Refresh stations",
@@ -440,6 +476,24 @@ data class AppStrings(
             visualCrossingApiUrl = "Holen Sie sich Ihren API-Schl\u00FCssel unter: https://www.visualcrossing.com/",
             deleteKeyTitle = { keyType -> "$keyType l\u00F6schen?" },
             deleteKeyMessage = { keyType -> "Dadurch wird Ihr gespeicherter $keyType entfernt. Sie k\u00F6nnen ihn sp\u00E4ter erneut \u00FCber die Einstellungen hinzuf\u00FCgen." },
+
+            // SettingsView \u2014 grouped list (KIM-273)
+            settingsGroupGeneral = "Allgemein",
+            settingsGroupApiKeys = "API-Schl\u00FCssel",
+            settingsGroupData = "Daten",
+            settingsGroupAbout = "\u00DCber",
+            settingsRowUnits = "Einheiten",
+            settingsRowWindSpeed = "Windgeschwindigkeit",
+            settingsRowAutoRefresh = "Automatisch aktualisieren",
+            settingsRowWifiOnly = "Nur \u00FCber WLAN aktualisieren",
+            settingsRowExportData = "Daten exportieren",
+            settingsRowVersion = "Version",
+            settingsRowDeleteAllData = "Alle Daten l\u00F6schen",
+            settingsKeyConfiguredChip = "\u2713 Konfiguriert",
+            settingsKeyNotSetChip = "Nicht festgelegt",
+            settingsAnthropicSubLabel = "KI-Chat-Funktion",
+            settingsVisualCrossingSubLabel = "Wetterdaten",
+            settingsAppVersion = "1.0.0",
 
             // StationMapModal
             noStationData = "Keine Stationsdaten verfügbar",
