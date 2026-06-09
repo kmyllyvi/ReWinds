@@ -195,8 +195,23 @@ When invoked with "bootstrap docs from codebase" and no existing agent docs are 
 
 ---
 
+## Keeping the human docs date current
+
+After every doc update, bump the **"Docs last updated"** date in
+`docs/human/rewinds.html`. Find the line:
+
+```html
+Docs last updated <strong>YYYY-MM-DD</strong>
+```
+
+Replace the date with today's ISO date. This is the only line in
+`docs/human/` you ever touch directly — all other human-doc content is a
+separate render step.
+
+---
+
 ## Out of scope
 
-- Do not generate human docs directly. That is a separate render step.
+- Do not generate full human docs. That is a separate render step.
 - Do not modify test files, CI config, or source code.
 - Do not make product or architectural decisions. Surface them as `⚠ review-needed`.

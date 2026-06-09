@@ -130,6 +130,26 @@ body {
   font-weight: 400;
 }
 
+.doc-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.doc-updated strong { color: var(--text-secondary); font-weight: 600; }
+
+.doc-updated-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #059669;
+  flex-shrink: 0;
+}
+
 /* ── Sections ── */
 section {
   margin-bottom: 44px;
