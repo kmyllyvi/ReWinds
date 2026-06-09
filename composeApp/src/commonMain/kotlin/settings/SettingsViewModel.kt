@@ -4,7 +4,7 @@ import ai.AnthropicClient
 import ai.DaysOfInterestParser
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import core.AppSettingsRepository
+import core.AppSettingsStore
 import core.DaysOfInterestFilter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +21,7 @@ sealed class DaysOfInterestUiState {
 }
 
 class SettingsViewModel(
-    private val settingsRepo: AppSettingsRepository,
+    private val settingsRepo: AppSettingsStore,
     private val anthropicClient: AnthropicClient
 ) : ViewModel() {
 
