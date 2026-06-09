@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+
+/* ── pipeline ── */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 28px 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 110px;
+  flex: 1;
+}
+
+.stage-node {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 8px 10px;
+  text-align: center;
+  position: relative;
+}
+
+.stage-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.stage-label-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  background: var(--surface-raised);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-top: 2px;
+  letter-spacing: 0.06em;
+}
+
+.stage-agent {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* connector arrow */
+.connector {
+  display: flex;
+  align-items: center;
+  padding-top: 22px; /* align with node center */
+  flex-shrink: 0;
+}
+.connector svg { display: block; }
+
+/* gate */
+.gate-node {
+  background: #1f1500;
+  border: 1.5px solid #E8A030;
+  border-radius: 10px;
+  padding: 12px 8px 10px;
+  text-align: center;
+  width: 100%;
+}
+.gate-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #E8A030;
+  letter-spacing: 0.04em;
+}
+.gate-sub {
+  font-size: 9px;
+  color: #a06818;
+  margin-top: 3px;
+}
+.gate-icon {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* agent badges */
+.agent-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.badge-shirley  { background: #0d1f40; border-color: #2563EB; color: #6ea8fe; }
+.badge-randy    { background: #1a0d40; border-color: #7C3AED; color: #c4b5fd; }
+.badge-marcy    { background: #0a2018; border-color: #059669; color: #6ee7b7; }
+.badge-seppo    { background: #2a0d1a; border-color: #DB2777; color: #f9a8d4; }
+.badge-mrt      { background: #0a2018; border-color: #10b981; color: #a7f3d0; }
+.badge-armin    { background: #1f1500; border-color: #D97706; color: #fcd34d; }
+.badge-doc      { background: #141414; border-color: #4A7A9B; color: #7AB8D8; }
+.badge-human    { background: #1f1500; border-color: #E8A030; color: #fbbf24; }
+.badge-optional { opacity: 0.6; }
+
+.badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-shirley { background: #2563EB; }
+.dot-randy   { background: #7C3AED; }
+.dot-marcy   { background: #059669; }
+.dot-seppo   { background: #DB2777; }
+.dot-mrt     { background: #10b981; }
+.dot-armin   { background: #D97706; }
+.dot-doc     { background: #4A7A9B; }
+.dot-human   { background: #E8A030; }
+
+/* review fanout */
+.review-fanout {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  margin-top: 10px;
+}
+.review-req-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* escape valve */
+.escape-valve {
+  background: #0a0f18;
+  border: 1px dashed #1A3050;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 12px 0 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.escape-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.escape-body { flex: 1; }
+.escape-body h4 { font-size: 12px; font-weight: 700; color: #E8A030; margin-bottom: 6px; }
+.escape-body p  { font-size: 12px; color: var(--text-secondary); line-height: 1.55; }
+
+/* agent roster cards */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.agent-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.agent-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.agent-color-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.agent-card-name  { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.agent-card-role  { font-size: 10px; color: var(--text-secondary); margin-bottom: 6px; }
+.agent-card-model {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--surface-raised);
+  color: var(--text-tertiary);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.agent-card-notes { font-size: 10px; color: var(--text-tertiary); margin-top: 6px; line-height: 1.5; }
+
+/* autonomy table */
+.autonomy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 16px 0;
+}
+.autonomy-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.autonomy-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.autonomy-table tr:last-child td { border-bottom: none; }
+.autonomy-table td:first-child { color: var(--text-primary); font-weight: 600; white-space: nowrap; }
+.pill {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+.pill-manual   { background: #1f1500; color: #E8A030; border: 1px solid #E8A030; }
+.pill-auto     { background: #0a2018; color: #6ee7b7; border: 1px solid #059669; }
+.pill-deferred { background: #0d1830; color: #6ea8fe; border: 1px solid #2563EB; }
+
+/* linear label chips */
+.label-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.lchip {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  border: 1px solid;
+}
+.lchip-spec   { background: #0a2018; border-color: #059669; color: #6ee7b7; }
+.lchip-review { background: #1a0d40; border-color: #7C3AED; color: #c4b5fd; }
+.lchip-human  { background: #1f1500; border-color: #E8A030; color: #fbbf24; }
+
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+    <li><a href="workflow.html" class="active">Workflow</a></li>
+  </ul>
+</nav>
+
+<main class="content">
+  <header class="page-header">
+    <h1>Agentic Workflow</h1>
+    <p class="subtitle">How the agent team is orchestrated — pipeline stages, human gates, and the path to more autonomous operation.</p>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section>
+    <h2>Pipeline</h2>
+    <p>Every issue travels left to right through these stages. <strong>Kimmo is the CEO and the only human in the loop.</strong> Two gates require his explicit approval — nothing crosses them automatically.</p>
+
+    <div class="pipeline">
+
+      <!-- Backlog -->
+      <div class="stage">
+        <div class="stage-node">
+          <div class="stage-title">Backlog</div>
+          <div class="stage-label-tag">Linear: Backlog</div>
+        </div>
+        <div class="stage-agent">
+          <div class="agent-badge badge-human"><span class="badge-dot dot-human"></span>Kimmo triages</div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg width="24" height="16"><path d="M0 8 L16 8 M10 3 L16 8 L10 13" stroke="#4A7A9B" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- Spec -->
+      <div class="stage">
+        <div class="stage-node">
+          <div class="stage-title">Spec</div>
+          <div class="stage-label-tag">+ spec-ready</div>
+        </div>
+        <div class="stage-agent">
+          <div class="agent-badge badge-shirley"><span class="badge-dot dot-shirley"></span>Shirley</div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg width="24" height="16"><path d="M0 8 L16 8 M10 3 L16 8 L10 13" stroke="#4A7A9B" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- Gate 1 -->
+      <div class="stage">
+        <div class="gate-node">
+          <span class="gate-icon">🚦</span>
+          <div class="gate-title">Gate 1</div>
+          <div class="gate-sub">Approve spec<br>before any code</div>
+        </div>
+        <div class="stage-agent">
+          <div class="agent-badge badge-human"><span class="badge-dot dot-human"></span>Kimmo approves</div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg width="24" height="16"><path d="M0 8 L16 8 M10 3 L16 8 L10 13" stroke="#E8A030" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- In Progress -->
+      <div class="stage">
+        <div class="stage-node">
+          <div class="stage-title">In Progress</div>
+          <div class="stage-label-tag">Linear: In Progress</div>
+        </div>
+        <div class="stage-agent">
+          <div class="agent-badge badge-randy"><span class="badge-dot dot-randy"></span>Randy</div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg width="24" height="16"><path d="M0 8 L16 8 M10 3 L16 8 L10 13" stroke="#4A7A9B" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- In Review -->
+      <div class="stage">
+        <div class="stage-node">
+          <div class="stage-title">In Review</div>
+          <div class="stage-label-tag">+ in-review</div>
+        </div>
+        <div class="review-fanout">
+          <div class="review-req-label">required</div>
+          <div class="agent-badge badge-marcy"><span class="badge-dot dot-marcy"></span>Marcy</div>
+          <div class="review-req-label">optional</div>
+          <div class="agent-badge badge-seppo badge-optional"><span class="badge-dot dot-seppo"></span>Seppo</div>
+          <div class="agent-badge badge-mrt badge-optional"><span class="badge-dot dot-mrt"></span>Mr.T</div>
+        </div>
+      </div>
+
+      <div class="connector">
+        <svg width="24" height="16"><path d="M0 8 L16 8 M10 3 L16 8 L10 13" stroke="#4A7A9B" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <!-- Completed -->
+      <div class="stage">
+        <div class="stage-node" style="border-color: #059669;">
+          <div class="stage-title" style="color: #6ee7b7;">Completed</div>
+          <div class="stage-label-tag">Linear: Completed</div>
+        </div>
+        <div class="stage-agent">
+          <div class="agent-badge badge-doc"><span class="badge-dot dot-doc"></span>doc-agent (opt.)</div>
+        </div>
+      </div>
+
+    </div><!-- /pipeline -->
+
+    <!-- Escape valve -->
+    <div class="escape-valve">
+      <div class="escape-icon">⚡</div>
+      <div class="escape-body">
+        <h4>Gate 2 — needs-human (can fire from any stage)</h4>
+        <p>Any agent that hits genuine ambiguity — unclear spec, architectural fork, missing context — adds the <strong style="color:#E8A030">needs-human</strong> label, assigns Kimmo, and stops. Kimmo resolves the blocker and puts the issue back into the lane. This is the pressure-release valve that prevents compounding errors. Direction and pivot decisions are never delegated.</p>
+      </div>
+    </div>
+
+    <!-- Linear labels -->
+    <h3 style="font-size:13px; margin-bottom:8px;">Linear labels used</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">The free plan doesn't allow custom statuses, so labels carry the sub-state.</p>
+    <div class="label-chips">
+      <span class="lchip lchip-spec">spec-ready</span>
+      <span class="lchip lchip-review">in-review</span>
+      <span class="lchip lchip-human">needs-human</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section>
+    <h2>Orchestrator dispatch (pilot — manual)</h2>
+    <p>There is no autonomous polling yet. To advance the board, read Linear and act:</p>
+    <table>
+      <thead><tr><th>Issue state</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Backlog, no label</td><td>Triage — dispatch <strong>Shirley</strong> at chosen items</td></tr>
+        <tr><td>Backlog + <code>spec-ready</code></td><td><strong>Gate 1</strong> — you review; if approved → move to Todo</td></tr>
+        <tr><td>Todo</td><td>Dispatch <strong>Randy</strong> (he moves it to In Progress and codes)</td></tr>
+        <tr><td>In Progress + <code>in-review</code></td><td>Dispatch <strong>Marcy</strong> (+ Seppo and/or Mr.T if relevant)</td></tr>
+        <tr><td>Any + <code>needs-human</code></td><td><strong>Gate 2</strong> — yours to resolve</td></tr>
+        <tr><td>Completed</td><td>Optionally run <strong>doc-agent</strong> on the merged PR</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px; color:var(--text-secondary); margin-top:12px;">Two agents may run in parallel <strong>only</strong> if they touch different issues and different files. Parallelism never bypasses a gate.</p>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section>
+    <h2>Agent roster</h2>
+    <div class="agent-grid">
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#2563EB"></div>
+          <div class="agent-card-name">Shirley</div>
+        </div>
+        <div class="agent-card-role">Product Owner — Spec stage</div>
+        <span class="agent-card-model">sonnet</span>
+        <div class="agent-card-notes">Writes spec, acceptance criteria, and DoD into the issue body. Adds <code>spec-ready</code>. Never moves to Planned — Gate 1 is Kimmo's.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#7C3AED"></div>
+          <div class="agent-card-name">Randy</div>
+        </div>
+        <div class="agent-card-role">Developer — In Progress stage</div>
+        <span class="agent-card-model">opus</span>
+        <div class="agent-card-notes">Implements features and fixes. Tests mandatory in same commit. Opens PR, posts handoff comment, adds <code>in-review</code>.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#059669"></div>
+          <div class="agent-card-name">Marcy</div>
+        </div>
+        <div class="agent-card-role">Code Reviewer — In Review (required)</div>
+        <span class="agent-card-model">opus</span>
+        <div class="agent-card-notes">Checks MV*, AC/DoD, test coverage. Missing ViewModel/Repo tests = Critical. Pass → Completed. Fail → back to Randy with specifics.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#DB2777"></div>
+          <div class="agent-card-name">Seppo</div>
+        </div>
+        <div class="agent-card-role">QA — In Review (manual, logic-heavy)</div>
+        <span class="agent-card-model">opus</span>
+        <div class="agent-card-notes">Writes and runs tests when logic is complex. Invoked manually for now; joins automatic review in v2.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#10b981"></div>
+          <div class="agent-card-name">Mr.T</div>
+        </div>
+        <div class="agent-card-role">UX/UI Reviewer — In Review (manual, UI)</div>
+        <span class="agent-card-model">sonnet</span>
+        <div class="agent-card-notes">Reviews Compose layouts, design system compliance, accessibility. Invoked manually for UI-heavy PRs.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#D97706"></div>
+          <div class="agent-card-name">Armin</div>
+        </div>
+        <div class="agent-card-role">Codebase Architect — advisory, off-lane</div>
+        <span class="agent-card-model">sonnet</span>
+        <div class="agent-card-notes">Consulted on structural questions, refactoring plans, and cross-cutting concerns. Does not sit in the build lane.</div>
+      </div>
+
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-color-dot" style="background:#4A7A9B"></div>
+          <div class="agent-card-name">doc-agent</div>
+        </div>
+        <div class="agent-card-role">Documentation — post-merge</div>
+        <span class="agent-card-model">—</span>
+        <div class="agent-card-notes">Updates <code>docs/agent/</code> modules, interfaces, and decisions after each PR merge. Opens a docs PR targeting develop.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <section>
+    <h2>Path to autonomy</h2>
+    <p>The current pilot requires Kimmo to manually dispatch agents and hold two gates. This table shows each manual step, its current state, and what would need to be true to automate it.</p>
+
+    <table class="autonomy-table">
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Now</th>
+          <th>Status</th>
+          <th>What unlocks automation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Triage / pick items</td>
+          <td>Kimmo reads Backlog and points Shirley at items</td>
+          <td><span class="pill pill-manual">Manual</span></td>
+          <td>A priority-scoring agent or scheduled sweep; requires Kimmo to trust the selection criteria enough to not review every pick</td>
+        </tr>
+        <tr>
+          <td>Gate 1 — spec approval</td>
+          <td>Kimmo reads spec and moves to Todo</td>
+          <td><span class="pill pill-manual">Manual — intentional</span></td>
+          <td>Not designed to be automated. Direction is a human decision. Keep this gate.</td>
+        </tr>
+        <tr>
+          <td>Dispatch Randy to Todo</td>
+          <td>Kimmo tells Randy which issue to work</td>
+          <td><span class="pill pill-deferred">Automatable</span></td>
+          <td>Scheduled agent or GitHub Action that reads Linear for <strong>Todo</strong> issues and dispatches Randy. Works once Randy is trusted end-to-end.</td>
+        </tr>
+        <tr>
+          <td>Dispatch Marcy on PR open</td>
+          <td>Kimmo dispatches Marcy manually</td>
+          <td><span class="pill pill-deferred">v2 planned</span></td>
+          <td>GitHub Action: <code>on: pull_request opened/synchronize</code> → run Marcy against the diff. She comments on the PR; human still merges. Needs one full manual loop first.</td>
+        </tr>
+        <tr>
+          <td>Dispatch Seppo / Mr.T</td>
+          <td>Kimmo decides when to invoke manually</td>
+          <td><span class="pill pill-deferred">Automatable</span></td>
+          <td>Marcy's review output could tag PRs that need deeper QA or UI review, triggering the relevant agent automatically.</td>
+        </tr>
+        <tr>
+          <td>Gate 2 — needs-human resolution</td>
+          <td>Kimmo resolves the blocker and re-dispatches</td>
+          <td><span class="pill pill-manual">Manual — intentional</span></td>
+          <td>Not designed to be automated. Ambiguity and architectural forks require judgment. Keep this gate.</td>
+        </tr>
+        <tr>
+          <td>Merge PR to develop</td>
+          <td>Kimmo merges after review passes</td>
+          <td><span class="pill pill-manual">Manual — intentional</span></td>
+          <td>Auto-merge is explicitly deferred — the review agent shares the developer's blind spots. A passing Marcy review is a first filter, not a guarantee. Keep human merge.</td>
+        </tr>
+        <tr>
+          <td>Dispatch doc-agent post-merge</td>
+          <td>Kimmo optionally runs doc-agent</td>
+          <td><span class="pill pill-deferred">Automatable</span></td>
+          <td>GitHub Action on <code>push to develop</code> → run doc-agent with the merged PR diff. Low risk; good candidate for early automation.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:13px; margin: 20px 0 10px;">Recommended automation sequence</h3>
+    <ol style="font-size:13px; color:var(--text-secondary); line-height:2; padding-left:20px;">
+      <li>Run one issue through the <strong>full manual loop</strong> end-to-end — confirm every handover works.</li>
+      <li>Automate <strong>doc-agent on merge</strong> (GitHub Action, low risk, high value).</li>
+      <li>Automate <strong>Marcy on PR open</strong> (GitHub Action — v2 plan in WORKFLOW.md).</li>
+      <li>Once Marcy + CI are trusted, automate <strong>Randy dispatch from Todo</strong> (scheduled sweep).</li>
+      <li>Add <strong>Seppo/Mr.T auto-trigger</strong> based on Marcy's review tags.</li>
+      <li>Keep Gate 1, Gate 2, and human merge <strong>permanently manual</strong>.</li>
+    </ol>
+  </section>
+
+</main>
+</body>
+</html>
