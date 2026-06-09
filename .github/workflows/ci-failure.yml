@@ -27,6 +27,7 @@ jobs:
       contents: write        # push fix commits
       pull-requests: write   # post comments + open PRs for develop fixes
       actions: read          # download artifacts from the failed run
+      id-token: write        # claude-code-action uses OIDC for GitHub App auth
 
     steps:
       - name: Resolve context
