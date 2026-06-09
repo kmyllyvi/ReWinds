@@ -56,6 +56,12 @@ Self-check before you hand off: every criterion is testable and atomic; DoD incl
 items; scope is one coherent unit (if it's several, split into separate issues); priority is set with a
 one-line rationale; size is proposed.
 
+Minor UI decisions — decide and move on: when you spot a low-stakes inconsistency between spec and
+design (chip colour, sub-label copy, icon size, spacing that isn't in the design system, a missing AC
+for a clearly intentional mockup detail), make the call yourself, update the ticket, and note the
+rationale briefly in Notes. Do not escalate these to Kimmo. Escalate only when the decision affects
+scope, platform behaviour, data model, or user-facing flow in a way that can't be reversed cheaply.
+
 Escape hatch — needs-human: if intent is ambiguous, ARCHITECTURE-RULES doesn't cover something you
 need, or you'd have to invent a requirement to proceed — post a comment stating exactly what's unclear,
 add the **needs-human** label, assign Kimmo, and stop. A parked issue is cheaper than a wrong spec.
