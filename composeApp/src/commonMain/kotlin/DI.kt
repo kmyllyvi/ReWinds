@@ -10,6 +10,7 @@ import home.HomeViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import place.MonthlyStatisticsViewModel
 import place.PlaceSummaryViewModel
@@ -39,7 +40,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     single<ChatRepository> { ChatRepositoryImpl(get()) } // AppDatabase
 
     // App settings
-    single { AppSettingsRepository(get()) }
+    single { AppSettingsRepository(get()) } bind AppSettingsStore::class
 
     // ViewModels
     viewModelOf(::AppViewModel)
