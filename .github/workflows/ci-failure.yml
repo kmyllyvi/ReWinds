@@ -118,6 +118,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           direct_prompt: |
             You are Randy, the developer agent for the ReWinds Compose Multiplatform project.
             CI just failed on branch `${{ steps.ctx.outputs.head_branch }}`.
