@@ -2,7 +2,7 @@
 
 How the agent team is orchestrated. **Kimmo is the CEO and the human in the loop.** Two points
 require his approval; nothing crosses them automatically. This file is the single source of truth for
-the workflow — the individual agent files own their *craft*, this file owns the *handover*.
+the workflow — the individual agent files own their _craft_, this file owns the _handover_.
 
 Reusable machinery (this workflow, the gates) is mirrored in
 `Dropbox/Agentic Development/Agentic Team Setup/`. Project-specific facts live in the codebase and
@@ -16,16 +16,14 @@ The Linear workspace is on the free plan, so we **cannot create custom workflow 
 existing native statuses for the coarse lane position and **labels** for the agent sub-states. Labels
 are free to create.
 
-
 | Logical stage | How it's represented in Linear                  |
 | ------------- | ----------------------------------------------- |
 | Spec          | **Backlog** + label `spec-ready` (once specced) |
-| Ready for Dev | **Planned** (native)                            |
+| Ready for Dev | **Todo** (native)                               |
 | In Progress   | **In Progress** (native)                        |
 | In Review     | **In Progress** + label `in-review`             |
 | Needs Human   | label `needs-human` + assigned to Kimmo         |
 | Completed     | **Completed** (native)                          |
-
 
 Labels to create (one-time, in Linear): `spec-ready`, `in-review`, `needs-human`.
 
@@ -37,7 +35,6 @@ manual loop is proven (see GitHub Action note at the end).
 
 ## Build lane
 
-
 | Stage (status + label)    | Whose turn                               | Reads                                                        | Produces                                                              | Then moves to                                       |
 | ------------------------- | ---------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
 | Backlog (no label)        | — (you triage)                           | —                                                            | you point `po` at chosen items                                        | po works it                                         |
@@ -45,21 +42,20 @@ manual loop is proven (see GitHub Action note at the end).
 | **GATE 1 — you**          | you                                      | the spec                                                     | approval                                                              | **Planned**                                         |
 | Todo                      | — (dev queue)                            | —                                                            | orchestrator picks it up                                              | In Progress                                         |
 | In Progress               | **developer** agent                      | spec + AC + DoD, repo, ARCHITECTURE-RULES                    | branch + commits + PR; handoff comment; adds `in-review`              | In Progress + `in-review`                           |
-| In Progress + `in-review` | **code-reviewer** (pilot: this one only) | the diff/PR vs AC + DoD + MV* rules                          | pass, or fail with specifics                                          | Completed / (remove `in-review`, stays In Progress) |
+| In Progress + `in-review` | **code-reviewer** (pilot: this one only) | the diff/PR vs AC + DoD + MV\* rules                         | pass, or fail with specifics                                          | Completed / (remove `in-review`, stays In Progress) |
 | `needs-human`             | **GATE 2 — you**                         | the blocker the agent hit                                    | a decision                                                            | back into the lane                                  |
 | Completed                 | — (optional doc agent on merge)          | —                                                            | —                                                                     | —                                                   |
-
 
 For the **pilot**, "In Review" runs **only `code-reviewer`**. `qa-test-agent` and `ux-ui-reviewer`
 are invoked manually when relevant; they join the automatic review step once the loop is trusted.
 
 ## The two human gates
 
-- **Gate 1 —** `spec-ready` **(in Backlog) → Todo.** You approve what gets built *before any code is
-written*. The `po` agent never moves an issue to Planned; it only adds `spec-ready`.
+- **Gate 1 —** `spec-ready` **(in Backlog) → Todo.** You approve what gets built _before any code is
+  written_. The `po` agent never moves an issue to Planned; it only adds `spec-ready`.
 - **Gate 2 — `needs-human`.** Any agent that hits genuine ambiguity (unclear spec, architectural fork,
-scope question) adds `needs-human`, assigns you, and stops rather than guessing. You resolve it and
-move it back into the lane. This is the pressure-release valve that stops compounding error.
+  scope question) adds `needs-human`, assigns you, and stops rather than guessing. You resolve it and
+  move it back into the lane. This is the pressure-release valve that stops compounding error.
 
 Direction and pivot decisions are yours. Not delegated.
 
@@ -68,12 +64,12 @@ Direction and pivot decisions are yours. Not delegated.
 ## Linear handover protocol (every agent follows this)
 
 1. **On dispatch**, read the target issue: its status, labels, body (spec/AC/DoD), and comments.
-  Confirm it matches your role (table above). If it doesn't, stop and say so — don't act out of turn.
+   Confirm it matches your role (table above). If it doesn't, stop and say so — don't act out of turn.
 2. **Do your craft** per your own agent file.
 3. **On completion**, post a comment summarising what you did, then **update status/labels** to the
-  "Then moves to" value above.
+   "Then moves to" value above.
 4. **If blocked** (ambiguity, architectural decision, missing context): comment the specific blocker,
-  add `needs-human`, assign Kimmo, and stop. Do not guess.
+   add `needs-human`, assign Kimmo, and stop. Do not guess.
 
 Linear tools: `mcp__linear-server__get_issue`, `list_issues`, `save_issue`. Team **KIM**, project
 **ReWinds**. (`save_issue` sets status, labels, and assignee.)
@@ -89,7 +85,8 @@ Linear tools: `mcp__linear-server__get_issue`, `list_issues`, `save_issue`. Team
 
 ## Definition of done
 - [ ] Builds on Android (`./gradlew buildAndroidOnly`)
-- [ ] Tests pass (`./gradlew :composeApp:testDebugUnitTest`); new logic has basic coverage
+- [ ] Tests pass (`./gradlew :composeApp:testDebugUnitTest`)
+- [ ] New tests written in the same commit for all non-trivial logic (ViewModel, Repository, pure functions, bug fixes). No "tests later". Exempt only: pure UI styling, config/doc-only changes — state the reason explicitly.
 - [ ] No MV* violations (see ARCHITECTURE-RULES.md)
 - [ ] No new lint violations
 - [ ] <issue-specific items>
@@ -103,10 +100,10 @@ Reviewers needed: code-reviewer [+ qa-test-agent if logic-heavy] [+ ux-ui-review
 
 - Branch: `kim-<issue-number>-<short-slug>`.
 - Build/test for the pilot is **Android only** (`buildAndroidOnly`, `testDebugUnitTest`). iOS is
-verified manually in Xcode — the developer agent does not attempt Gradle iOS builds.
+  verified manually in Xcode — the developer agent does not attempt Gradle iOS builds.
 - Open a PR using `.github/pull_request_template.md`, with `Closes KIM-<n>` in the Linear section.
 - The developer's closing comment must contain: `Branch: …`, `PR: <link>`, `Build: pass/fail`,
-`Tests: pass/fail`, `Summary`, `Deviations`. Then add the `in-review` label.
+  `Tests: pass/fail`, `New tests written: <yes — list files> | <no — reason>`, `Summary`, `Deviations`. Then add the `in-review` label.
 
 ---
 
@@ -120,7 +117,7 @@ To advance the board, read the issues and act:
 - **In Progress** + `in-review` → dispatch `code-reviewer`.
 - **Any** + `needs-human` → it's yours (Gate 2).
 - **Completed** → optionally run the documentation agent on the merged PR (see
-`agent instruction - doc.txt`).
+  `agent instruction - doc.txt`).
 
 Two agents may run in parallel **only if they touch different issues and different files** (e.g. `po`
 drafting a new ticket while `developer` codes an approved one). New po tickets stay in Backlog and wait
@@ -128,17 +125,15 @@ at Gate 1 — parallelism never bypasses a gate.
 
 ## Roster
 
-
-| Agent                | Role in lane           | Model  |
-| -------------------- | ---------------------- | ------ |
-| `po`                 | Spec                   | sonnet |
-| `developer`          | In Progress            | sonnet |
-| `code-reviewer`      | In Review (pilot)      | sonnet |
-| `qa-test-agent`      | In Review (manual)     | haiku  |
-| `ux-ui-reviewer`     | In Review (manual, UI) | sonnet |
-| `codebase-architect` | advisory, off-lane     | sonnet |
-| doc agent            | post-merge docs        | —      |
-
+| Agent                            | Persona  | Role in lane           | Model  |
+| -------------------------------- | -------- | ---------------------- | ------ |
+| `po`                             | Shirley  | Spec                   | sonnet |
+| `developer`                      | Randy    | In Progress            | opus   |
+| `code-reviewer`                  | Marcy    | In Review (pilot)      | opus   |
+| `qa-test-agent`                  | Seppo    | In Review (manual)     | opus   |
+| `ux-ui-reviewer`                 | Mr.T     | In Review (manual, UI) | sonnet |
+| `codebase-architect`             | Armin    | advisory, off-lane     | sonnet |
+| `doc-agent`                      | —        | post-merge docs        | —      |
 
 ## One-time setup (Kimmo, in the Linear UI)
 
@@ -155,11 +150,11 @@ manual dispatch:
 
 - Trigger: `on: pull_request: { types: [opened, synchronize] }`.
 - Step: run Anthropic's Claude Code GitHub Action, pointed at the repo's `code-reviewer` agent and
-`docs/agent/ARCHITECTURE-RULES.md`, to post review comments on the PR.
+  `docs/agent/ARCHITECTURE-RULES.md`, to post review comments on the PR.
 - On a clean review it can comment "review passed"; a human still merges. It should **not** auto-merge
-— the review agent shares the developer's blind spots, so a pass is a first filter, not a guarantee.
+  — the review agent shares the developer's blind spots, so a pass is a first filter, not a guarantee.
 - Linear stays in sync via the PR's `Closes KIM-<n>` link; the `in-review` label can be dropped when
-the PR merges.
+  the PR merges.
 
 Do **not** build this until one issue has gone through the manual loop end-to-end. Wiring CI before
 the workflow is proven means debugging the process and the infrastructure at the same time.
