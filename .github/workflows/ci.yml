@@ -36,6 +36,18 @@ jobs:
       - name: Run unit tests
         run: ./gradlew :composeApp:testDebugUnitTest -PincludeAllTargets=false --no-daemon --stacktrace
 
+      - name: Generate coverage report
+        if: success()
+        run: ./gradlew :composeApp:coverageReport -PincludeAllTargets=false -PenableCoverage=true --no-daemon
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: composeApp/build/reports/jacoco/
+          retention-days: 14
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

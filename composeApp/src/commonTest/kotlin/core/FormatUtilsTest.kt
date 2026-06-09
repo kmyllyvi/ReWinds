@@ -5,16 +5,12 @@ import core.utils.monthName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * Tests for core/FormatUtils.kt — the KMP-safe number/month formatting helpers
- * (no String.format, must behave identically on iOS and Android).
- */
 class FormatUtilsTest {
 
     @Test
-    fun formatDecimal_positiveTruncatesToOneDecimal() {
+    fun formatDecimal_roundsToOneDecimalPlace() {
         assertEquals("12.3", formatDecimal(12.34))
-        assertEquals("12.3", formatDecimal(12.39)) // truncation, not rounding
+        assertEquals("12.4", formatDecimal(12.39))
     }
 
     @Test
@@ -24,11 +20,9 @@ class FormatUtilsTest {
     }
 
     @Test
-    fun formatDecimal_negativeTruncatesTowardZero() {
-        // (-5.67 * 10).toLong() == -56  ->  intPart = -5, decPart = abs(-6) = 6
-        // This documents the ACTUAL behavior (truncation), which differs from the
-        // KDoc example that claims "-5.7". The implementation truncates, not rounds.
-        assertEquals("-5.6", formatDecimal(-5.67))
+    fun formatDecimal_negativeRoundsCorrectly() {
+        assertEquals("-5.7", formatDecimal(-5.67))
+        assertEquals("-5.6", formatDecimal(-5.64))
     }
 
     @Test
@@ -37,18 +31,14 @@ class FormatUtilsTest {
     }
 
     @Test
-    fun formatDecimal_smallFraction() {
+    fun formatDecimal_smallPositiveFraction() {
         assertEquals("0.5", formatDecimal(0.5))
     }
 
     @Test
-    fun formatDecimal_negativeBetweenMinusOneAndZeroLosesSign_knownBug() {
-        // KNOWN BUG (pinned, not endorsed): for values in (-1.0, 0.0) the integer part is 0,
-        // and "$intPart" renders as "0" with no minus sign, so the result is positive-looking.
-        // (-0.5 * 10).toLong() == -5  ->  intPart = -5/10 = 0,  decPart = abs(-5 % 10) = 5  ->  "0.5"
-        // A correct implementation would yield "-0.5". This test documents current behavior so a
-        // future fix will surface here intentionally.
-        assertEquals("0.5", formatDecimal(-0.5))
+    fun formatDecimal_negativeBetweenMinusOneAndZeroRetainsSign() {
+        assertEquals("-0.5", formatDecimal(-0.5))
+        assertEquals("-0.3", formatDecimal(-0.34))
     }
 
     @Test
