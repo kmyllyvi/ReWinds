@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -157,6 +158,14 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     }
                 }
 
+                // Skeleton placeholders while the first load is in flight and we have
+                // nothing to show yet — gives immediate feedback instead of a blank list.
+                if (uiState.isLoading && uiState.placeDisplayData.isEmpty()) {
+                    items(3) {
+                        PlaceRowSkeleton()
+                    }
+                }
+
                 // Places list
                 if (uiState.placeDisplayData.isNotEmpty()) {
                     items(uiState.placeDisplayData, key = { it.name }) { place ->
@@ -273,6 +282,52 @@ private fun PlaceRow(place: PlaceDisplayData, onClick: () -> Unit) {
             tint = MaterialTheme.rewinds.textTertiary,
             modifier = Modifier.size(20.dp)
         )
+    }
+}
+
+/**
+ * Muted placeholder shaped like a [PlaceRow], shown while the places list loads.
+ * Two grey bars stand in for the name and subtitle. No shimmer — a static muted block
+ * is enough feedback and keeps the loading state cheap.
+ */
+@Composable
+private fun PlaceRowSkeleton() {
+    val placeholderColor = MaterialTheme.rewinds.textTertiary.copy(alpha = 0.18f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 5.dp)
+            .background(
+                color = MaterialTheme.rewinds.surface.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(13.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(placeholderColor)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(placeholderColor)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.32f)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(placeholderColor)
+            )
+        }
     }
 }
 

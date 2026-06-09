@@ -31,6 +31,8 @@ class WeatherToolsMetricsTest {
         override suspend fun getSavedPlaceNames(): List<String> =
             listOf("Oahu", "Maui", "Kauai")
 
+        override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
+
         override suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse? =
             if (resolvedPlace == "unknown") null else getDaysRange(resolvedPlace, "2026-02-26", "2026-02-27")
 

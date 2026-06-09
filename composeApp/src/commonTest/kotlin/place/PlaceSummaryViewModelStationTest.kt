@@ -510,6 +510,8 @@ private class FakeWeatherRepository(
 ) : WeatherRepository {
 
     override suspend fun getSavedPlaceNames(): List<String> = listOf(data.resolvedAddress)
+    override suspend fun getPlaceDayCounts(): Map<String, Long> =
+        mapOf(data.resolvedAddress to (data.days?.size ?: 0).toLong())
     override suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse = data
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse = data
     override suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse = data

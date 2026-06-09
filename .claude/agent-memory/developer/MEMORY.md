@@ -89,6 +89,37 @@
 - Background gradle output piped through `tail` only flushes on completion; poll the
   JUnit XML at `composeApp/build/test-results/testDebugUnitTest/TEST-*.xml` for pass/fail counts
 
+## Core interface test fakes (update ALL when adding interface methods)
+
+When you add a method to `core.WeatherRepository` or `core.Database`, every fake must implement it
+or the commonTest source set won't compile. Known fakes as of KIM-278:
+- `WeatherRepository`: `MockWeatherRepository` (HomeViewTest), `MockWeatherRepositoryForSearch`
+  (HomeViewModelSearchTest), `FakeWeatherRepository` (PlaceSummaryViewModelStationTest),
+  anonymous object (WeatherToolsMetricsTest), `FakeWeatherRepository` (ChatPersistenceTest).
+- `Database`: `MockDatabase` (HomeViewTest), `MockDatabaseForSearch` (HomeViewModelSearchTest).
+  Production impl is `SqlDelightDatabase` in `core/Database.kt`.
+
+## WeatherRepositoryImpl in-memory cache (KIM-278)
+
+- Session-scoped `savedDataCache: HashMap<String, WeatherResponse>` in `WeatherRepositoryImpl`.
+- `getSavedDataFor` is read-through (cache hit returns immediately; miss loads + stores).
+- ALL DB writes go through private `persistAndInvalidate(response)` (saves + evicts entry).
+  `deletePlace` also evicts. If you add a new write path, route it through `persistAndInvalidate`,
+  never call `database.saveWeatherResponse` directly, or the cache goes stale.
+- Home day counts use the lightweight `getPlaceDayCounts()` (single GROUP BY via
+  `getAllPlaceDayCounts` in AppDatabase.sq) instead of loading full per-place data.
+
+## Progressive render + skeletons (KIM-278)
+
+- For staged UI, the VM clears state at the start of a load so the View can show a loading
+  state, then emits in stages. Example: `MonthlyStatisticsViewModel.loadStatistics()` sets
+  `_statistics = null` and `_dailySummaries = []` first, then emits days, then stats.
+- Skeleton placeholders are plain `Box` filled with
+  `MaterialTheme.rewinds.textTertiary.copy(alpha = 0.18f)` — no shimmer library.
+  See `PlaceRowSkeleton` (HomeView) and `DaySummaryRowSkeleton` (MonthlyStatisticsView).
+- SQLDelight `SELECT col, COUNT(*) AS dayCount` → generated row has `.col` and `.dayCount`
+  (the AS alias). Map with `.executeAsList().associate { it.col to it.dayCount }`.
+
 ## Theme / Design system (Midnight Blue — KIM-265+)
 
 - `ReWindsColors` object in `ui/theme/ReWindsTheme.kt` — all palette tokens

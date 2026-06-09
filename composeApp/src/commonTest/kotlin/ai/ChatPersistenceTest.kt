@@ -231,6 +231,7 @@ class FakeChatRepository : ChatRepository {
  */
 private class FakeWeatherRepository : core.WeatherRepository {
     override suspend fun getSavedPlaceNames(): List<String> = emptyList()
+    override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
     override suspend fun getSavedDataFor(resolvedPlace: String): core.WeatherResponse? = null
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): core.WeatherResponse =
         TestWeatherRepositoryFactory.createWeatherResponse(place)

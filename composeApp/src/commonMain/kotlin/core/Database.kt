@@ -39,6 +39,9 @@ interface Database {
     // get all saved places
     suspend fun getAllSavedPlaces(): List<String>
 
+    // get stored-day counts per place in a single GROUP BY query (no day/hour loading)
+    suspend fun getPlaceDayCounts(): Map<String, Long>
+
     // get full data for a specific place
     suspend fun getSavedPlaceFull(place: String): WeatherResponse?
 
@@ -71,6 +74,13 @@ class SqlDelightDatabase(
     override suspend fun getAllSavedPlaces(): List<String> {
         return withContext(Dispatchers.IO) {
             dbQuery.getAllWeatherResponseResolvedAddresses().executeAsList()
+        }
+    }
+
+    override suspend fun getPlaceDayCounts(): Map<String, Long> {
+        return withContext(Dispatchers.IO) {
+            dbQuery.getAllPlaceDayCounts().executeAsList()
+                .associate { it.weatherResponseResolvedAddress to it.dayCount }
         }
     }
 

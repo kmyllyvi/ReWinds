@@ -49,6 +49,7 @@ class MockWeatherRepositoryForSearch : WeatherRepository {
     }
 
     override suspend fun getSavedPlaceNames(): List<String> = emptyList()
+    override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
     override suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse? = null
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse {
         return WeatherResponse(resolvedAddress = "", address = "", queryCost = 0, latitude = 0.0, longitude = 0.0, timezone = "", tzoffset = 0.0, days = emptyList())
@@ -75,6 +76,7 @@ class MockWeatherRepositoryForSearch : WeatherRepository {
  */
 class MockDatabaseForSearch : Database {
     override suspend fun getAllSavedPlaces(): List<String> = emptyList()
+    override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
     override suspend fun getSavedPlaceFull(place: String): WeatherResponse? = null
     override suspend fun saveWeatherResponse(response: WeatherResponse) {}
     override suspend fun getWeatherDataFor(placeName: String, date: String): WeatherResponse? = null

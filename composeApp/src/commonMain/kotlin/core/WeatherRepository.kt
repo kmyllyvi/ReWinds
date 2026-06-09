@@ -45,6 +45,12 @@ sealed class StationsResult {
 interface WeatherRepository {
     suspend fun getSavedPlaceNames(): List<String>
     suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse?
+
+    /**
+     * Stored-day count per place, resolved in a single GROUP BY query.
+     * The Home screen uses this instead of loading full per-place data (KIM-278).
+     */
+    suspend fun getPlaceDayCounts(): Map<String, Long>
     suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse
     suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse
     suspend fun deletePlace(placeName: String)
@@ -89,6 +95,11 @@ class WeatherRepositoryImpl(
     private val visualcrossingUrl = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
     private val apiQuery get() = "?unitGroup=metric&key=${getVisualCrossingApiKey()}&contentType=json&include=hours"
 
+    // Session-lifetime cache of fully-loaded place data, keyed by resolved address.
+    // Scoped to the Koin singleton, so revisiting a place (e.g. back-and-forward month
+    // navigation) skips the expensive day/hour DB load. Invalidated on save (KIM-278).
+    private val savedDataCache = HashMap<String, WeatherResponse>()
+
     init {
         Log.d("init WeatherRepository")
     }
@@ -99,10 +110,28 @@ class WeatherRepositoryImpl(
         }
     }
 
+    override suspend fun getPlaceDayCounts(): Map<String, Long> {
+        return withContext(Dispatchers.IO) {
+            database.getPlaceDayCounts()
+        }
+    }
+
     override suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse? {
         return withContext(Dispatchers.IO) {
-            database.getSavedPlaceFull(resolvedPlace)
+            savedDataCache[resolvedPlace]?.let { return@withContext it }
+            database.getSavedPlaceFull(resolvedPlace)?.also { loaded ->
+                savedDataCache[resolvedPlace] = loaded
+            }
         }
+    }
+
+    /**
+     * Persist a response and drop its cached entry so the next read reflects the new days.
+     * All writes go through here to keep [savedDataCache] consistent (KIM-278).
+     */
+    private suspend fun persistAndInvalidate(response: WeatherResponse) {
+        database.saveWeatherResponse(response)
+        savedDataCache.remove(response.resolvedAddress)
     }
 
     private fun generateDateList(startDateStr: String, endDateStr: String): List<String> {
@@ -203,7 +232,7 @@ class WeatherRepositoryImpl(
                 val locationString = resolveLocationString(place, existingPlaceData)
                 val networkResponse = fetchWeatherFromNetwork(locationString, truncatedFromDate, null)
                 val correctedResponse = networkResponse.copy(resolvedAddress = place, address = place)
-                database.saveWeatherResponse(correctedResponse)
+                persistAndInvalidate(correctedResponse)
                 return correctedResponse
             }
         } else { // Fetching a date range
@@ -267,7 +296,7 @@ class WeatherRepositoryImpl(
                     Log.d("WeatherRepository - Fetching gap: ${gap.startDate} to ${gap.endDate}")
                     val gapResponse = fetchWeatherFromNetwork(locationString, gap.startDate, gap.endDate)
                     val correctedGapResponse = gapResponse.copy(resolvedAddress = place, address = place)
-                    database.saveWeatherResponse(correctedGapResponse)
+                    persistAndInvalidate(correctedGapResponse)
                 } catch (e: Exception) {
                     Log.e("Failed to fetch gap ${gap.startDate} to ${gap.endDate} for $place", e)
                     // Continue with other gaps even if one fails
@@ -296,6 +325,7 @@ class WeatherRepositoryImpl(
     override suspend fun deletePlace(placeName: String) {
         withContext(Dispatchers.IO) {
             database.deletePlace(placeName)
+            savedDataCache.remove(placeName)
         }
     }
 
@@ -318,7 +348,7 @@ class WeatherRepositoryImpl(
         // always get from API - days saved if new
         val response = fetchWeatherFromNetwork(place, previousDaysCount)
         // save to DB
-        database.saveWeatherResponse(response)
+        persistAndInvalidate(response)
         return response
     }
 
@@ -349,7 +379,7 @@ class WeatherRepositoryImpl(
             resolvedAddress = place.name
         )
         // Save the corrected weather data to the database
-        database.saveWeatherResponse(correctedResponse)
+        persistAndInvalidate(correctedResponse)
         return correctedResponse
     }
 

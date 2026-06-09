@@ -1,5 +1,6 @@
 package place
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -23,11 +25,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,9 +76,9 @@ fun MonthlyStatisticsView(
     val peakWindDayIndex by vm.peakWindDayIndex.collectAsState()
     val strings = LocalAppStrings.current
 
-    LaunchedEffect(placeName, year, month) {
-        vm.reloadStatistics(year = year, month = month)
-    }
+    // No LaunchedEffect to (re)load here: the ViewModel's init already loads the initial
+    // month, and month navigation is driven by navigateToPreviousMonth/navigateToNextMonth.
+    // A LaunchedEffect(placeName, year, month) double-fired on first entry (KIM-278).
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Decorative isobar background — rendered first so it sits below all content.
@@ -93,9 +95,17 @@ fun MonthlyStatisticsView(
             )
 
             val currentStats = statistics
-            if (currentStats == null) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            if (dailySummaries.isEmpty() && currentStats == null) {
+                // Nothing loaded yet — show skeleton day rows for immediate feedback
+                // instead of blocking the whole screen on a single spinner (KIM-278).
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp)
+                ) {
+                    repeat(3) {
+                        DaySummaryRowSkeleton()
+                    }
                 }
             } else {
                 LazyColumn(
@@ -114,7 +124,27 @@ fun MonthlyStatisticsView(
                             Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        if (currentStats.numberOfDaysWithData > 0) {
+                        // Progressive render: day rows are already available, but the stats
+                        // card waits on the (cheap) aggregate calculation. Show a spinner only
+                        // where the card will land rather than holding back the whole list.
+                        if (currentStats == null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = strings.dailyBreakdown,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.rewinds.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        } else if (currentStats.numberOfDaysWithData > 0) {
                             StatCardGrid(stats = currentStats)
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -260,6 +290,49 @@ private fun StatCardGrid(stats: CalculatedStats) {
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+/**
+ * Muted placeholder shaped like a [DaySummaryRow], shown while the month's days load.
+ * Static muted bars — no shimmer — matching the Home skeleton approach (KIM-278).
+ */
+@Composable
+private fun DaySummaryRowSkeleton() {
+    val placeholderColor = MaterialTheme.rewinds.textTertiary.copy(alpha = 0.18f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.rewinds.surface.copy(alpha = 0.5f))
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.4f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(placeholderColor)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(placeholderColor)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(14.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(placeholderColor)
+        )
     }
 }
 

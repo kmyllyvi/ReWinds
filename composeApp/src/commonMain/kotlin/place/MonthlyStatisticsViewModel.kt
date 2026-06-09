@@ -118,6 +118,10 @@ class MonthlyStatisticsViewModel(
         filter = loadFilter()
         _year.value = currentYear
         _month.value = currentMonth
+        // Clear previous month's results so the View renders its loading state while the new
+        // month resolves, and so the day rows emit before the stats card (progressive render).
+        _statistics.value = null
+        _dailySummaries.value = emptyList()
         viewModelScope.launch {
 
             // Now use the 'this.placeName', 'this.currentYear', 'this.currentMonth' properties
