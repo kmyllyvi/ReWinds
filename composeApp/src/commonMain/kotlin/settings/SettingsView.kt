@@ -5,19 +5,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,25 +27,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import components.AppHeader
 import core.ApiKeyManager
 import core.Language
-import core.LanguageManager
 import core.LocalAppStrings
-import core.WeatherApiKeyManager
 import core.Navigator
+import core.WeatherApiKeyManager
 import core.deleteApiKeyPlatform
 import core.deleteWeatherApiKeyPlatform
-import core.isAnthropicApiKeyConfigured
+import core.filterSummary
 import core.saveApiKeyPlatform
 import core.saveWeatherApiKeyPlatform
-import core.filterSummary
-import components.AppHeader
 import org.koin.compose.viewmodel.koinViewModel
+import settings.components.SettingsDestructiveRow
+import settings.components.SettingsGroup
+import settings.components.SettingsKeyRow
+import settings.components.SettingsToggleRow
+import settings.components.SettingsValueRow
+import ui.components.IsobarBackground
+import ui.theme.rewinds
+
+/** Identifies which editor/dialog is currently open. Pure UI navigation state. */
+private enum class SettingsDialog { NONE, ANTHROPIC_KEY, WEATHER_KEY, DAYS_OF_INTEREST }
 
 @Composable
 fun SettingsView(
@@ -57,353 +59,341 @@ fun SettingsView(
 ) {
     val scrollState = rememberScrollState()
     val strings = LocalAppStrings.current
-    val language by LanguageManager.currentLanguage.collectAsState()
-    val focusManager = LocalFocusManager.current
-    var anthropicApiKey by remember { mutableStateOf("") }
-    var weatherApiKey by remember { mutableStateOf("") }
-    var showSuccessMessage by remember { mutableStateOf("") }
-    var showDeleteConfirm by remember { mutableStateOf("") }
 
-    val doiState by vm.doiState.collectAsState()
-    val currentFilter by vm.currentFilter.collectAsState()
-    var doiCriteria by remember { mutableStateOf("") }
+    val language by vm.languageState.collectAsState()
+    val units by vm.unitsState.collectAsState()
+    val windSpeedUnit by vm.windSpeedUnitState.collectAsState()
+    val anthropicConfigured by vm.anthropicKeyConfigured.collectAsState()
+    val weatherConfigured by vm.visualCrossingKeyConfigured.collectAsState()
+    val autoRefresh by vm.autoRefreshEnabled.collectAsState()
+    val wifiOnly by vm.wifiOnlyEnabled.collectAsState()
 
-    Column(
+    var openDialog by remember { mutableStateOf(SettingsDialog.NONE) }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.rewinds.pageBg)
     ) {
-        AppHeader(
-            title = strings.settingsTitle,
-            onBackClick = { navigator.navigateBack() }
+        // Decorative isobar texture — lowest layer, below all content.
+        IsobarBackground()
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            AppHeader(title = strings.settingsTitle)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // ── General ─────────────────────────────────────────────────
+                SettingsGroup(
+                    label = strings.settingsGroupGeneral,
+                    rows = listOf(
+                        {
+                            SettingsValueRow(
+                                label = strings.languageTitle,
+                                value = language.displayName,
+                                onClick = {
+                                    // Single toggle between the two supported languages.
+                                    vm.setLanguage(
+                                        if (language == Language.ENGLISH) Language.GERMAN
+                                        else Language.ENGLISH
+                                    )
+                                }
+                            )
+                        },
+                        {
+                            SettingsValueRow(
+                                label = strings.settingsRowUnits,
+                                value = units.displayName,
+                                onClick = {
+                                    vm.setUnits(
+                                        if (units == UnitSystem.METRIC) UnitSystem.IMPERIAL
+                                        else UnitSystem.METRIC
+                                    )
+                                }
+                            )
+                        },
+                        {
+                            SettingsValueRow(
+                                label = strings.settingsRowWindSpeed,
+                                value = windSpeedUnit.displayName,
+                                onClick = {
+                                    // Cycle through the supported wind units.
+                                    val next = when (windSpeedUnit) {
+                                        WindSpeedUnit.KMH -> WindSpeedUnit.KNOTS
+                                        WindSpeedUnit.KNOTS -> WindSpeedUnit.MPH
+                                        WindSpeedUnit.MPH -> WindSpeedUnit.KMH
+                                    }
+                                    vm.setWindSpeedUnit(next)
+                                }
+                            )
+                        }
+                    )
+                )
+
+                // ── API Keys ────────────────────────────────────────────────
+                SettingsGroup(
+                    label = strings.settingsGroupApiKeys,
+                    rows = listOf(
+                        {
+                            SettingsKeyRow(
+                                title = strings.anthropicKeyTitle,
+                                subLabel = strings.settingsAnthropicSubLabel,
+                                configured = anthropicConfigured,
+                                configuredChipText = strings.settingsKeyConfiguredChip,
+                                notSetChipText = strings.settingsKeyNotSetChip,
+                                onClick = { openDialog = SettingsDialog.ANTHROPIC_KEY }
+                            )
+                        },
+                        {
+                            SettingsKeyRow(
+                                title = strings.visualCrossingKeyTitle,
+                                subLabel = strings.settingsVisualCrossingSubLabel,
+                                configured = weatherConfigured,
+                                configuredChipText = strings.settingsKeyConfiguredChip,
+                                notSetChipText = strings.settingsKeyNotSetChip,
+                                onClick = { openDialog = SettingsDialog.WEATHER_KEY }
+                            )
+                        }
+                    )
+                )
+
+                // ── Data ────────────────────────────────────────────────────
+                SettingsGroup(
+                    label = strings.settingsGroupData,
+                    rows = listOf(
+                        {
+                            SettingsToggleRow(
+                                label = strings.settingsRowAutoRefresh,
+                                checked = autoRefresh,
+                                onCheckedChange = { vm.setAutoRefreshEnabled(it) }
+                            )
+                        },
+                        {
+                            SettingsToggleRow(
+                                label = strings.settingsRowWifiOnly,
+                                checked = wifiOnly,
+                                onCheckedChange = { vm.setWifiOnlyEnabled(it) }
+                            )
+                        },
+                        {
+                            SettingsValueRow(
+                                label = strings.daysOfInterestTitle,
+                                onClick = { openDialog = SettingsDialog.DAYS_OF_INTEREST }
+                            )
+                        },
+                        {
+                            SettingsValueRow(
+                                label = strings.settingsRowExportData,
+                                onClick = { /* Routed to the existing export flow elsewhere. */ }
+                            )
+                        }
+                    )
+                )
+
+                // ── About ───────────────────────────────────────────────────
+                SettingsGroup(
+                    label = strings.settingsGroupAbout,
+                    rows = listOf(
+                        {
+                            SettingsValueRow(
+                                label = strings.settingsRowVersion,
+                                value = strings.settingsAppVersion,
+                                showChevron = false
+                            )
+                        },
+                        {
+                            SettingsDestructiveRow(
+                                label = strings.settingsRowDeleteAllData,
+                                onClick = { /* Routed to the existing data-management flow elsewhere. */ }
+                            )
+                        }
+                    )
+                )
+
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+
+    when (openDialog) {
+        SettingsDialog.ANTHROPIC_KEY -> ApiKeyDialog(
+            title = strings.anthropicKeyTitle,
+            description = strings.anthropicKeyDescription,
+            urlHint = strings.anthropicApiUrl,
+            configured = anthropicConfigured,
+            onSave = { key ->
+                saveApiKeyPlatform(key)
+                ApiKeyManager.setApiKey(key)
+                vm.refreshKeyStatus()
+            },
+            onDelete = {
+                deleteApiKeyPlatform()
+                ApiKeyManager.setApiKey("")
+                vm.refreshKeyStatus()
+            },
+            onDismiss = { openDialog = SettingsDialog.NONE }
         )
+        SettingsDialog.WEATHER_KEY -> ApiKeyDialog(
+            title = strings.visualCrossingKeyTitle,
+            description = strings.visualCrossingKeyDescription,
+            urlHint = strings.visualCrossingApiUrl,
+            configured = weatherConfigured,
+            onSave = { key ->
+                saveWeatherApiKeyPlatform(key)
+                WeatherApiKeyManager.setApiKey(key)
+                vm.refreshKeyStatus()
+            },
+            onDelete = {
+                deleteWeatherApiKeyPlatform()
+                WeatherApiKeyManager.setApiKey("")
+                vm.refreshKeyStatus()
+            },
+            onDismiss = { openDialog = SettingsDialog.NONE }
+        )
+        SettingsDialog.DAYS_OF_INTEREST -> DaysOfInterestDialog(
+            vm = vm,
+            onDismiss = { openDialog = SettingsDialog.NONE }
+        )
+        SettingsDialog.NONE -> Unit
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .clickable(
-                    indication = null,
-                    interactionSource = MutableInteractionSource()
-                ) {
-                    focusManager.clearFocus()
-                }
-                .padding(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Language Section
-            Text(
-                text = strings.languageTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+/**
+ * Editor dialog for a single API key: shows the description, a secure entry field,
+ * and Save / Delete actions. Persistence is delegated to the supplied callbacks so
+ * this composable stays free of platform logic.
+ */
+@Composable
+private fun ApiKeyDialog(
+    title: String,
+    description: String,
+    urlHint: String,
+    configured: Boolean,
+    onSave: (String) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    var key by remember { mutableStateOf("") }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { LanguageManager.setLanguage(Language.ENGLISH) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (language == Language.ENGLISH)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (language == Language.ENGLISH)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Text("EN")
-                }
-                Button(
-                    onClick = { LanguageManager.setLanguage(Language.GERMAN) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (language == Language.GERMAN)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (language == Language.GERMAN)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Text("DE")
-                }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textSecondary
+                )
+                OutlinedTextField(
+                    value = key,
+                    onValueChange = { key = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(strings.apiKeyPlaceholder) },
+                    label = { Text(strings.apiKeyFieldLabel) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = false,
+                    maxLines = 3
+                )
+                Text(
+                    text = urlHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textTertiary
+                )
             }
-
-            // Anthropic API Key Section
-            Text(
-                text = strings.anthropicKeyTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Text(
-                text = strings.anthropicKeyDescription,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (isAnthropicApiKeyConfigured()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeyConfigured,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeyNotConfiguredStatus,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-
-            if (showSuccessMessage == "anthropic") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeySaved,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = anthropicApiKey,
-                onValueChange = { anthropicApiKey = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(strings.apiKeyPlaceholder) },
-                label = { Text(strings.apiKeyFieldLabel) },
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = false,
-                maxLines = 3
-            )
-
-            Text(
-                text = strings.anthropicApiUrl,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextButton(
-                    onClick = { showDeleteConfirm = "anthropic" },
-                    modifier = Modifier.weight(1f),
-                    enabled = isAnthropicApiKeyConfigured()
-                ) {
-                    Text(strings.delete)
-                }
-
-                Button(
-                    onClick = {
-                        if (anthropicApiKey.isNotBlank()) {
-                            saveApiKeyPlatform(anthropicApiKey)
-                            ApiKeyManager.setApiKey(anthropicApiKey)
-                            showSuccessMessage = "anthropic"
-                            anthropicApiKey = ""
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(strings.saveKey)
-                }
-            }
-
-            // Visual Crossing API Key Section
-            Text(
-                text = strings.visualCrossingKeyTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Text(
-                text = strings.visualCrossingKeyDescription,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (WeatherApiKeyManager.hasValidKey()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeyConfigured,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeyNotConfiguredStatus,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-
-            if (showSuccessMessage == "weather") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = strings.apiKeySaved,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = weatherApiKey,
-                onValueChange = { weatherApiKey = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(strings.apiKeyPlaceholder) },
-                label = { Text(strings.apiKeyFieldLabel) },
-                visualTransformation = PasswordVisualTransformation(),
-                singleLine = false,
-                maxLines = 3
-            )
-
-            Text(
-                text = strings.visualCrossingApiUrl,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextButton(
-                    onClick = { showDeleteConfirm = "weather" },
-                    modifier = Modifier.weight(1f),
-                    enabled = WeatherApiKeyManager.hasValidKey()
-                ) {
-                    Text(strings.delete)
-                }
-
-                Button(
-                    onClick = {
-                        if (weatherApiKey.isNotBlank()) {
-                            saveWeatherApiKeyPlatform(weatherApiKey)
-                            WeatherApiKeyManager.setApiKey(weatherApiKey)
-                            showSuccessMessage = "weather"
-                            weatherApiKey = ""
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(strings.saveKey)
-                }
-            }
-
-            // Days of Interest Section
-            Text(
-                text = strings.daysOfInterestTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            Text(
-                text = strings.daysOfInterestDescription,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            currentFilter?.let { filter ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(12.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = filter.naturalLanguageCriteria,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = filter.filterSummary(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (key.isNotBlank()) {
+                        onSave(key)
+                        onDismiss()
                     }
+                },
+                enabled = key.isNotBlank()
+            ) {
+                Text(strings.saveKey)
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        onDismiss()
+                    },
+                    enabled = configured
+                ) {
+                    Text(strings.delete)
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(strings.cancel)
                 }
             }
+        }
+    )
+}
 
-            when (val state = doiState) {
-                is DaysOfInterestUiState.Parsing -> {
-                    Row(
+/**
+ * Editor dialog for the natural-language Days of Interest filter. Parsing is performed
+ * by the ViewModel; this composable only renders state and forwards user input.
+ */
+@Composable
+private fun DaysOfInterestDialog(
+    vm: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val doiState by vm.doiState.collectAsState()
+    val currentFilter by vm.currentFilter.collectAsState()
+    var criteria by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.daysOfInterestTitle) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = strings.daysOfInterestDescription,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textSecondary
+                )
+
+                currentFilter?.let { filter ->
+                    Text(
+                        text = strings.daysOfInterestCurrent(filter.naturalLanguageCriteria),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.accentBlue
+                    )
+                    Text(
+                        text = filter.filterSummary(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.rewinds.textTertiary
+                    )
+                }
+
+                OutlinedTextField(
+                    value = criteria,
+                    onValueChange = {
+                        criteria = it
+                        if (doiState !is DaysOfInterestUiState.Idle) vm.resetDoiState()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(strings.daysOfInterestPlaceholder) },
+                    label = { Text(strings.daysOfInterestTitle) },
+                    singleLine = false,
+                    maxLines = 4
+                )
+
+                when (val state = doiState) {
+                    is DaysOfInterestUiState.Parsing -> Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -411,114 +401,28 @@ fun SettingsView(
                         Text(
                             text = strings.daysOfInterestParsing,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.rewinds.textSecondary
                         )
                     }
+                    is DaysOfInterestUiState.Error -> Text(
+                        text = strings.daysOfInterestError(state.message),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.error
+                    )
+                    else -> Unit
                 }
-                is DaysOfInterestUiState.Success -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = strings.daysOfInterestCurrent(state.filter.naturalLanguageCriteria),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-                is DaysOfInterestUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = strings.daysOfInterestError(state.message),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-                is DaysOfInterestUiState.Idle -> Unit
             }
-
-            OutlinedTextField(
-                value = doiCriteria,
-                onValueChange = {
-                    doiCriteria = it
-                    if (doiState !is DaysOfInterestUiState.Idle) vm.resetDoiState()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(strings.daysOfInterestPlaceholder) },
-                label = { Text(strings.daysOfInterestTitle) },
-                singleLine = false,
-                maxLines = 4
-            )
-
+        },
+        confirmButton = {
             Button(
-                onClick = {
-                    vm.saveFilter(doiCriteria)
-                    doiCriteria = ""
-                    focusManager.clearFocus()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = doiCriteria.isNotBlank() && doiState !is DaysOfInterestUiState.Parsing,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                onClick = { vm.saveFilter(criteria) },
+                enabled = criteria.isNotBlank() && doiState !is DaysOfInterestUiState.Parsing
             ) {
                 Text(strings.daysOfInterestSave)
             }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
-    }
-
-    // Delete confirmation dialog
-    if (showDeleteConfirm.isNotBlank()) {
-        val (keyType, onConfirmDelete) = when (showDeleteConfirm) {
-            "anthropic" -> strings.anthropicKeyTitle to {
-                deleteApiKeyPlatform()
-                ApiKeyManager.setApiKey("")
-            }
-            "weather" -> strings.visualCrossingKeyTitle to {
-                deleteWeatherApiKeyPlatform()
-                WeatherApiKeyManager.setApiKey("")
-            }
-            else -> "" to {}
-        }
-
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showDeleteConfirm = "" },
-            title = { Text(strings.deleteKeyTitle(keyType)) },
-            text = { Text(strings.deleteKeyMessage(keyType)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onConfirmDelete()
-                        showDeleteConfirm = ""
-                        showSuccessMessage = ""
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text(strings.delete)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = "" }) {
-                    Text(strings.cancel)
-                }
-            }
-        )
-    }
+    )
 }

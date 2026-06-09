@@ -1,11 +1,15 @@
 package settings
 
 import ai.AnthropicClient
+import androidx.lifecycle.viewModelScope
 import core.AppSettingsStore
 import core.DaysOfInterestFilter
+import core.Language
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.Json
@@ -13,6 +17,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -45,6 +50,15 @@ class SettingsViewModelTest {
     // never trigger a path that calls it (blank input short-circuits before parsing).
     private val dummyClient = AnthropicClient(apiKey = "test-key", enableLogs = false)
 
+    // Track every ViewModel so teardown can cancel its viewModelScope. Without this, a VM's
+    // scope (bound to Dispatchers.Main = this StandardTestDispatcher) is still live when
+    // resetMain() runs, and any leftover coroutine leaks into the next test class as an
+    // UncaughtExceptionsBeforeTest / IllegalStateException.
+    private val createdViewModels = mutableListOf<SettingsViewModel>()
+
+    private fun viewModel(store: AppSettingsStore): SettingsViewModel =
+        SettingsViewModel(store, dummyClient).also { createdViewModels.add(it) }
+
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -52,6 +66,9 @@ class SettingsViewModelTest {
 
     @AfterTest
     fun tearDown() {
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
+        dispatcher.scheduler.advanceUntilIdle() // process the cancellations cleanly
         Dispatchers.resetMain()
     }
 
@@ -65,7 +82,7 @@ class SettingsViewModelTest {
         val json = Json.encodeToString(DaysOfInterestFilter.serializer(), filter)
         val store = FakeSettingsStore(mapOf(SettingsViewModel.FILTER_KEY to json))
 
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
 
         assertEquals(filter, vm.currentFilter.value)
     }
@@ -73,7 +90,7 @@ class SettingsViewModelTest {
     @Test
     fun init_noPersistedFilterLeavesNull() {
         val store = FakeSettingsStore()
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
         assertNull(vm.currentFilter.value)
     }
 
@@ -81,14 +98,14 @@ class SettingsViewModelTest {
     fun init_corruptJsonIsIgnoredAndDoesNotThrow() {
         val store = FakeSettingsStore(mapOf(SettingsViewModel.FILTER_KEY to "{not valid json"))
         // Should not throw; currentFilter stays null.
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
         assertNull(vm.currentFilter.value)
     }
 
     @Test
     fun saveFilter_blankCriteriaIsNoOp() {
         val store = FakeSettingsStore()
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
 
         vm.saveFilter("")
         vm.saveFilter("   ")
@@ -101,7 +118,7 @@ class SettingsViewModelTest {
     @Test
     fun resetDoiState_returnsToIdle() {
         val store = FakeSettingsStore()
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
         vm.resetDoiState()
         assertTrue(vm.doiState.value is DaysOfInterestUiState.Idle)
     }
@@ -109,7 +126,80 @@ class SettingsViewModelTest {
     @Test
     fun initialDoiStateIsIdle() {
         val store = FakeSettingsStore()
-        val vm = SettingsViewModel(store, dummyClient)
+        val vm = viewModel(store)
         assertTrue(vm.doiState.value is DaysOfInterestUiState.Idle)
+    }
+
+    // ── KIM-273: grouped-list ViewModel state ────────────────────────────────
+
+    @Test
+    fun generalStateHasExpectedDefaults() {
+        val vm = viewModel(FakeSettingsStore())
+        assertEquals(UnitSystem.METRIC, vm.unitsState.value)
+        assertEquals(WindSpeedUnit.KMH, vm.windSpeedUnitState.value)
+    }
+
+    @Test
+    fun setUnits_updatesUnitsState() {
+        val vm = viewModel(FakeSettingsStore())
+        vm.setUnits(UnitSystem.IMPERIAL)
+        assertEquals(UnitSystem.IMPERIAL, vm.unitsState.value)
+    }
+
+    @Test
+    fun setWindSpeedUnit_updatesWindSpeedUnitState() {
+        val vm = viewModel(FakeSettingsStore())
+        vm.setWindSpeedUnit(WindSpeedUnit.KNOTS)
+        assertEquals(WindSpeedUnit.KNOTS, vm.windSpeedUnitState.value)
+    }
+
+    @Test
+    fun setLanguage_updatesLanguageState() {
+        val vm = viewModel(FakeSettingsStore())
+        vm.setLanguage(Language.GERMAN)
+        assertEquals(Language.GERMAN, vm.languageState.value)
+        // Restore the global LanguageManager so test order cannot leak.
+        vm.setLanguage(Language.ENGLISH)
+    }
+
+    @Test
+    fun autoRefreshDefaultsOn_andToggles() {
+        val vm = viewModel(FakeSettingsStore())
+        assertTrue(vm.autoRefreshEnabled.value)
+        vm.toggleAutoRefresh()
+        assertFalse(vm.autoRefreshEnabled.value)
+        vm.setAutoRefreshEnabled(true)
+        assertTrue(vm.autoRefreshEnabled.value)
+    }
+
+    @Test
+    fun wifiOnlyDefaultsOff_andToggles() {
+        val vm = viewModel(FakeSettingsStore())
+        assertFalse(vm.wifiOnlyEnabled.value)
+        vm.toggleWifiOnly()
+        assertTrue(vm.wifiOnlyEnabled.value)
+        vm.setWifiOnlyEnabled(false)
+        assertFalse(vm.wifiOnlyEnabled.value)
+    }
+
+    @Test
+    fun keyConfiguredFlags_reflectEmptyManagersByDefault() {
+        // No key has been set on either manager in the test process, so both are absent.
+        val vm = viewModel(FakeSettingsStore())
+        assertFalse(vm.anthropicKeyConfigured.value)
+        assertFalse(vm.visualCrossingKeyConfigured.value)
+    }
+
+    @Test
+    fun refreshKeyStatus_picksUpAConfiguredVisualCrossingKey() {
+        val vm = viewModel(FakeSettingsStore())
+        try {
+            core.WeatherApiKeyManager.setApiKey("real-vc-key")
+            vm.refreshKeyStatus()
+            assertTrue(vm.visualCrossingKeyConfigured.value)
+        } finally {
+            // Reset shared singleton so other tests see a clean slate.
+            core.WeatherApiKeyManager.setApiKey("")
+        }
     }
 }

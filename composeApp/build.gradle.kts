@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.support.serviceOf
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
@@ -297,19 +298,23 @@ tasks.register("coverageReport") {
     description = "Generate detailed code coverage report with percentages"
     dependsOn("testDebugUnitTest")
 
+    // Capture inputs at configuration time so the task is configuration-cache compatible.
+    // Accessing Task.project or calling Project.exec at execution time is unsupported.
+    val rootDir = project.rootProject.projectDir
+    val scriptFile = File(rootDir, "generate_coverage_metrics.py")
+    val execOps = project.serviceOf<org.gradle.process.ExecOperations>()
+
     doLast {
-        val scriptPath = "${project.rootProject.projectDir}/generate_coverage_metrics.py"
-        val scriptFile = File(scriptPath)
         if (scriptFile.exists()) {
-            exec {
+            execOps.exec {
                 commandLine("python3", scriptFile.absolutePath)
-                workingDir(project.rootProject.projectDir)
+                workingDir(rootDir)
             }
             println("\n✅ Coverage report generated!")
             println("   Open: docs/coverage/detailed.html")
         } else {
             println("⚠ generate_coverage_metrics.py not found")
-            println("   Expected at: $scriptPath")
+            println("   Expected at: ${scriptFile.absolutePath}")
         }
     }
 }
