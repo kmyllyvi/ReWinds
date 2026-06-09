@@ -554,9 +554,9 @@
         </tr>
         <tr>
           <td>Dispatch doc-agent post-merge</td>
-          <td>Kimmo optionally runs doc-agent</td>
-          <td><span class="pill pill-deferred">Automatable</span></td>
-          <td>GitHub Action on <code>push to develop</code> → run doc-agent with the merged PR diff. Low risk; good candidate for early automation.</td>
+          <td>GitHub Action runs automatically on every merge to develop</td>
+          <td><span class="pill pill-auto">Automated ✓</span></td>
+          <td><code>.github/workflows/doc-agent.yml</code> — fires on push to develop, finds the merged PR via GitHub API, runs doc-agent, opens a docs PR. Linear MCP unavailable in CI; agent uses PR body for ticket context and applies ⚠ ticket-missing rule when absent.</td>
         </tr>
       </tbody>
     </table>

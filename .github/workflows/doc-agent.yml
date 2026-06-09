@@ -1,0 +1,108 @@
+name: Doc Agent — update docs on merge
+
+# Fires on every push to develop (i.e. every merged PR).
+# Looks up which PR produced this commit, then runs the doc-agent to
+# update docs/agent/ and open a docs PR for review.
+#
+# Required secrets (Settings → Secrets → Actions):
+#   ANTHROPIC_API_KEY — used by the Claude Code action to run the agent
+#
+# Required repo permissions (already granted via default GITHUB_TOKEN):
+#   contents: write     — create branch, push commit
+#   pull-requests: write — open the docs PR
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  update-agent-docs:
+    name: Run doc-agent
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      # Full history so the agent can diff against the merge base
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Find the PR that produced this merge commit.
+      # Works for merge commits, squash merges, and rebase merges because
+      # we query the GitHub API by commit SHA rather than parsing the message.
+      - name: Find merged PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ github.sha }}"
+
+          PR_JSON=$(gh api \
+            -H "Accept: application/vnd.github.groot-preview+json" \
+            "repos/${{ github.repository }}/commits/$SHA/pulls" \
+            --jq '.[0] // empty')
+
+          if [ -z "$PR_JSON" ]; then
+            echo "No PR associated with $SHA — skipping doc update."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          PR_NUM=$(echo "$PR_JSON"   | jq -r '.number')
+          PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
+          PR_BODY=$(echo "$PR_JSON"  | jq -r '.body // ""')
+
+          # Extract first Linear ticket ID from the PR body (e.g. KIM-123)
+          TICKET=$(echo "$PR_BODY" | grep -oE 'KIM-[0-9]+' | head -1 || true)
+
+          echo "number=$PR_NUM"        >> "$GITHUB_OUTPUT"
+          echo "title=$PR_TITLE"       >> "$GITHUB_OUTPUT"
+          echo "ticket=${TICKET:-none}" >> "$GITHUB_OUTPUT"
+          echo "skip=false"            >> "$GITHUB_OUTPUT"
+
+          echo "PR #$PR_NUM — $PR_TITLE (ticket: ${TICKET:-none})"
+
+      # Give git an identity so the agent can commit
+      - name: Configure git identity
+        if: steps.pr.outputs.skip != 'true'
+        run: |
+          git config user.name  "doc-agent[bot]"
+          git config user.email "doc-agent@users.noreply.github.com"
+
+      # Run the doc-agent.  The agent file lives at .claude/agents/doc-agent.md
+      # and is picked up automatically by the Claude Code action.
+      #
+      # Note: Linear MCP is not available in CI. The agent will fetch ticket
+      # context from the PR description instead. If no ticket info is found it
+      # follows its own ⚠ ticket-missing rule (structural facts only, flag added).
+      - name: Run doc-agent
+        if: steps.pr.outputs.skip != 'true'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            Run the doc-agent workflow for the PR that just merged into develop.
+
+            PR details:
+            - Number : #${{ steps.pr.outputs.number }}
+            - Title  : ${{ steps.pr.outputs.title }}
+            - Ticket : ${{ steps.pr.outputs.ticket }}
+
+            Follow the instructions in .claude/agents/doc-agent.md exactly.
+            Use these commands to gather context:
+
+              gh pr diff ${{ steps.pr.outputs.number }}
+              gh pr view ${{ steps.pr.outputs.number }} --json title,body,labels
+
+            Linear MCP is not available here — use the PR body for ticket context.
+            If the ticket body is absent, apply the ⚠ ticket-missing rule from the agent spec.
+
+            After updating docs/agent/, open a PR targeting develop per the agent spec.
+            Branch name  : docs/${{ steps.pr.outputs.ticket != 'none' && steps.pr.outputs.ticket || format('pr-{0}', steps.pr.outputs.number) }}-update
+            Commit message: docs: update agent docs for ${{ steps.pr.outputs.ticket != 'none' && steps.pr.outputs.ticket || format('PR #{0}', steps.pr.outputs.number) }} (${{ steps.pr.outputs.title }})
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
