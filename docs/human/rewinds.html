@@ -3,278 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReWinds — Icon Concepts</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0c0f18;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-    gap: 48px;
-  }
-  h1 {
-    color: rgba(255,255,255,0.35);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-  .row {
-    display: flex;
-    gap: 48px;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .icon-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-  }
-  canvas {
-    display: block;
-    border-radius: 40px;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.07);
-  }
-  .label {
-    color: rgba(255,255,255,0.45);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-</style>
+<title>ReWinds — Documentation</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>ReWinds — App Icon Concepts</h1>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="rewinds.html" class="active">Overview</a></li>
+    <li><a href="sections/architecture.html">Architecture</a></li>
+    <li><a href="sections/features.html">Features</a></li>
+    <li><a href="sections/ai-chat.html">AI Chat</a></li>
+    <li><a href="sections/database.html">Database</a></li>
+    <li><a href="sections/ios.html">iOS Platform</a></li>
+    <li><a href="sections/decisions.html">Decisions</a></li>
+  </ul>
+</nav>
 
-<div class="row">
-  <div class="icon-wrap">
-    <canvas id="c1" width="180" height="180"></canvas>
-    <div class="label">1. Wind Rose</div>
-  </div>
-  <div class="icon-wrap">
-    <canvas id="c2" width="180" height="180"></canvas>
-    <div class="label">2. Isobar Spiral</div>
-  </div>
-  <div class="icon-wrap">
-    <canvas id="c5" width="180" height="180"></canvas>
-    <div class="label">5. Swoosh + Data</div>
-  </div>
-</div>
+<main class="content">
+  <header class="page-header">
+    <h1>ReWinds</h1>
+    <p class="subtitle">A Compose Multiplatform app for wind-sports enthusiasts — historical weather data, saved locations, and AI-powered condition analysis.</p>
+  </header>
 
-<script>
-const CORNER = 40;
+  <section>
+    <h2>What is ReWinds?</h2>
+    <p>ReWinds is an iOS and Android application built on Kotlin Multiplatform with Compose for the UI. It lets kite- and windsurfers save their favourite spots, accumulate years of historical weather data from the Visual Crossing API, and interrogate that data via an AI chat assistant backed by Claude.</p>
+    <p>The codebase shares the vast majority of logic between platforms through <code>commonMain</code>, with thin platform bridges in <code>iosMain</code> / <code>androidMain</code> for things like secure storage and native driver initialisation.</p>
+  </section>
 
-function clip(ctx, w, h) {
-  ctx.beginPath();
-  ctx.moveTo(CORNER, 0);
-  ctx.arcTo(w, 0, w, h, CORNER);
-  ctx.arcTo(w, h, 0, h, CORNER);
-  ctx.arcTo(0, h, 0, 0, CORNER);
-  ctx.arcTo(0, 0, w, 0, CORNER);
-  ctx.closePath();
-  ctx.clip();
-}
+  <section>
+    <h2>Quick navigation</h2>
+    <div class="feature-grid">
+      <a class="feature-card" href="sections/architecture.html">
+        <span class="feature-card-title">Architecture</span>
+        <p class="feature-card-desc">Platform layers, MV* pattern, data flow, external services, and build topology.</p>
+      </a>
+      <a class="feature-card" href="sections/features.html">
+        <span class="feature-card-title">Features</span>
+        <p class="feature-card-desc">All major modules — Home, Place Summary, Monthly Statistics, Settings, Navigation, DI, and UI theme.</p>
+      </a>
+      <a class="feature-card" href="sections/ai-chat.html">
+        <span class="feature-card-title">AI Chat</span>
+        <p class="feature-card-desc">How the Claude integration works: weather tools, metric aliases, the three-layer permission gate, and context chips.</p>
+      </a>
+      <a class="feature-card" href="sections/database.html">
+        <span class="feature-card-title">Database</span>
+        <p class="feature-card-desc">SQLDelight schema, upsert semantics, adapters, AppSettings, and export/import.</p>
+      </a>
+      <a class="feature-card" href="sections/ios.html">
+        <span class="feature-card-title">iOS Platform</span>
+        <p class="feature-card-desc">Keychain bridge, expect/actual wiring, startup sequence, CocoaPods, and Xcode build guide.</p>
+      </a>
+      <a class="feature-card" href="sections/decisions.html">
+        <span class="feature-card-title">Decisions</span>
+        <p class="feature-card-desc">Architectural decision records — Keychain approach, caching strategy, AI permission gate, and the Gradle/Xcode build split.</p>
+      </a>
+    </div>
+  </section>
 
-// ── 1. WIND ROSE ──────────────────────────────────────────────────
-{
-  const cv = document.getElementById('c1');
-  const ctx = cv.getContext('2d');
-  const W = cv.width, H = cv.height;
-  const cx = W / 2, cy = H / 2;
+  <section>
+    <h2>Tech stack at a glance</h2>
+    <table>
+      <thead><tr><th>Concern</th><th>Technology</th></tr></thead>
+      <tbody>
+        <tr><td>UI</td><td>Jetpack Compose (Multiplatform)</td></tr>
+        <tr><td>Shared logic</td><td>Kotlin Multiplatform (commonMain)</td></tr>
+        <tr><td>Database</td><td>SQLDelight + sqlite3 (CocoaPods on iOS)</td></tr>
+        <tr><td>Networking</td><td>Ktor HTTP client</td></tr>
+        <tr><td>Dependency injection</td><td>Koin</td></tr>
+        <tr><td>AI</td><td>Anthropic Claude (claude-haiku-4-5) via REST</td></tr>
+        <tr><td>Weather data</td><td>Visual Crossing Weather API</td></tr>
+        <tr><td>iOS secure storage</td><td>Keychain (Swift bridge)</td></tr>
+        <tr><td>Build — Android</td><td>Gradle</td></tr>
+        <tr><td>Build — iOS</td><td>Xcode + CocoaPods</td></tr>
+      </tbody>
+    </table>
+  </section>
 
-  ctx.save();
-  clip(ctx, W, H);
+  <section>
+    <h2>Build quick-reference</h2>
+    <pre><code># Android
+./gradlew buildAndroidOnly
 
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#1c4480');
-  bg.addColorStop(1, '#081525');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+# iOS — always use Xcode, not Gradle
+open iosApp/iosApp.xcworkspace   # then Cmd+R
 
-  // Decorative rings
-  [72, 56].forEach((r, i) => {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255,255,255,${i === 0 ? 0.10 : 0.06})`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  });
+# Tests
+./gradlew :composeApp:testDebugUnitTest
 
-  // Petal shape: tip → left → inner notch → right → close
-  function petal(angleDeg, outerR, innerR, halfW, color, alpha) {
-    const a = angleDeg * Math.PI / 180;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(a);
-    ctx.globalAlpha = alpha;
-    const mid = (outerR + innerR) / 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -outerR);
-    ctx.lineTo(-halfW, -mid);
-    ctx.lineTo(0, -innerR);
-    ctx.lineTo(halfW, -mid);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.restore();
-  }
+# Coverage (opt-in)
+./gradlew coverageReport -PenableCoverage=true</code></pre>
+  </section>
 
-  // Cardinal — white
-  petal(0,   65, 22, 11, '#ffffff', 1.00); // N (bright)
-  petal(90,  65, 22, 11, '#ffffff', 0.95); // E
-  petal(180, 65, 22, 11, '#ffffff', 0.45); // S (shadow side)
-  petal(270, 65, 22, 11, '#ffffff', 0.45); // W
+  <footer class="page-footer">
+    <p>Generated from <code>docs/agent/</code> — bootstrap 2026-06-09. Agent docs are the source of truth; edit those, not this file.</p>
+  </footer>
+</main>
 
-  // Intercardinal — teal
-  petal(45,  48, 18,  8, '#3DD9C0', 0.95); // NE
-  petal(135, 48, 18,  8, '#3DD9C0', 0.55); // SE
-  petal(225, 48, 18,  8, '#3DD9C0', 0.45); // SW
-  petal(315, 48, 18,  8, '#3DD9C0', 0.70); // NW
-
-  // Center bullseye
-  ctx.globalAlpha = 1;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-  ctx.fillStyle = '#0d1f3c';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-  ctx.fillStyle = 'white';
-  ctx.fill();
-
-  ctx.restore();
-}
-
-// ── 2. ISOBAR SPIRAL ──────────────────────────────────────────────
-{
-  const cv = document.getElementById('c2');
-  const ctx = cv.getContext('2d');
-  const W = cv.width, H = cv.height;
-  const cx = W / 2, cy = H / 2;
-
-  ctx.save();
-  clip(ctx, W, H);
-
-  const bg = ctx.createRadialGradient(cx, cy * 0.8, 0, cx, cy, W * 0.75);
-  bg.addColorStop(0, '#19304d');
-  bg.addColorStop(1, '#030810');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // Rotating ellipses — each 25° more than the last, shrinking inward
-  const isobars = [
-    { rx: 72, ry: 52, rot: 0,   alpha: 0.40, lw: 2.0 },
-    { rx: 57, ry: 41, rot: 28,  alpha: 0.52, lw: 1.9 },
-    { rx: 42, ry: 30, rot: 56,  alpha: 0.65, lw: 1.7 },
-    { rx: 27, ry: 19, rot: 84,  alpha: 0.78, lw: 1.6 },
-    { rx: 13, ry:  9, rot: 112, alpha: 0.90, lw: 1.4 },
-  ];
-
-  isobars.forEach(({ rx, ry, rot, alpha, lw }) => {
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(rot * Math.PI / 180);
-    ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = '#8ecff0';
-    ctx.lineWidth = lw;
-    ctx.stroke();
-    ctx.restore();
-  });
-
-  // Eye of storm
-  ctx.beginPath();
-  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-  ctx.fillStyle = '#8ecff0';
-  ctx.globalAlpha = 1;
-  ctx.fill();
-
-  ctx.restore();
-}
-
-// ── 5. SWOOSH + DATA ──────────────────────────────────────────────
-{
-  const cv = document.getElementById('c5');
-  const ctx = cv.getContext('2d');
-  const W = cv.width, H = cv.height;
-
-  ctx.save();
-  clip(ctx, W, H);
-
-  const bg = ctx.createLinearGradient(0, H, W, 0);
-  bg.addColorStop(0, '#180f40');
-  bg.addColorStop(0.55, '#0d1f44');
-  bg.addColorStop(1, '#091830');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // Trailing echo lines (drawn first, behind main swoosh)
-  [
-    { p: [14, 148, 44, 72, 126, 62, 162, 68], a: 0.12, lw: 2.5 },
-    { p: [16, 136, 42, 56, 122, 46, 162, 52], a: 0.28, lw: 3.5 },
-  ].forEach(({ p, a, lw }) => {
-    ctx.beginPath();
-    ctx.moveTo(p[0], p[1]);
-    ctx.bezierCurveTo(p[2], p[3], p[4], p[5], p[6], p[7]);
-    ctx.strokeStyle = `rgba(255,255,255,${a})`;
-    ctx.lineWidth = lw;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  });
-
-  // Main swoosh
-  ctx.beginPath();
-  ctx.moveTo(16, 124);
-  ctx.bezierCurveTo(40, 38, 118, 28, 162, 36);
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 6;
-  ctx.lineCap = 'round';
-  ctx.globalAlpha = 1;
-  ctx.stroke();
-
-  // Data bars
-  const values = [0.28, 0.44, 0.56, 0.70, 0.84, 1.0];
-  const bW = 14, gap = 5;
-  const startX = 20;
-  const baseY = 155;
-  const maxH = 40;
-  const topR = 3;
-
-  values.forEach((v, i) => {
-    const x = startX + i * (bW + gap);
-    const h = Math.max(v * maxH, 4);
-    const y = baseY - h;
-
-    const barGrad = ctx.createLinearGradient(x, y, x, baseY);
-    barGrad.addColorStop(0, '#4DD9C0');
-    barGrad.addColorStop(1, 'rgba(40,155,135,0.2)');
-
-    ctx.globalAlpha = 0.85;
-    ctx.beginPath();
-    ctx.moveTo(x, baseY);
-    ctx.lineTo(x, y + topR);
-    ctx.arc(x + topR, y + topR, topR, Math.PI, 1.5 * Math.PI);
-    ctx.arc(x + bW - topR, y + topR, topR, 1.5 * Math.PI, 0);
-    ctx.lineTo(x + bW, baseY);
-    ctx.closePath();
-    ctx.fillStyle = barGrad;
-    ctx.fill();
-  });
-
-  ctx.restore();
-}
-</script>
 </body>
 </html>

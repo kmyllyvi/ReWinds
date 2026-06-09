@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iOS Platform — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html" class="active">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+  </ul>
+</nav>
+<main class="content">
+  <header class="page-header">
+    <h1>iOS Platform</h1>
+    <p class="subtitle">Build setup, Keychain integration, and iOS-specific implementation details.</p>
+  </header>
+
+  <section>
+    <h2>Building for iOS</h2>
+    <p>The canonical tool for iOS builds is <strong>Xcode</strong>. Always open the workspace file, not the project file — CocoaPods requires the workspace to wire in native dependencies like <code>sqlite3</code>.</p>
+    <div class="code-block">
+<pre># Open the workspace
+open iosApp/iosApp.xcworkspace
+
+# Then press Cmd+R to build and run on the simulator</pre>
+    </div>
+    <p>Alternatively, from the command line:</p>
+    <div class="code-block">
+<pre>xcodebuild \
+  -workspace iosApp/iosApp.xcworkspace \
+  -scheme iosApp \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -derivedDataPath build</pre>
+    </div>
+    <div class="callout callout-warn">Do not use <code>./gradlew build</code> for iOS. Gradle iOS tasks only compile the Kotlin framework — they do not run through Xcode's build system, do not apply CocoaPods integration, and do not produce a runnable app. They have been excluded from the default build.</div>
+  </section>
+
+  <section>
+    <h2>Why Gradle skips iOS by default</h2>
+    <p>Running <code>./gradlew build</code> without flags builds Android only. iOS targets are included only when <code>-PincludeAllTargets=true</code> is passed, which is intended for CI pipelines.</p>
+    <p>This was a deliberate decision: Kotlin/Native iOS Gradle tasks were unreliable — they compiled Kotlin to a framework binary but had no proper CocoaPods integration, incorrect iOS SDK paths, and occasionally crashed with <code>podspec</code>/<code>generateDummyFramework</code> errors. Removing them from the default build eliminated a whole class of build failures and made local development faster.</p>
+    <p>A convenience task <code>./gradlew buildAndroidOnly</code> makes the intent explicit for Android-only builds.</p>
+  </section>
+
+  <section>
+    <h2>CocoaPods and the sqlite3 dependency</h2>
+    <p>The iOS app uses CocoaPods to manage the native <code>sqlite3</code> library required by SQLDelight's Kotlin/Native driver. The Podfile is at <code>iosApp/Podfile</code>; Pods are committed (at <code>iosApp/Pods/</code>).</p>
+    <p>The <code>composeApp.podspec</code> file defines the Kotlin framework as a CocoaPods vendored framework. This means Xcode's build system handles all framework linkage automatically.</p>
+    <div class="callout callout-warn">Do not manually add <code>-framework ComposeApp</code> to <code>OTHER_LDFLAGS</code> in Xcode build settings. The podspec's <code>vendored_frameworks</code> entry already handles all linkage. Adding it manually causes duplicate symbol errors at link time.</div>
+  </section>
+
+  <section>
+    <h2>API key storage — Keychain</h2>
+    <p>iOS does not have a build-time key injection mechanism that works without recompiling the app. To let users configure their own API keys, ReWinds stores them in the <strong>iOS Keychain</strong> using <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code>.</p>
+    <p>Two keys are stored separately:</p>
+    <ul>
+      <li><strong>Anthropic API key</strong> — Keychain account: <code>anthropic_api_key</code>, service: <code>com.km.rewinds</code>.</li>
+      <li><strong>Visual Crossing API key</strong> — Keychain account: <code>visual_crossing_api_key</code>, same service.</li>
+    </ul>
+    <p>At app startup, the priority order for the Anthropic key is:</p>
+    <ol>
+      <li>Build-time value from <code>Info.plist</code> key <code>ANTHROPIC_API_KEY</code> (populated via <code>Config.local.xcconfig</code>, which is gitignored and must be created manually per developer).</li>
+      <li>Value stored in the Keychain from a previous Settings save.</li>
+      <li>Empty — triggers the Settings prompt in the Chat tab.</li>
+    </ol>
+    <p>The Visual Crossing key has no build-config path on iOS; it must always be entered in Settings.</p>
+    <div class="callout callout-info">Keys stored with <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code> do not migrate via iCloud Keychain backup. Users who switch to a new iPhone must re-enter their API keys.</div>
+  </section>
+
+  <section>
+    <h2>Kotlin ↔ Swift bridge pattern</h2>
+    <p>Apple Security framework APIs are simpler to call from Swift than from Kotlin/Native C interop. Rather than bridging the Security framework directly into Kotlin, the design uses a <strong>callback pattern</strong>:</p>
+    <ol>
+      <li>Swift registers closure callbacks with Kotlin bridge objects (<code>KeychainBridge</code>, <code>WeatherKeychainBridge</code>) at startup.</li>
+      <li>When the Settings screen saves or deletes a key, the Kotlin <code>actual</code> function invokes the registered Swift closure.</li>
+      <li>The Swift closure calls <code>KeychainHelper.swift</code>, which wraps the Security framework.</li>
+    </ol>
+    <p>Wrapper functions in <code>iosMain</code> Kotlin (<code>IosKeychain.kt</code>, <code>IosWeatherKeychain.kt</code>) expose these to Swift as top-level functions, since Swift cannot directly call into Kotlin singleton objects from the compiled framework.</p>
+  </section>
+
+  <section>
+    <h2>iOS startup sequence</h2>
+    <p>The full sequence in <code>iOSApp.swift</code> at launch:</p>
+    <ol>
+      <li>Check <code>Info.plist</code> for a build-time Anthropic key. If present, load it into the in-memory key store.</li>
+      <li>Otherwise, load the Anthropic key from the Keychain.</li>
+      <li>Register Swift Keychain callbacks for future save and delete actions.</li>
+      <li>Load the Visual Crossing key from the Keychain.</li>
+      <li>Register Visual Crossing Keychain callbacks.</li>
+      <li>Initialise the SQLite database driver (<code>DatabaseDriverFactory</code>).</li>
+      <li>Initialise Koin DI with the database driver.</li>
+      <li>Initialise the Napier logger.</li>
+      <li>Present the Compose root view controller (dark mode forced via <code>.preferredColorScheme(.dark)</code>).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Apple Silicon only</h2>
+    <p>The project targets <code>iosArm64</code> (physical devices) and <code>iosSimulatorArm64</code> (Apple Silicon simulator). The <code>iosX64</code> target (Intel Mac simulator) has been removed. Device ARM64 builds are memory-intensive — they require 8 GB or more of JVM heap and may OOM on machines with less RAM or without sufficient swap.</p>
+  </section>
+</main>
+</body>
+</html>

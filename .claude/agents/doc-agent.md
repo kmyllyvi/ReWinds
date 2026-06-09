@@ -1,7 +1,7 @@
 ---
 name: doc-agent
 description: |
-  Documentation maintenance agent for ReWinds app.
+  Documentation maintenance agent for ReWinds.
   Use after every PR merge to update /docs/agent/ based on the diff and linked Linear ticket.
   Invoke with: "run doc agent on PR #<N>" or "update docs for <ticket-id>".
   Also handles bootstrapping: "bootstrap docs from codebase".

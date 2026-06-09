@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Features — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html" class="active">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+  </ul>
+</nav>
+<main class="content">
+  <header class="page-header">
+    <h1>Features</h1>
+    <p class="subtitle">A tour of what each screen does and how the modules fit together.</p>
+  </header>
+
+  <section>
+    <h2>Home — Places list</h2>
+    <p>The opening screen of the Places tab shows all saved locations. For each place the app displays how many weather days are stored, so you can see at a glance which locations have rich history. Loading this list is intentionally lightweight — only day counts are queried, never the full weather records — so it stays fast even with many places and years of data.</p>
+    <p>From the Home screen you can:</p>
+    <ul>
+      <li>Search for a new location using free-text (powered by Open-Meteo geocoding).</li>
+      <li>Add a location from the search results. Station metadata is fetched immediately; weather days are downloaded later on demand.</li>
+      <li>Delete a saved place (with a confirmation dialog).</li>
+      <li>See a banner if your Visual Crossing API key is missing or invalid, with a direct link to Settings.</li>
+      <li>Access a debug panel for database export and import (hidden by default).</li>
+    </ul>
+    <div class="callout callout-info">The app re-checks your API key status each time you return to the Home tab, so the nudge banner disappears as soon as you save a valid key in Settings.</div>
+  </section>
+
+  <section>
+    <h2>Place Summary — year/month grid</h2>
+    <p>Tapping a place opens its summary screen. This shows a compact grid of months, colour-coded to indicate how much data is stored:</p>
+    <ul>
+      <li><strong>Full</strong> — the month has a complete (or near-complete) set of daily records.</li>
+      <li><strong>Partial</strong> — some days are present but the month is not complete.</li>
+      <li><strong>No data</strong> — nothing stored yet for that month.</li>
+    </ul>
+    <p>You can tap any month cell to open the Monthly Statistics drill-down, or tap a download button to fetch a full month from Visual Crossing. Average monthly temperatures are shown alongside the year selector so you can quickly spot seasonal patterns.</p>
+    <p>The screen also shows a map of nearby weather stations. Station data is fetched automatically on first visit (silently in the background); you can also refresh it manually.</p>
+  </section>
+
+  <section>
+    <h2>Monthly Statistics — daily detail</h2>
+    <p>The monthly statistics screen shows every stored day in the selected month as a card, with temperature, precipitation, wind speed, and a sunrise/sunset time. A wind bar chart at the top highlights the day with the strongest sustained wind.</p>
+    <p>The screen computes aggregated statistics for the month:</p>
+    <ul>
+      <li>Temperature extremes (absolute min, absolute max, daily averages).</li>
+      <li>Total rainfall and total solar energy.</li>
+      <li>Average sustained wind speed.</li>
+      <li>A count of days that match your current <strong>days-of-interest filter</strong>.</li>
+    </ul>
+    <p>You can navigate forward and back between months without leaving the screen. Missing months can be downloaded directly from here as well.</p>
+    <div class="callout callout-info">The days-of-interest filter is configured in Settings. The default filter highlights days with sustained wind above 20 km/h for at least 2 hours and temperature at or above 10°C — a reasonable threshold for kite/windsurf sessions.</div>
+  </section>
+
+  <section>
+    <h2>AI Chat — weather assistant</h2>
+    <p>The Chat tab gives you a conversational interface to your stored weather data, powered by Claude (<code>claude-haiku-4-5</code>). You can ask natural-language questions about any of your saved places.</p>
+    <p>Example questions the assistant can answer:</p>
+    <ul>
+      <li>"How many days had wind above 25 knots in Tarifa last summer?"</li>
+      <li>"What were the best kitesurfing days in Maui in January 2024?"</li>
+      <li>"Compare average wind speeds between my two favourite spots."</li>
+      <li>"What's the typical temperature range in Dakhla in October?"</li>
+    </ul>
+    <p>If the data for a question hasn't been downloaded yet, the assistant asks for your confirmation before making any API call to Visual Crossing — you stay in control of when data is fetched.</p>
+    <p>Chat history is persisted per session in the local database, so your conversations survive app restarts.</p>
+    <p>See the <a href="ai-chat.html">AI Chat deep-dive</a> for technical details on tools, the permission gate, and API key setup.</p>
+  </section>
+
+  <section>
+    <h2>Settings</h2>
+    <p>The Settings tab is where you configure the two API keys the app needs:</p>
+    <ul>
+      <li><strong>Anthropic API key</strong> — required for AI chat. On iOS this is stored securely in the Keychain and persists across app restarts. On Android it comes from the build configuration.</li>
+      <li><strong>Visual Crossing API key</strong> — required for downloading weather data. On iOS this is stored in the Keychain; on Android it is set at build time.</li>
+    </ul>
+    <p>Settings also lets you define your <strong>days-of-interest filter</strong> in plain language. You describe the conditions you care about ("good kitesurfing days: wind above 20 knots, no rain, temperature above 15°C") and the app uses Claude to parse that description into a structured filter. The resulting filter is then applied in Monthly Statistics to highlight matching days.</p>
+    <div class="callout callout-warn">Parsing the days-of-interest criteria uses your Anthropic API key. Each save of the filter makes one AI call.</div>
+  </section>
+
+  <section>
+    <h2>UI Theme</h2>
+    <p>ReWinds uses a single dark-only <strong>Midnight Blue</strong> design system. There is no light mode. The colour palette is defined in <code>ReWindsColors</code> and mapped to Material 3 semantic slots.</p>
+    <table>
+      <thead><tr><th>Token</th><th>Hex</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td>pageBg</td><td><code>#030810</code></td><td>Screen backgrounds</td></tr>
+        <tr><td>surface</td><td><code>#0D1B2E</code></td><td>Cards, sheets</td></tr>
+        <tr><td>surfaceRaised</td><td><code>#19304D</code></td><td>Elevated surfaces</td></tr>
+        <tr><td>textPrimary</td><td><code>#DDEEF8</code></td><td>Main text</td></tr>
+        <tr><td>textSecondary</td><td><code>#7AB8D8</code></td><td>Subtitles</td></tr>
+        <tr><td>accentBlue</td><td><code>#8ECFF0</code></td><td>Active tab, primary actions</td></tr>
+        <tr><td>attention</td><td><code>#E8A030</code></td><td>Warning banners</td></tr>
+        <tr><td>error</td><td><code>#D95060</code></td><td>Error states</td></tr>
+      </tbody>
+    </table>
+    <p>The isobar spiral motif (concentric rotating ellipses, echoing a weather pressure chart) appears as a background texture and in the app icon concepts.</p>
+  </section>
+</main>
+</body>
+</html>

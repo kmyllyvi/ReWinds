@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Database — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html" class="active">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+  </ul>
+</nav>
+<main class="content">
+  <header class="page-header">
+    <h1>Database &amp; Data Models</h1>
+    <p class="subtitle">Local persistence, weather data shapes, and how records are stored and queried.</p>
+  </header>
+
+  <section>
+    <h2>Storage technology</h2>
+    <p>All data is stored locally on the device in a single <strong>SQLite</strong> database named <code>app.db</code>. The schema and queries are defined using <strong>SQLDelight</strong>, which generates type-safe Kotlin functions at compile time. There is no cloud sync or server-side storage — the database is entirely local.</p>
+    <p>The database holds four categories of data:</p>
+    <ul>
+      <li><strong>Weather records</strong> — places, daily weather (one row per day per place), and hourly sub-records.</li>
+      <li><strong>Weather stations</strong> — nearby measurement stations for each place, used on the station map.</li>
+      <li><strong>Chat history</strong> — sessions and individual messages for the AI chat.</li>
+      <li><strong>App settings</strong> — key/value store for the days-of-interest filter and other preferences.</li>
+    </ul>
+    <p>On iOS, SQLite is provided as a native C library via CocoaPods. On Android, the standard Android SQLite driver is used. Both platforms share the same schema file located at <code>composeApp/src/commonMain/sqldelight/</code>.</p>
+  </section>
+
+  <section>
+    <h2>Write semantics</h2>
+    <p>Weather data uses <strong>upsert semantics</strong> — new places and new days are inserted; existing days are never overwritten. This means partial downloads accumulate safely: if you download January and then February separately, both months end up in the database without any data loss.</p>
+    <p>Station data uses a <strong>delete-then-insert</strong> approach within a single transaction. When station data is refreshed, all existing station rows for a place are removed and the new set is inserted atomically.</p>
+    <p>Every write operation invalidates the in-memory session cache for the affected place, so the next read always reflects the latest database state.</p>
+  </section>
+
+  <section>
+    <h2>Core data models</h2>
+
+    <h3>WeatherResponse</h3>
+    <p>The top-level container for a place's data. The <code>resolvedAddress</code> field is used as the canonical place key throughout the app — it is the key for cache lookups, database queries, and tool calls.</p>
+
+    <h3>Day</h3>
+    <p>One calendar day of weather data, matching the Visual Crossing day object. A day record includes:</p>
+    <ul>
+      <li>Temperature: min, max, average, feels-like variants — all in Celsius.</li>
+      <li>Wind: daily average speed, gust, and direction — stored in <strong>m/s</strong> as received from the API. Display layers and the AI tools convert to knots where needed (multiply by 1.944).</li>
+      <li>Precipitation: amount (mm), probability (%), coverage (%), type (e.g. "rain"), snow depth.</li>
+      <li>Atmosphere: humidity, dew point, pressure (hPa), cloud cover (%), visibility (km).</li>
+      <li>Solar: radiation (W/m²), energy (MJ/m²), UV index.</li>
+      <li>Astronomical: sunrise/sunset times, moon phase (0.0–1.0).</li>
+      <li>Conditions text and icon identifier.</li>
+      <li>A list of hourly records (<code>Hour</code>) covering the full day.</li>
+    </ul>
+
+    <h3>Hour</h3>
+    <p>One hour within a day. Contains the same weather fields as a day record (temperature, wind, precipitation, atmosphere, solar) but without day-level aggregates like min/max temperature or sunrise/sunset.</p>
+
+    <h3>Station</h3>
+    <p>A physical weather measurement station near a saved place. Stores its name, coordinates, distance from the place (in metres as returned by the API — the display layer divides by 1000 for km), data quality score, and usage count.</p>
+
+    <h3>DayWeatherSummary</h3>
+    <p>A derived display model produced by the Place Summary and Monthly Statistics ViewModels from a <code>Day</code> record. It is not persisted — it is computed on read. Fields include pre-calculated sustained wind speed (a rolling average over a configurable window of hourly records), fog detection, and whether the day matches the current days-of-interest filter (<code>isMatch</code>).</p>
+  </section>
+
+  <section>
+    <h2>Performance design</h2>
+    <p>Loading all days and all hours for a place in one query is expensive as data accumulates. Two strategies keep the app responsive:</p>
+    <ul>
+      <li><strong>Home screen lightweight query.</strong> The Home screen never loads full day rows. It uses a single <code>GROUP BY</code> SQL query that returns only the day count per place. This is fast regardless of how much data is stored.</li>
+      <li><strong>Session-lifetime in-memory cache.</strong> After the first full load of a place's data (e.g. when opening Place Summary), the result is cached in memory for the rest of the app session. Navigating away and back does not trigger another database read. The cache is invalidated whenever new data is written for that place.</li>
+    </ul>
+    <div class="callout callout-warn">The cache has no eviction policy. Memory usage grows with the number of places visited in a session. It is cleared only on app restart.</div>
+  </section>
+
+  <section>
+    <h2>Gap-fill queries</h2>
+    <p>When the app needs weather data for a date range — either from the AI tools or from a manual month download — it does not blindly re-fetch everything. Instead it compares the requested range against what is already in the database and fetches only the consecutive <em>gaps</em>. Each gap is a separate Visual Crossing API call.</p>
+    <p>This means repeated requests for overlapping date ranges cost nothing after the first fetch, and partial month downloads accumulate correctly.</p>
+  </section>
+
+  <section>
+    <h2>Export and import</h2>
+    <p>The app supports backing up and restoring the database file. This is exposed through the debug panel on the Home screen. The implementation is platform-specific (<code>DatabaseExportImport</code> expect/actual): on iOS it copies the SQLite file to the app's documents directory; on Android it copies to external storage. The three operations are export, import (by file path), and list backups.</p>
+  </section>
+
+  <section>
+    <h2>App settings storage</h2>
+    <p>Settings (currently the days-of-interest filter JSON) are stored as key/value rows in the same SQLite database via <code>AppSettingsRepository</code>. Reads and writes are simple string get/set operations — no separate preferences file is used.</p>
+  </section>
+</main>
+</body>
+</html>

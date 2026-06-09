@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html" class="active">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+  </ul>
+</nav>
+<main class="content">
+  <header class="page-header">
+    <h1>AI Chat</h1>
+    <p class="subtitle">How the conversational weather assistant works under the hood.</p>
+  </header>
+
+  <section>
+    <h2>Overview</h2>
+    <p>The AI chat feature connects to the <strong>Anthropic API</strong> using the <code>claude-haiku-4-5</code> model. Claude is configured as a wind-sports analyst: it knows how to interpret weather data in the context of kitesurfing and windsurfing, and it uses a set of tools to query the app's local SQLite database rather than making up answers.</p>
+    <p>Each user message triggers an <strong>agentic loop</strong> that can run up to 20 turns. Within those turns Claude can call tools multiple times, combine results, and reason across several locations or date ranges before producing its final answer.</p>
+  </section>
+
+  <section>
+    <h2>Available tools</h2>
+    <p>Five tools are registered with every Claude request:</p>
+    <table>
+      <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>get_weather_metrics</code></td>
+          <td>Fetches one or more specific metrics (temperature, humidity, wind speed, UV index, etc.) for a location and date range. This tool implements the full three-layer permission gate before any network fetch.</td>
+        </tr>
+        <tr>
+          <td><code>get_wind_summary</code></td>
+          <td>Returns a structured wind summary for a location and date range — speeds, gusts, direction, and sustained-wind hours.</td>
+        </tr>
+        <tr>
+          <td><code>get_monthly_stats</code></td>
+          <td>Returns aggregated statistics for a single calendar month: temperature extremes, rainfall, solar energy, average wind.</td>
+        </tr>
+        <tr>
+          <td><code>get_best_days</code></td>
+          <td>Finds days within a date range that meet optional criteria: minimum/maximum wind speed (in knots), maximum gust, and no-rain flag.</td>
+        </tr>
+        <tr>
+          <td><code>list_saved_places</code></td>
+          <td>Returns the names of all saved places. Useful for Claude to know what data is available before asking follow-up questions.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Metric names passed by Claude are translated to database field names by <code>MetricMapper</code>, which understands approximately 50 alias variants. Wind values are stored in m/s and converted to knots (multiplied by 1.944) for display and for tool parameters that use knots.</p>
+  </section>
+
+  <section>
+    <h2>The permission gate</h2>
+    <p>Fetching weather data from Visual Crossing costs API credits and takes time. To keep the user in control, <code>get_weather_metrics</code> implements a three-step permission flow before making any network call:</p>
+    <ol>
+      <li><strong>Availability check.</strong> Before fetching, the tool asks the local database whether the requested data already exists (<code>Available</code>, <code>Partial</code>, or <code>Missing</code>).</li>
+      <li><strong>Permission request.</strong> If data is not fully available, the tool returns a structured response with <code>"status": "permission_required"</code>, the location, the date range, and a human-readable explanation — instead of fetching.</li>
+      <li><strong>User confirmation.</strong> The chat UI surfaces this as a prompt. If the user confirms (typing "yes", "ok", "proceed", etc.), the app fetches the data directly, then asks Claude to retry the original question with the data now in the database.</li>
+    </ol>
+    <div class="callout callout-info">If the data is already fully available in the local database, the permission gate is bypassed entirely and the tool responds immediately with no network call.</div>
+    <div class="callout callout-warn">The other three tools (<code>get_wind_summary</code>, <code>get_monthly_stats</code>, <code>get_best_days</code>) do not implement the permission gate — they call the database directly. Only <code>get_weather_metrics</code> has the full three-layer flow.</div>
+  </section>
+
+  <section>
+    <h2>Chat persistence</h2>
+    <p>Conversations are stored in SQLite through <code>ChatRepository</code>. Each app session has a session record; messages within it are saved as they are sent and received. When the app restarts, the last session's history is loaded so the conversation continues where it left off.</p>
+    <p>The AI keeps the conversation history in memory during the agentic loop and passes it with every request to Claude, providing full context. History is reconstructed from the database as plain text blocks on reload — multi-part tool-use turns from previous sessions are simplified to text for the history reconstruction.</p>
+  </section>
+
+  <section>
+    <h2>API key setup</h2>
+    <p>The chat feature requires an Anthropic API key. How this is configured depends on the platform:</p>
+    <ul>
+      <li><strong>iOS:</strong> Enter the key in the Settings tab. It is stored securely in the iOS Keychain and persists across restarts. Optionally, a build-time key can be embedded via <code>Config.local.xcconfig</code> for developer builds.</li>
+      <li><strong>Android:</strong> The key is set in <code>gradle.properties</code> at build time and compiled into the app via <code>BuildConfig</code>. It cannot be changed at runtime through the UI.</li>
+    </ul>
+    <p>If no key is configured, the chat screen shows an inline prompt to open Settings.</p>
+  </section>
+
+  <section>
+    <h2>Technical constants</h2>
+    <table>
+      <thead><tr><th>Constant</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Model</td><td><code>claude-haiku-4-5</code></td></tr>
+        <tr><td>API version header</td><td><code>2023-06-01</code></td></tr>
+        <tr><td>Max tokens per response</td><td><code>1024</code></td></tr>
+        <tr><td>Max agentic turns</td><td><code>20</code></td></tr>
+        <tr><td>Streaming</td><td>Not implemented</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Known limitations</h2>
+    <ul>
+      <li>Context chips visible in the chat UI do not currently filter which data Claude receives — they are a UI-only element as of the current build.</li>
+      <li>The permission detection in the app uses a regex fallback on the AI's response text, which may be fragile if the model's phrasing changes in a future API version.</li>
+      <li>History reconstruction from the database simplifies tool-use turns to text. If you clear and reload a long session, the full structured tool history is not preserved.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Anthropic API request/response shape</h2>
+    <p>Each request to <code>/v1/messages</code> includes the model, the system prompt, the full conversation history, and the five tool schemas. Responses may have a stop reason of <code>end_turn</code>, <code>tool_use</code>, or <code>max_tokens</code>. The agentic loop continues as long as the stop reason is <code>tool_use</code> and the turn count is below the limit.</p>
+    <p>Errors with HTTP status 401 or 403 are surfaced to the user as an "invalid API key" message with a link to Settings. Other errors show a generic dismissible error banner.</p>
+  </section>
+</main>
+</body>
+</html>

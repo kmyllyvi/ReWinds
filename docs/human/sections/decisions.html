@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decisions — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html" class="active">Decisions</a></li>
+  </ul>
+</nav>
+<main class="content">
+  <header class="page-header">
+    <h1>Architectural Decisions</h1>
+    <p class="subtitle">The significant design choices made in ReWinds, and why they were made.</p>
+  </header>
+
+  <div class="callout callout-warn">These decisions were reconstructed from the codebase during the bootstrap phase (2026-06-09). Original ticket history was not available for all entries.</div>
+
+  <section class="adr">
+    <div class="adr-header">
+      <span class="adr-status active">Active</span>
+      <h2>iOS Keychain for API key storage</h2>
+      <span class="adr-date">2026-06-09</span>
+    </div>
+
+    <h3>Why this was needed</h3>
+    <p>The app requires two API keys at runtime: one for Anthropic (AI chat) and one for Visual Crossing (weather data). On Android, keys are injected at build time via <code>gradle.properties</code> → <code>BuildConfig</code>. iOS has no equivalent mechanism that works without rebuilding the app, which makes it impractical for end users to supply their own keys.</p>
+
+    <h3>What was decided</h3>
+    <p>On iOS, API keys are stored in the iOS Keychain using <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code>. A build-config override is also supported via <code>Info.plist</code> / <code>Config.local.xcconfig</code> (gitignored) for developer convenience. At startup the app checks the build config first, then the Keychain, and finally falls back to empty — which triggers a Settings prompt.</p>
+    <p>The Kotlin↔Swift bridge uses a callback pattern: Kotlin bridge objects hold Swift-registered closures for save and delete. When the user saves a key in Settings, the Kotlin <code>actual</code> function invokes the registered Swift closure, which writes to the Keychain using the native Security framework. This keeps iOS-specific Security API code in Swift, where it is most natural.</p>
+
+    <h3>Trade-offs accepted</h3>
+    <ul>
+      <li>Keys stored with <code>kSecAttrAccessibleWhenUnlockedThisDeviceOnly</code> do not migrate via iCloud Keychain. Users must re-enter keys after migrating to a new device.</li>
+      <li>The Visual Crossing key has no build-config path on iOS and must always be entered in Settings by iOS users.</li>
+      <li>Android remains build-time-only for keys; runtime configurability was not added there.</li>
+    </ul>
+  </section>
+
+  <section class="adr">
+    <div class="adr-header">
+      <span class="adr-status active">Active</span>
+      <h2>Gradle iOS build exclusion by default</h2>
+      <span class="adr-date">2026-06-09</span>
+    </div>
+
+    <h3>Why this was needed</h3>
+    <p>Kotlin/Native iOS Gradle tasks (<code>linkPodReleaseFrameworkIosSimulatorArm64</code> and siblings) were unreliable. They compile Kotlin to a framework binary but do not go through Xcode's build system — no CocoaPods integration, no correct iOS SDK paths, no full Xcode build settings. Running them in the default build added compile time and periodically crashed with <code>podspec</code>/<code>generateDummyFramework</code> errors, blocking Android-only development.</p>
+
+    <h3>What was decided</h3>
+    <p>iOS targets are excluded from <code>./gradlew build</code> unless <code>-PincludeAllTargets=true</code> is explicitly passed (intended for CI). A convenience task <code>buildAndroidOnly</code> was added to make the intent clear. The canonical iOS build tool is Xcode: open <code>iosApp/iosApp.xcworkspace</code> and press Cmd+R.</p>
+    <p>Apple Silicon only: the <code>iosX64</code> (Intel simulator) target was removed. Only <code>iosArm64</code> and <code>iosSimulatorArm64</code> are built.</p>
+
+    <h3>Trade-offs accepted</h3>
+    <ul>
+      <li>Developers must switch tools when moving between Android and iOS work — Gradle for Android, Xcode for iOS.</li>
+      <li>CI pipelines that need iOS builds must pass the flag explicitly.</li>
+      <li>The Kotlin/Native compiler daemon is kept enabled (not disabled) to keep build performance reasonable when iOS targets are compiled in CI.</li>
+      <li>Devirtualization is disabled (<code>-Xno-devirtualization</code>) to work around a Kotlin/Native runtime issue. This is a known performance trade-off.</li>
+    </ul>
+  </section>
+
+  <section class="adr">
+    <div class="adr-header">
+      <span class="adr-status active">Active</span>
+      <h2>Three-layer AI data fetch permission gate</h2>
+      <span class="adr-date">2026-06-09</span>
+    </div>
+
+    <h3>Why this was needed</h3>
+    <p>The AI chat can ask the app to fetch weather data from Visual Crossing on the user's behalf. Visual Crossing charges per query. A question like "what were wind conditions in Tarifa all of last year?" would silently trigger 12 months of API calls without the user realising. Users should be aware before the app makes external calls that cost money and take time.</p>
+
+    <h3>What was decided</h3>
+    <p>The <code>get_weather_metrics</code> tool implements a three-step flow before any network fetch:</p>
+    <ol>
+      <li>Check local database availability (<code>Available</code> / <code>Partial</code> / <code>Missing</code>).</li>
+      <li>If not fully available, return a structured <code>permission_required</code> response to the AI instead of fetching. The response includes the location, date range, and a human-readable explanation.</li>
+      <li>The chat UI surfaces this as a user prompt. On confirmation the app fetches the data directly, then asks Claude to retry the original question.</li>
+    </ol>
+    <p>If data is already fully in the local database, the gate is bypassed and the tool responds immediately at zero cost.</p>
+
+    <h3>Trade-offs accepted</h3>
+    <ul>
+      <li>The permission detection uses both a structured JSON check and a regex fallback on the AI's response text. The regex is fragile if the model's phrasing changes in a future API version.</li>
+      <li>The gate is only on <code>get_weather_metrics</code>. The <code>get_wind_summary</code>, <code>get_monthly_stats</code>, and <code>get_best_days</code> tools call the database directly without a permission step.</li>
+      <li>Context chips in the chat UI do not currently constrain which data Claude can access — they are visual-only as of the current build.</li>
+    </ul>
+  </section>
+
+  <section class="adr">
+    <div class="adr-header">
+      <span class="adr-status active">Active</span>
+      <h2>Gap-fill caching strategy for weather data</h2>
+      <span class="adr-date">2026-06-09 · KIM-278</span>
+    </div>
+
+    <h3>Why this was needed</h3>
+    <p>Weather data is expensive to fetch. As users accumulate data for multiple places over multiple years, loading all days and hours on every Home screen visit became too slow. The Home screen was noticeably sluggish with more than a handful of places, because it was loading full day and hour rows on every visit.</p>
+
+    <h3>What was decided</h3>
+    <p>Three complementary strategies were adopted:</p>
+    <ol>
+      <li><strong>Home screen lightweight query.</strong> The Home screen uses a single <code>GROUP BY</code> SQL query that returns only the day count per place — no day or hour rows are loaded. This scales to any number of places with constant cost.</li>
+      <li><strong>Session-lifetime in-memory cache.</strong> After the first full load of a place's data (e.g. when navigating into Place Summary), the complete <code>WeatherResponse</code> is cached in memory for the remainder of the app session. Navigating away and back skips the database entirely. The cache is invalidated whenever new data is written for a place.</li>
+      <li><strong>Gap-fill queries.</strong> When fetching a date range, the app first checks which dates are already in the database and requests only the missing consecutive gaps from the API — never refetching data that is already present.</li>
+    </ol>
+
+    <h3>Trade-offs accepted</h3>
+    <ul>
+      <li>The in-memory cache has no eviction policy. Memory usage grows with the number of distinct places visited during a session. It is cleared only on app restart.</li>
+      <li>Every write path must go through <code>persistAndInvalidate()</code>, which enforces cache invalidation. A write that bypasses this function would serve stale cached data.</li>
+      <li><code>getPreviousDays</code> always fetches from the network without a DB-first check — this is intentional for the "recent live data" use case but means it always costs an API call.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
