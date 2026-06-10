@@ -1,5 +1,5 @@
 ---
-name: doc-agent
+name: Phill (doc-agent)
 description: |
   Documentation maintenance agent for ReWinds.
   Use after every PR merge to update /docs/agent/ based on the diff and linked Linear ticket.
