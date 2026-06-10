@@ -296,6 +296,7 @@ private fun generateMapHtml(
                 html, body, #map { width: 100%; height: 100%; }
                 body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: $PAGE_BG_HEX; }
                 .leaflet-container { background: $PAGE_BG_HEX; }
+                .leaflet-tile { filter: brightness(1.55) saturate(0.9); }
                 #no-data-overlay {
                     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
                     background: rgba(13,27,46,0.92); border: 1px solid $BORDER_HEX; border-radius: 8px;
