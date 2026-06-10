@@ -1,2 +1,0 @@
-Claude API key (ReWinds)
-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

@@ -27,3 +27,4 @@ iosApp/Config.local.xcconfig
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+secrets-gitignore.md
