@@ -90,6 +90,11 @@ class ChatViewModel(
     private val chatRepository: ChatRepository
 ) : ViewModel() {
 
+    /**
+     * Session the VM is currently reading from / writing to. Resolved on launch via
+     * [ChatSessionLogic.resolveActiveSessionId] (defaults to the most recent session)
+     * and updated by [switchToSession]. Replaces the old "always load the latest" rule.
+     */
     private var currentSessionId: Long? = null
 
     private val _uiState = MutableStateFlow(ChatUiState(
@@ -107,19 +112,50 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            val sessionId = chatRepository.getOrCreateSession()
-            currentSessionId = sessionId
-            val savedMessages = chatRepository.loadUiMessages(sessionId)
-            if (savedMessages.isNotEmpty()) {
-                val history = chatRepository.loadConversationHistory(sessionId)
-                aiRepository.loadHistory(history)
-                _uiState.update { it.copy(messages = savedMessages) }
-                Log.d("ChatViewModel: loaded ${savedMessages.size} messages from session $sessionId")
-            } else {
-                Log.d("ChatViewModel: new session $sessionId, starting fresh")
-            }
+            loadActiveSession(requestedId = null)
         }
         loadContextChips()
+    }
+
+    /**
+     * Resolves and loads the active session. With [requestedId] null (app launch) the
+     * most recent session is used; a session is auto-created when none exist, so the
+     * original single-chat launch behaviour is preserved.
+     */
+    private suspend fun loadActiveSession(requestedId: Long?) {
+        val sessionIds = chatRepository.listSessions().map { it.id }
+        val resolvedId = ChatSessionLogic.resolveActiveSessionId(requestedId, sessionIds)
+            ?: chatRepository.createSession()
+
+        currentSessionId = resolvedId
+        val savedMessages = chatRepository.loadUiMessages(resolvedId)
+        if (savedMessages.isNotEmpty()) {
+            val history = chatRepository.loadConversationHistory(resolvedId)
+            aiRepository.loadHistory(history)
+            _uiState.update { it.copy(messages = savedMessages) }
+            Log.d("ChatViewModel: loaded ${savedMessages.size} messages from session $resolvedId")
+        } else {
+            Log.d("ChatViewModel: session $resolvedId has no messages, starting fresh")
+        }
+    }
+
+    /**
+     * Switches the active session to [sessionId] and rebuilds UI + AI history from its
+     * stored messages. No-op when the session no longer exists.
+     */
+    fun switchToSession(sessionId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val messages = chatRepository.switchToSession(sessionId)
+            if (messages == null) {
+                Log.d("ChatViewModel: switch ignored, session $sessionId not found")
+                return@launch
+            }
+            currentSessionId = sessionId
+            val history = chatRepository.loadConversationHistory(sessionId)
+            aiRepository.loadHistory(history)
+            _uiState.update { it.copy(messages = messages) }
+            Log.d("ChatViewModel: switched to session $sessionId (${messages.size} messages)")
+        }
     }
 
     /**
