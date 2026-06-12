@@ -1,0 +1,10 @@
+-- Migration from schema version 5 to 6 (KIM-285)
+-- Adds multi-session metadata to ChatSession: a human-readable title and an
+-- optional place tag (placeId) used only for auto-titling. placeId is TEXT because
+-- places are keyed by WeatherResponse.resolvedAddress (TEXT). No FK constraint: a
+-- chat is not owned by or restricted to a place, and tagged places may be deleted.
+
+-- Existing rows predate titles, so backfill a non-null default.
+ALTER TABLE ChatSession ADD COLUMN title TEXT NOT NULL DEFAULT 'Chat';
+
+ALTER TABLE ChatSession ADD COLUMN placeId TEXT;

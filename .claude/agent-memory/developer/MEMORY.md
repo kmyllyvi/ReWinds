@@ -99,6 +99,22 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
 - `Database`: `MockDatabase` (HomeViewTest), `MockDatabaseForSearch` (HomeViewModelSearchTest).
   Production impl is `SqlDelightDatabase` in `core/Database.kt`.
 
+## Chat multi-session data layer (KIM-285)
+
+- `ChatSession` columns: `title TEXT NOT NULL DEFAULT 'Chat'` + nullable `placeId TEXT`.
+  placeId = `WeatherResponse.resolvedAddress` (TEXT, NOT integer) — chats are not 1:1 with places.
+- Migration `5.sqm` (v5→v6) uses plain `ALTER TABLE ... ADD COLUMN` (additive, no recreation needed).
+- `ai/ChatSessionLogic.kt` — DB-free object holding the testable rules: `deriveTitle(msg, placeName)`
+  (place tag + first ~40 chars, ellipsis, default fallback), `shouldEvictBeforeCreate(count)` (cap=50),
+  `resolveActiveSessionId(requestedId, idsNewestFirst)`. Unit tested in `ChatSessionLogicTest`.
+- `ChatRepository` interface gained: `listSessions()`, `createSession(placeId)`, `switchToSession(id)`,
+  `renameSession(id, title)`. Auto-title fires on the first USER message and only overwrites the
+  still-default title (never clobbers an explicit rename).
+- `ChatViewModel`: `loadActiveSession(requestedId)` replaces the old latest-only rule; `switchToSession(id)`
+  added. Single-chat launch preserved (auto-creates a session when none exist).
+- KNOWN FAKES of `ChatRepository` to keep in sync: `FakeChatRepository` (ChatPersistenceTest),
+  `InMemoryChatRepository` (ChatSessionRepositoryContractTest).
+
 ## WeatherRepositoryImpl in-memory cache (KIM-278)
 
 - Session-scoped `savedDataCache: HashMap<String, WeatherResponse>` in `WeatherRepositoryImpl`.
