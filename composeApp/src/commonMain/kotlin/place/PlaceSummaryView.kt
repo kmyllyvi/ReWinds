@@ -118,9 +118,10 @@ fun PlaceSummaryView(
                     }
                     TextButton(
                         onClick = {
-                            // TODO: Chat tab does not yet support a place pre-filter / deep-link.
-                            // Navigate to Chat with a seeded message until that lands.
-                            navigator.navigateToChat(initialMessage = "Chat about $currentPlaceName")
+                            // "Ask AI about this place" — Chat tab resolves to (or creates)
+                            // a session tagged with this place. initialMessage deep-link is
+                            // still deferred (KIM-267).
+                            navigator.navigateToChat(placeId = currentPlaceName)
                         }
                     ) {
                         Text(

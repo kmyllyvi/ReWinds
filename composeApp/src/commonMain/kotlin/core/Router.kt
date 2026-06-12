@@ -71,8 +71,17 @@ fun Navigation() {
     // instead of pushing onto the Places back stack. Push destinations (PlaceSummary)
     // share this so "Chat about <place>" lands on the Chat tab, not the Places stack.
     // Note: initial message deep-link is deferred to a follow-up ticket (KIM-267 spec).
-    val placesNavigatorDelegate = remember(placesNav, tabVm) {
-        TabRoutingNavigator(base = placesNav, selectTab = tabVm::selectTab)
+    val placesNavigatorDelegate = remember(placesNav, tabVm, chatStack) {
+        TabRoutingNavigator(
+            base = placesNav,
+            selectTab = tabVm::selectTab,
+            // "Ask AI about this place" — push a place-tagged ChatRoute onto the Chat
+            // tab's stack so the Chat tab resolves to that place's session, then switch.
+            onChatRequested = { initialMessage, placeId ->
+                chatStack.add(ChatRoute(initialMessage = initialMessage, placeId = placeId))
+                tabVm.selectTab(AppTab.CHAT)
+            }
+        )
     }
 
     // Chat-tab navigator: back from the chat root returns to the Places tab rather than
@@ -111,7 +120,16 @@ fun Navigation() {
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 when (activeTab) {
                     AppTab.PLACES   -> HomeView(navigator = placesNavigatorDelegate)
-                    AppTab.CHAT     -> ChatView(initialMessage = null, navigator = chatNavigatorDelegate)
+                    AppTab.CHAT     -> {
+                        // Top of the chat stack carries the place context (if entered via
+                        // "Ask AI about this place"); null placeId is the normal Chat tab.
+                        val chatRoute = chatStack.lastOrNull() as? ChatRoute
+                        ChatView(
+                            initialMessage = null,
+                            placeId = chatRoute?.placeId,
+                            navigator = chatNavigatorDelegate
+                        )
+                    }
                     AppTab.SETTINGS -> SettingsView(navigator = settingsNav)
                 }
             }
