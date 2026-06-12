@@ -56,6 +56,28 @@ object ChatSessionLogic {
     fun shouldEvictBeforeCreate(currentCount: Long): Boolean = currentCount >= SESSION_CAP
 
     /**
+     * Formats [timestampMillis] as a short, relative label for the session list
+     * (e.g. "Just now", "5m ago", "3h ago", "2d ago", "5w ago"). [nowMillis] is the
+     * reference point. Pure and locale-free so it can be unit-tested directly and stays
+     * KMP-safe (no platform date formatting).
+     */
+    fun relativeTimeLabel(timestampMillis: Long, nowMillis: Long): String {
+        val deltaMs = (nowMillis - timestampMillis).coerceAtLeast(0L)
+        val minutes = deltaMs / 60_000L
+        val hours = deltaMs / 3_600_000L
+        val days = deltaMs / 86_400_000L
+        val weeks = deltaMs / 604_800_000L
+
+        return when {
+            minutes < 1L -> "Just now"
+            minutes < 60L -> "${minutes}m ago"
+            hours < 24L -> "${hours}h ago"
+            days < 7L -> "${days}d ago"
+            else -> "${weeks}w ago"
+        }
+    }
+
+    /**
      * Resolves which session to load: the explicitly requested [requestedId] when it
      * still exists, otherwise the most recent available session, otherwise null
      * (caller creates a fresh session). [availableIdsNewestFirst] is ordered the same

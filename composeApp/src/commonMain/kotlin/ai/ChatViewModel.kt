@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import core.Log
 import core.isAnthropicApiKeyConfigured
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,7 +74,16 @@ data class ChatUiState(
     val showApiKeyInvalidError: Boolean = false,
     val pendingDataFetch: PendingDataFetch? = null,
     /** Context chips above the message list. The "All places" chip is always present. */
-    val contextChips: List<ContextChip> = listOf(ContextChip(placeName = null, isSelected = true))
+    val contextChips: List<ContextChip> = listOf(ContextChip(placeName = null, isSelected = true)),
+    /** Whether the session switcher (bottom sheet) is currently open. */
+    val isSessionSwitcherOpen: Boolean = false,
+    /**
+     * Saved chat sessions for the switcher, newest activity first. Mirrors
+     * [ChatRepository.listSessions] ordering — never re-sorted in the View.
+     */
+    val sessions: List<ChatSessionSummary> = emptyList(),
+    /** Id of the session currently shown in the chat view; highlighted in the switcher. */
+    val activeSessionId: Long? = null
 ) {
     /** Send is enabled only when there is non-blank input and no request in flight. */
     val isSendEnabled: Boolean
@@ -87,7 +97,9 @@ data class ChatUiState(
 class ChatViewModel(
     private val aiRepository: AiRepository,
     private val weatherRepository: core.WeatherRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    /** Background dispatcher for repository I/O. Injectable so tests can substitute a TestDispatcher. */
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     /**
@@ -111,7 +123,7 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             loadActiveSession(requestedId = null)
         }
         loadContextChips()
@@ -132,19 +144,66 @@ class ChatViewModel(
         if (savedMessages.isNotEmpty()) {
             val history = chatRepository.loadConversationHistory(resolvedId)
             aiRepository.loadHistory(history)
-            _uiState.update { it.copy(messages = savedMessages) }
+            _uiState.update { it.copy(messages = savedMessages, activeSessionId = resolvedId) }
             Log.d("ChatViewModel: loaded ${savedMessages.size} messages from session $resolvedId")
         } else {
+            _uiState.update { it.copy(activeSessionId = resolvedId) }
             Log.d("ChatViewModel: session $resolvedId has no messages, starting fresh")
         }
     }
 
     /**
+     * Opens the session switcher, refreshing the session list from the repository so the
+     * sheet always reflects current titles/timestamps. List order is the repository's
+     * (newest first) — never re-sorted here.
+     */
+    fun openSessionSwitcher() {
+        viewModelScope.launch(ioDispatcher) {
+            val sessions = runCatching { chatRepository.listSessions() }.getOrDefault(emptyList())
+            _uiState.update { it.copy(sessions = sessions, isSessionSwitcherOpen = true) }
+            Log.d("ChatViewModel: opened session switcher (${sessions.size} sessions)")
+        }
+    }
+
+    /** Closes the session switcher without changing the active session. */
+    fun closeSessionSwitcher() {
+        _uiState.update { it.copy(isSessionSwitcherOpen = false) }
+    }
+
+    /**
+     * Creates a fresh session, makes it active, and closes the switcher. The new chat
+     * starts empty with the standard greeting; the previous session stays persisted.
+     */
+    fun startNewChat() {
+        viewModelScope.launch(ioDispatcher) {
+            val newId = chatRepository.createSession()
+            currentSessionId = newId
+            aiRepository.clearHistory()
+            _uiState.update {
+                it.copy(
+                    messages = listOf(
+                        ChatMessage(
+                            role = MessageRole.ASSISTANT,
+                            content = "Let's talk about the weather!"
+                        )
+                    ),
+                    activeSessionId = newId,
+                    isSessionSwitcherOpen = false,
+                    error = null,
+                    pendingDataFetch = null
+                )
+            }
+            Log.d("ChatViewModel: started new chat (session $newId)")
+        }
+    }
+
+    /**
      * Switches the active session to [sessionId] and rebuilds UI + AI history from its
-     * stored messages. No-op when the session no longer exists.
+     * stored messages, then closes the switcher. No-op when the session no longer exists
+     * (the switcher stays open so the user can pick another).
      */
     fun switchToSession(sessionId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val messages = chatRepository.switchToSession(sessionId)
             if (messages == null) {
                 Log.d("ChatViewModel: switch ignored, session $sessionId not found")
@@ -153,7 +212,13 @@ class ChatViewModel(
             currentSessionId = sessionId
             val history = chatRepository.loadConversationHistory(sessionId)
             aiRepository.loadHistory(history)
-            _uiState.update { it.copy(messages = messages) }
+            _uiState.update {
+                it.copy(
+                    messages = messages,
+                    activeSessionId = sessionId,
+                    isSessionSwitcherOpen = false
+                )
+            }
             Log.d("ChatViewModel: switched to session $sessionId (${messages.size} messages)")
         }
     }
@@ -163,7 +228,7 @@ class ChatViewModel(
      * and starts selected; each saved place becomes a selectable chip.
      */
     private fun loadContextChips() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val placeNames = runCatching { weatherRepository.getSavedPlaceNames() }
                 .getOrDefault(emptyList())
             val chips = buildList {
@@ -253,7 +318,7 @@ class ChatViewModel(
         // Start loading state
         _uiState.update { it.copy(isLoading = true, error = null) }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 // Persist user message
                 persistMessage(userMessage)
@@ -360,7 +425,7 @@ class ChatViewModel(
      */
     fun clearChat() {
         aiRepository.clearHistory()
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             currentSessionId?.let { chatRepository.clearSession(it) }
         }
         _uiState.update {
@@ -410,7 +475,7 @@ class ChatViewModel(
             )
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 // Persist user confirmation message
                 persistMessage(userMessage)
