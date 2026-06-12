@@ -9,6 +9,7 @@ import core.*
 import home.HomeViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.error.KoinApplicationAlreadyStartedException
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -48,7 +49,10 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     viewModelOf(::HomeViewModel)
     viewModelOf(::PlaceSummaryViewModel)
     viewModelOf(::MonthlyStatisticsViewModel)
-    viewModelOf(::ChatViewModel)
+    // Explicit lambda (not viewModelOf): ioDispatcher has a default and must not be
+    // resolved from the graph. Constructor-reflection would try to inject a
+    // CoroutineDispatcher, which isn't registered, and crash the chat screen.
+    viewModel { ChatViewModel(get(), get(), get()) } // AiRepository, WeatherRepository, ChatRepository
     viewModelOf(::SettingsViewModel)
     viewModelOf(::TabNavigationViewModel)
 }
