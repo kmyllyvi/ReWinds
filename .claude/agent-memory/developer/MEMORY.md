@@ -115,6 +115,25 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
 - KNOWN FAKES of `ChatRepository` to keep in sync: `FakeChatRepository` (ChatPersistenceTest),
   `InMemoryChatRepository` (ChatSessionRepositoryContractTest).
 
+## Chat session switcher UI (KIM-286)
+
+- `ChatViewModel` now takes `ioDispatcher: CoroutineDispatcher = Dispatchers.IO` and uses it in
+  every `viewModelScope.launch(ioDispatcher)`. This is the only way to make its coroutine-driven
+  actions testable: `Dispatchers.setMain` does NOT redirect a hardcoded `Dispatchers.IO`. Inject a
+  `StandardTestDispatcher` and drive with `runTest(dispatcher){ ... advanceUntilIdle() }`. Teardown
+  must cancel each VM's `viewModelScope` before `resetMain()`. See `ChatSessionSwitcherViewModelTest`
+  (its own `MultiSessionFakeChatRepository` tracking per-session messages, newest-first listSessions).
+- Switcher state lives in `ChatUiState`: `isSessionSwitcherOpen`, `sessions: List<ChatSessionSummary>`,
+  `activeSessionId`. VM actions: `openSessionSwitcher()` (refreshes list), `closeSessionSwitcher()`,
+  `startNewChat()`, `switchToSession(id)` (closes sheet, no-op if missing). Never re-sort in the View.
+- `ai/ChatSessionSwitcher.kt` is the `ModalBottomSheet` composable (pure render + callbacks).
+  Header entry point: `AppHeader(rightContent = { IconButton(...) })` with `Icons.AutoMirrored.Filled.List`.
+- Relative timestamps: pure `ChatSessionLogic.relativeTimeLabel(ts, now)` (Just now / Nm / Nh / Nd / Nw,
+  clamps negative deltas). Caller passes a single `Clock.System...toEpochMilliseconds()` per render.
+- Reminder: every new AppStrings field must be added to BOTH English and German with a real German
+  translation. `LocalizationTest` is hand-written per-field (not reflection), so it won't auto-fail on
+  a missing/untranslated new field — translate anyway.
+
 ## WeatherRepositoryImpl in-memory cache (KIM-278)
 
 - Session-scoped `savedDataCache: HashMap<String, WeatherResponse>` in `WeatherRepositoryImpl`.
