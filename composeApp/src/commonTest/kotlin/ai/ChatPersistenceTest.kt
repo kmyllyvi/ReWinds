@@ -224,6 +224,21 @@ class FakeChatRepository : ChatRepository {
     }
 
     override suspend fun getCurrentSessionId(): Long? = sessionId
+
+    override suspend fun listSessions(): List<ChatSessionSummary> =
+        sessionId?.let {
+            listOf(ChatSessionSummary(it, ChatSessionLogic.DEFAULT_TITLE, 0L, messages.size.toLong(), null))
+        } ?: emptyList()
+
+    override suspend fun createSession(placeId: String?): Long {
+        sessionId = (sessionId ?: 0L) + 1L
+        return sessionId!!
+    }
+
+    override suspend fun switchToSession(sessionId: Long): List<ChatMessage>? =
+        if (sessionId == this.sessionId) messages.toList() else null
+
+    override suspend fun renameSession(sessionId: Long, title: String) {}
 }
 
 /**

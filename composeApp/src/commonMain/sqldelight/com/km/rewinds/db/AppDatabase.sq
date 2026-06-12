@@ -154,7 +154,11 @@ SELECT * FROM Hour WHERE dayId = ?;
 CREATE TABLE ChatSession (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     lastMessageTimestamp INTEGER NOT NULL,
-    messageCount INTEGER NOT NULL DEFAULT 0
+    messageCount INTEGER NOT NULL DEFAULT 0,
+    title TEXT NOT NULL DEFAULT 'Chat',
+    -- Optional place tag (resolvedAddress, TEXT) used only for auto-titling. No FK:
+    -- a chat is not owned by a place and the tagged place may later be deleted.
+    placeId TEXT
 );
 
 CREATE TABLE ChatMessage (
@@ -170,11 +174,37 @@ CREATE TABLE ChatMessage (
 getCurrentSession:
 SELECT * FROM ChatSession WHERE id = (SELECT MAX(id) FROM ChatSession) LIMIT 1;
 
+getSessionById:
+SELECT * FROM ChatSession WHERE id = ? LIMIT 1;
+
 createSession:
-INSERT INTO ChatSession(lastMessageTimestamp, messageCount) VALUES (?, ?);
+INSERT INTO ChatSession(lastMessageTimestamp, messageCount, title, placeId)
+VALUES (?, ?, ?, ?);
 
 updateSessionMetadata:
 UPDATE ChatSession SET lastMessageTimestamp = ?, messageCount = ? WHERE id = ?;
+
+updateSessionTitle:
+UPDATE ChatSession SET title = ? WHERE id = ?;
+
+-- All sessions, newest activity first. Drives the (future) chat list/switcher UI.
+listSessions:
+SELECT id, title, lastMessageTimestamp, messageCount, placeId
+FROM ChatSession
+ORDER BY lastMessageTimestamp DESC, id DESC;
+
+countSessions:
+SELECT COUNT(*) FROM ChatSession;
+
+-- Oldest by activity. Used to evict when the session cap is exceeded; its messages
+-- cascade-delete via ChatMessage's ON DELETE CASCADE foreign key.
+deleteOldestSession:
+DELETE FROM ChatSession
+WHERE id = (
+    SELECT id FROM ChatSession
+    ORDER BY lastMessageTimestamp ASC, id ASC
+    LIMIT 1
+);
 
 insertChatMessage:
 INSERT INTO ChatMessage(conversationMessageJson, messageRole, messageContent, timestamp, chatSessionId)
