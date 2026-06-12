@@ -115,6 +115,75 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
 - KNOWN FAKES of `ChatRepository` to keep in sync: `FakeChatRepository` (ChatPersistenceTest),
   `InMemoryChatRepository` (ChatSessionRepositoryContractTest).
 
+## Chat session switcher UI (KIM-286)
+
+- `ChatViewModel` now takes `ioDispatcher: CoroutineDispatcher = Dispatchers.IO` and uses it in
+  every `viewModelScope.launch(ioDispatcher)`. This is the only way to make its coroutine-driven
+  actions testable: `Dispatchers.setMain` does NOT redirect a hardcoded `Dispatchers.IO`. Inject a
+  `StandardTestDispatcher` and drive with `runTest(dispatcher){ ... advanceUntilIdle() }`. Teardown
+  must cancel each VM's `viewModelScope` before `resetMain()`. See `ChatSessionSwitcherViewModelTest`
+  (its own `MultiSessionFakeChatRepository` tracking per-session messages, newest-first listSessions).
+- Switcher state lives in `ChatUiState`: `isSessionSwitcherOpen`, `sessions: List<ChatSessionSummary>`,
+  `activeSessionId`. VM actions: `openSessionSwitcher()` (refreshes list), `closeSessionSwitcher()`,
+  `startNewChat()`, `switchToSession(id)` (closes sheet, no-op if missing). Never re-sort in the View.
+- `ai/ChatSessionSwitcher.kt` is the `ModalBottomSheet` composable (pure render + callbacks).
+  Header entry point: `AppHeader(rightContent = { IconButton(...) })` with `Icons.AutoMirrored.Filled.List`.
+- Relative timestamps: pure `ChatSessionLogic.relativeTimeLabel(ts, now)` (Just now / Nm / Nh / Nd / Nw,
+  clamps negative deltas). Caller passes a single `Clock.System...toEpochMilliseconds()` per render.
+- Reminder: every new AppStrings field must be added to BOTH English and German with a real German
+  translation. `LocalizationTest` is hand-written per-field (not reflection), so it won't auto-fail on
+  a missing/untranslated new field — translate anyway.
+- CRASH FIX (post-KIM-286): adding `ioDispatcher` broke the `viewModelOf(::ChatViewModel)` binding.
+  `viewModelOf`/`singleOf`/`factoryOf` use constructor reflection and try to resolve EVERY param —
+  Kotlin default values are IGNORED. Koin had no `CoroutineDispatcher` definition →
+  `NoDefinitionFoundException` → chat screen crash (iOS surfaced it as coroutine
+  `propagateExceptionFinalResort`). Fix in `DI.kt`: bind with explicit lambda
+  `viewModel { ChatViewModel(get(), get(), get()) }` so the defaulted param falls back. Any VM/class
+  with a defaulted ctor param must use an explicit lambda binding, not the reflective `*Of` helpers.
+  Regression test: `ChatViewModelKoinGraphTest` resolves the VM from a graph with NO dispatcher.
+- CONTEXT CHIPS (bug fix): `loadContextChips()` must only show a chip for a place that has a
+  tagged chat session. It intersects `getSavedPlaceNames()` with the non-null `placeId`s from
+  `listSessions()` via pure `ChatSessionLogic.placesWithSessions(savedNames, taggedPlaceIds)`.
+  "All places" (placeName=null) is always first. NOTE: production never sets `placeId` yet
+  (createSession() is called without it everywhere) — until the KIM-129c follow-up wires
+  place-tagging on the active session, the per-place chips will legitimately be empty.
+
+## Tab navigation & cross-tab routing (Router.kt + TabRoutingNavigator)
+
+- `core/Navigation()` in `Router.kt` holds THREE independent back stacks (places/chat/settings),
+  each wrapped in its own `NavigatorImpl`. Active tab lives in `TabNavigationViewModel.activeTab`.
+- `NavigatorImpl.navigateToChat/navigateToSettings` PUSH onto the *current* stack. That is wrong
+  for cross-tab intents (e.g. PlaceSummary's "Chat about X"): pushing a `ChatRoute` onto the Places
+  stack renders nothing and falls through to Home. Cross-tab navigation must go through
+  `core/TabRoutingNavigator` (a `Navigator by base` decorator) which redirects chat/settings to
+  `selectTab(...)` and handles root-level back via an `onRootBack` callback.
+- Both the Places-tab delegate AND the PlaceSummary push destination use the routing delegate —
+  if you add a new screen that can launch chat, pass it a `TabRoutingNavigator`, never raw `NavigatorImpl`.
+- GOTCHA: the push-destination branch in `Navigation()` must be guarded with `activeTab == AppTab.PLACES`.
+  A PlaceSummaryRoute stays on the Places stack after navigateToChat switches tabs; without the guard
+  the place screen overrides the Chat tab. Routing logic is unit-tested in `TabRoutingNavigatorTest`.
+- Chat-tab root back is NOT a no-op anymore: `onRootBack = { selectTab(PLACES); true }`.
+
+## Reproducing iOS runtime crashes locally (no Gradle iOS build)
+- Build: `xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp -configuration Debug
+  -sdk iphonesimulator -destination "id=<UDID>" -derivedDataPath build`.
+- Boot/install/run: `xcrun simctl boot <UDID>`; `xcrun simctl install <UDID> <.app>`;
+  `xcrun simctl launch --console-pty <UDID> com.km.rewinds` — the console shows the full Kotlin
+  `Caused by:` chain; scroll past generic coroutine final-resort frames to the real cause.
+- Force-open a deep screen without UI taps (computer-use/osascript need Accessibility perms often
+  unavailable): temporarily change default tab in `core/TabNavigationViewModel.kt` (`AppTab.PLACES`
+  -> target), rebuild, launch, then REVERT.
+- Simulate upgrade-from-old-DB: hand-build app.db with `sqlite3`, `PRAGMA user_version=N`, drop into
+  `$(xcrun simctl get_app_container <UDID> com.km.rewinds data)/Library/Application Support/databases/app.db`.
+  NativeSqliteDriver auto-runs `Schema.migrate` on first DB access. Verified migration 5->6 applies
+  cleanly on iOS.
+
+## buildAndroidOnly known lint failure (unrelated to feature work)
+- `./gradlew buildAndroidOnly` currently FAILS at `lintDebug` with `ProtectedPermissions` on
+  `READ_DEVICE_CONFIG` in `androidMain/AndroidManifest.xml` (pre-existing, on clean develop).
+  Kotlin compilation + `:composeApp:testDebugUnitTest` both PASS. Verify via the test task, not the
+  full lint-gated build.
+
 ## WeatherRepositoryImpl in-memory cache (KIM-278)
 
 - Session-scoped `savedDataCache: HashMap<String, WeatherResponse>` in `WeatherRepositoryImpl`.

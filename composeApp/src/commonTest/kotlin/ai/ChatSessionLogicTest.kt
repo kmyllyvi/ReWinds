@@ -97,4 +97,74 @@ class ChatSessionLogicTest {
         assertNull(ChatSessionLogic.resolveActiveSessionId(null, emptyList()))
         assertNull(ChatSessionLogic.resolveActiveSessionId(5L, emptyList()))
     }
+
+    // --- relativeTimeLabel (KIM-286) ---
+
+    private val now = 1_000_000_000_000L
+
+    @Test
+    fun relativeTimeJustNowUnderOneMinute() {
+        assertEquals("Just now", ChatSessionLogic.relativeTimeLabel(now - 30_000L, now))
+        assertEquals("Just now", ChatSessionLogic.relativeTimeLabel(now, now))
+    }
+
+    @Test
+    fun relativeTimeMinutes() {
+        assertEquals("5m ago", ChatSessionLogic.relativeTimeLabel(now - 5 * 60_000L, now))
+        assertEquals("59m ago", ChatSessionLogic.relativeTimeLabel(now - 59 * 60_000L, now))
+    }
+
+    @Test
+    fun relativeTimeHours() {
+        assertEquals("1h ago", ChatSessionLogic.relativeTimeLabel(now - 60 * 60_000L, now))
+        assertEquals("23h ago", ChatSessionLogic.relativeTimeLabel(now - 23 * 3_600_000L, now))
+    }
+
+    @Test
+    fun relativeTimeDays() {
+        assertEquals("1d ago", ChatSessionLogic.relativeTimeLabel(now - 24 * 3_600_000L, now))
+        assertEquals("6d ago", ChatSessionLogic.relativeTimeLabel(now - 6 * 86_400_000L, now))
+    }
+
+    @Test
+    fun relativeTimeWeeks() {
+        assertEquals("1w ago", ChatSessionLogic.relativeTimeLabel(now - 7 * 86_400_000L, now))
+        assertEquals("3w ago", ChatSessionLogic.relativeTimeLabel(now - 21 * 86_400_000L, now))
+    }
+
+    @Test
+    fun relativeTimeFutureTimestampClampsToJustNow() {
+        // Clock skew shouldn't produce negative deltas.
+        assertEquals("Just now", ChatSessionLogic.relativeTimeLabel(now + 60_000L, now))
+    }
+
+    // --- KIM-286 fix: context chips only for places that have chats ---
+
+    @Test
+    fun placesWithSessionsExcludesPlacesWithNoTaggedSession() {
+        val saved = listOf("Helsinki", "Oulu", "Tampere")
+        val tagged = listOf("Helsinki", null, "Helsinki") // only Helsinki has chats
+        assertEquals(listOf("Helsinki"), ChatSessionLogic.placesWithSessions(saved, tagged))
+    }
+
+    @Test
+    fun placesWithSessionsPreservesSavedOrderNotSessionOrder() {
+        val saved = listOf("Helsinki", "Oulu", "Tampere")
+        val tagged = listOf("Tampere", "Helsinki") // session order differs from chip order
+        assertEquals(listOf("Helsinki", "Tampere"), ChatSessionLogic.placesWithSessions(saved, tagged))
+    }
+
+    @Test
+    fun placesWithSessionsIsEmptyWhenNoSessionsAreTagged() {
+        val saved = listOf("Helsinki", "Oulu")
+        assertTrue(ChatSessionLogic.placesWithSessions(saved, listOf(null, null)).isEmpty())
+    }
+
+    @Test
+    fun placesWithSessionsIgnoresTagsForUnsavedPlaces() {
+        // A tag pointing at a place no longer in the saved list shouldn't resurrect a chip.
+        val saved = listOf("Helsinki")
+        val tagged = listOf("Helsinki", "DeletedPlace")
+        assertEquals(listOf("Helsinki"), ChatSessionLogic.placesWithSessions(saved, tagged))
+    }
 }

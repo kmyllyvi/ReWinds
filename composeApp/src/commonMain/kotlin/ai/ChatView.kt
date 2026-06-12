@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -83,10 +84,20 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
                 .fillMaxSize()
                 .imePadding()
         ) {
-        // Header at top of column - messages start below it
+        // Header at top of column - messages start below it.
+        // Right action: opens the session switcher (chat screen only).
         AppHeader(
             title = strings.chatTitle,
-            onBackClick = { navigator.navigateBack() }
+            onBackClick = { navigator.navigateBack() },
+            rightContent = {
+                IconButton(onClick = vm::openSessionSwitcher) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.List,
+                        contentDescription = strings.sessionSwitcherIconDesc,
+                        tint = MaterialTheme.rewinds.textPrimary
+                    )
+                }
+            }
         )
 
         // Context chips: which place the chat is scoped to (driven by ViewModel state)
@@ -154,6 +165,17 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
             isSendEnabled = uiState.isSendEnabled
         )
         }
+    }
+
+    // Session switcher bottom sheet — state owned by the ViewModel.
+    if (uiState.isSessionSwitcherOpen) {
+        ChatSessionSwitcher(
+            sessions = uiState.sessions,
+            activeSessionId = uiState.activeSessionId,
+            onSessionClick = vm::switchToSession,
+            onNewChatClick = vm::startNewChat,
+            onDismiss = vm::closeSessionSwitcher
+        )
     }
 
     // API Key Missing Dialog — with "Go to Settings" primary action

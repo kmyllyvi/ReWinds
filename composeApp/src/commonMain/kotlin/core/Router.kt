@@ -68,26 +68,39 @@ fun Navigation() {
     val activeTab by tabVm.activeTab.collectAsState()
 
     // Delegate navigator for the Places tab that routes chat/settings to the tab bar
-    // instead of pushing onto the Places back stack.
+    // instead of pushing onto the Places back stack. Push destinations (PlaceSummary)
+    // share this so "Chat about <place>" lands on the Chat tab, not the Places stack.
+    // Note: initial message deep-link is deferred to a follow-up ticket (KIM-267 spec).
     val placesNavigatorDelegate = remember(placesNav, tabVm) {
-        object : Navigator by placesNav {
-            override fun navigateToChat(initialMessage: String?) {
-                // Note: initial message deep-link is deferred to a follow-up ticket (KIM-267 spec).
-                tabVm.selectTab(AppTab.CHAT)
-            }
-            override fun navigateToSettings() {
-                tabVm.selectTab(AppTab.SETTINGS)
-            }
-        }
+        TabRoutingNavigator(base = placesNav, selectTab = tabVm::selectTab)
+    }
+
+    // Chat-tab navigator: back from the chat root returns to the Places tab rather than
+    // being a dead no-op. Push intents within the chat tab still use its own stack.
+    val chatNavigatorDelegate = remember(chatNav, tabVm) {
+        TabRoutingNavigator(
+            base = chatNav,
+            selectTab = tabVm::selectTab,
+            onRootBack = { tabVm.selectTab(AppTab.PLACES); true }
+        )
     }
 
     // The current top route of the places stack determines whether we are on a push
     // destination (no tab bar) or a tab root (tab bar visible).
     val currentPlacesRoute = placesStack.lastOrNull() ?: HomeRoute
 
-    if (currentPlacesRoute is PlaceSummaryRoute || currentPlacesRoute is MonthlyStatisticsRoute) {
-        // Push destinations fill the screen without a tab bar.
-        PushDestination(route = currentPlacesRoute, navigator = placesNav)
+    // A push destination only takes over the screen while the Places tab is active. This
+    // matters for the Place → Chat flow: navigateToChat switches to the Chat tab but leaves
+    // the PlaceSummaryRoute on the Places stack, so the tab bar (and Chat content) must still
+    // show — without this activeTab guard the place screen would override the Chat tab.
+    val showingPlacesPush = activeTab == AppTab.PLACES &&
+        (currentPlacesRoute is PlaceSummaryRoute || currentPlacesRoute is MonthlyStatisticsRoute)
+
+    if (showingPlacesPush) {
+        // Push destinations fill the screen without a tab bar. They use the routing
+        // delegate so "Chat about <place>" switches to the Chat tab instead of pushing
+        // an unrenderable ChatRoute onto the Places stack (which fell through to Home).
+        PushDestination(route = currentPlacesRoute, navigator = placesNavigatorDelegate)
     } else {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
@@ -98,7 +111,7 @@ fun Navigation() {
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 when (activeTab) {
                     AppTab.PLACES   -> HomeView(navigator = placesNavigatorDelegate)
-                    AppTab.CHAT     -> ChatView(initialMessage = null, navigator = chatNav)
+                    AppTab.CHAT     -> ChatView(initialMessage = null, navigator = chatNavigatorDelegate)
                     AppTab.SETTINGS -> SettingsView(navigator = settingsNav)
                 }
             }
