@@ -196,15 +196,16 @@ ORDER BY lastMessageTimestamp DESC, id DESC;
 countSessions:
 SELECT COUNT(*) FROM ChatSession;
 
--- Oldest by activity. Used to evict when the session cap is exceeded; its messages
--- cascade-delete via ChatMessage's ON DELETE CASCADE foreign key.
-deleteOldestSession:
-DELETE FROM ChatSession
-WHERE id = (
-    SELECT id FROM ChatSession
-    ORDER BY lastMessageTimestamp ASC, id ASC
-    LIMIT 1
-);
+-- Oldest by activity. The repository deletes its ChatMessage rows first, then the
+-- session, in a single transaction: SQLite has foreign keys OFF per connection, so
+-- ON DELETE CASCADE is NOT enforced at runtime and cannot be relied on for eviction.
+getOldestSessionId:
+SELECT id FROM ChatSession
+ORDER BY lastMessageTimestamp ASC, id ASC
+LIMIT 1;
+
+deleteSessionById:
+DELETE FROM ChatSession WHERE id = ?;
 
 insertChatMessage:
 INSERT INTO ChatMessage(conversationMessageJson, messageRole, messageContent, timestamp, chatSessionId)

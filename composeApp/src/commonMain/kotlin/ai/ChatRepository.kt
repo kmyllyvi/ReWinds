@@ -45,17 +45,27 @@ class ChatRepositoryImpl(private val db: AppDatabase) : ChatRepository {
     }
 
     override suspend fun createSession(placeId: String?): Long {
-        if (ChatSessionLogic.shouldEvictBeforeCreate(queries.countSessions().executeAsOne())) {
-            queries.deleteOldestSession()
-            Log.d("ChatRepository: session cap reached, evicted oldest session")
+        // FK ON DELETE CASCADE is not enforced at runtime (SQLite foreign_keys pragma is
+        // off per connection), so eviction must delete the oldest session's messages
+        // explicitly. The evict-then-insert runs in one transaction so a crash mid-evict
+        // can't leave orphaned ChatMessage rows.
+        return queries.transactionWithResult {
+            if (ChatSessionLogic.shouldEvictBeforeCreate(queries.countSessions().executeAsOne())) {
+                val oldestId = queries.getOldestSessionId().executeAsOneOrNull()
+                if (oldestId != null) {
+                    queries.deleteAllMessagesBySessionId(oldestId)
+                    queries.deleteSessionById(oldestId)
+                    Log.d("ChatRepository: session cap reached, evicted oldest session $oldestId")
+                }
+            }
+            queries.createSession(
+                lastMessageTimestamp = now(),
+                messageCount = 0,
+                title = ChatSessionLogic.DEFAULT_TITLE,
+                placeId = placeId
+            )
+            queries.getLatestSessionId().executeAsOne()
         }
-        queries.createSession(
-            lastMessageTimestamp = now(),
-            messageCount = 0,
-            title = ChatSessionLogic.DEFAULT_TITLE,
-            placeId = placeId
-        )
-        return queries.getLatestSessionId().executeAsOne()
     }
 
     override suspend fun saveMessage(sessionId: Long, message: ChatMessage) {
