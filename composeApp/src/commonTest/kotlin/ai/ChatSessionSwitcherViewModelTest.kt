@@ -28,9 +28,11 @@ class ChatSessionSwitcherViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val createdViewModels = mutableListOf<ChatViewModel>()
 
-    private fun viewModel(repo: ChatRepository): ChatViewModel {
+    private fun viewModel(
+        repo: ChatRepository,
+        weather: core.WeatherRepository = SwitcherFakeWeatherRepository()
+    ): ChatViewModel {
         val client = AnthropicClient(apiKey = "test-key", enableLogs = false)
-        val weather = SwitcherFakeWeatherRepository()
         val ai = AiRepository(client, WeatherTools, weather)
         return ChatViewModel(ai, weather, repo, ioDispatcher = dispatcher)
             .also { createdViewModels.add(it) }
@@ -153,6 +155,35 @@ class ChatSessionSwitcherViewModelTest {
         assertEquals(1L, vm.uiState.value.activeSessionId)
     }
 
+    // --- KIM-286 fix: context chips only for places that have a tagged chat session ---
+
+    @Test
+    fun contextChipsIncludeOnlyPlacesThatHaveChats() = runTest(dispatcher) {
+        // Helsinki has a tagged session; Oulu is saved but has no chat → no chip for Oulu.
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
+        }
+        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
+        val vm = viewModel(repo, weather)
+        advanceUntilIdle()
+
+        val chipNames = vm.uiState.value.contextChips.map { it.placeName }
+        // null == "All places" sentinel, always present and first.
+        assertEquals(listOf(null, "Helsinki"), chipNames)
+    }
+
+    @Test
+    fun contextChipsAreJustAllPlacesWhenNoSessionIsTagged() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Untagged", ts = 100L, placeId = null)
+        }
+        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
+        val vm = viewModel(repo, weather)
+        advanceUntilIdle()
+
+        assertEquals(listOf<String?>(null), vm.uiState.value.contextChips.map { it.placeName })
+    }
+
     @Test
     fun startNewChatCreatesSessionMakesItActiveAndClosesSwitcher() = runTest(dispatcher) {
         val repo = MultiSessionFakeChatRepository().apply { seed(1L, "Existing", 100L) }
@@ -185,15 +216,22 @@ private class MultiSessionFakeChatRepository : ChatRepository {
         val id: Long,
         var title: String,
         var ts: Long,
-        val messages: MutableList<ChatMessage>
+        val messages: MutableList<ChatMessage>,
+        val placeId: String? = null
     )
 
     private val sessions = mutableMapOf<Long, Session>()
     private var nextId = 1L
     private var currentId: Long? = null
 
-    fun seed(id: Long, title: String, ts: Long, messages: List<ChatMessage> = emptyList()) {
-        sessions[id] = Session(id, title, ts, messages.toMutableList())
+    fun seed(
+        id: Long,
+        title: String,
+        ts: Long,
+        messages: List<ChatMessage> = emptyList(),
+        placeId: String? = null
+    ) {
+        sessions[id] = Session(id, title, ts, messages.toMutableList(), placeId)
         if (id >= nextId) nextId = id + 1
         currentId = id
     }
@@ -228,7 +266,7 @@ private class MultiSessionFakeChatRepository : ChatRepository {
 
     override suspend fun listSessions(): List<ChatSessionSummary> =
         sessions.values.sortedByDescending { it.ts }.map {
-            ChatSessionSummary(it.id, it.title, it.ts, it.messages.size.toLong(), null)
+            ChatSessionSummary(it.id, it.title, it.ts, it.messages.size.toLong(), it.placeId)
         }
 
     override suspend fun createSession(placeId: String?): Long {
@@ -250,8 +288,10 @@ private class MultiSessionFakeChatRepository : ChatRepository {
 }
 
 /** Minimal WeatherRepository fake — getSavedPlaceNames is the only call made by VM init. */
-private class SwitcherFakeWeatherRepository : core.WeatherRepository {
-    override suspend fun getSavedPlaceNames(): List<String> = emptyList()
+private class SwitcherFakeWeatherRepository(
+    private val savedPlaces: List<String> = emptyList()
+) : core.WeatherRepository {
+    override suspend fun getSavedPlaceNames(): List<String> = savedPlaces
     override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
     override suspend fun getSavedDataFor(resolvedPlace: String): core.WeatherResponse? = null
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): core.WeatherResponse =

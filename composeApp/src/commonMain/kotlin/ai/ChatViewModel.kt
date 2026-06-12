@@ -224,16 +224,20 @@ class ChatViewModel(
     }
 
     /**
-     * Builds the context-chip row from the saved places. "All places" is always first
-     * and starts selected; each saved place becomes a selectable chip.
+     * Builds the context-chip row. "All places" is always first and starts selected; a
+     * per-place chip is added only for places that have at least one tagged chat session
+     * (selecting a chip for a place with no chats would filter to an empty list).
      */
     private fun loadContextChips() {
         viewModelScope.launch(ioDispatcher) {
             val placeNames = runCatching { weatherRepository.getSavedPlaceNames() }
                 .getOrDefault(emptyList())
+            val taggedPlaceIds = runCatching { chatRepository.listSessions().map { it.placeId } }
+                .getOrDefault(emptyList())
+            val placesWithChats = ChatSessionLogic.placesWithSessions(placeNames, taggedPlaceIds)
             val chips = buildList {
                 add(ContextChip(placeName = null, isSelected = true))
-                placeNames.forEach { add(ContextChip(placeName = it, isSelected = false)) }
+                placesWithChats.forEach { add(ContextChip(placeName = it, isSelected = false)) }
             }
             _uiState.update { it.copy(contextChips = chips) }
         }
