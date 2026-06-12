@@ -54,6 +54,8 @@ import ui.theme.rewinds
 fun ChatView(
     initialMessage: String? = null,
     placeId: String? = null,
+    /** Invoked after the one-shot [placeId] has been resolved, so the host can drop it. */
+    onPlaceIdConsumed: () -> Unit = {},
     vm: ChatViewModel = koinViewModel(),
     navigator: Navigator
 ) {
@@ -62,10 +64,12 @@ fun ChatView(
     val focusManager = LocalFocusManager.current
     val strings = LocalAppStrings.current
 
-    // "Ask AI about this place" — resolve to (or create) the session tagged with this place.
+    // "Ask AI about this place" — resolve to (or create) the session tagged with this place,
+    // then signal the host to clear the one-shot placeId so revisits behave normally.
     LaunchedEffect(placeId) {
         if (!placeId.isNullOrEmpty()) {
             vm.openPlaceChat(placeId)
+            onPlaceIdConsumed()
         }
     }
 

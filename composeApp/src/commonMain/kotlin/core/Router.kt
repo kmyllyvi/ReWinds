@@ -75,10 +75,13 @@ fun Navigation() {
         TabRoutingNavigator(
             base = placesNav,
             selectTab = tabVm::selectTab,
-            // "Ask AI about this place" — push a place-tagged ChatRoute onto the Chat
-            // tab's stack so the Chat tab resolves to that place's session, then switch.
+            // "Ask AI about this place" — tag the Chat tab's top route with this place so the
+            // Chat tab resolves to that place's session, then switch. Replacing (not pushing)
+            // keeps the chat stack at a constant size across repeated place entries.
             onChatRequested = { initialMessage, placeId ->
-                chatStack.add(ChatRoute(initialMessage = initialMessage, placeId = placeId))
+                if (placeId != null) {
+                    ChatStackOps.setPlaceContext(chatStack, placeId, initialMessage)
+                }
                 tabVm.selectTab(AppTab.CHAT)
             }
         )
@@ -127,6 +130,9 @@ fun Navigation() {
                         ChatView(
                             initialMessage = null,
                             placeId = chatRoute?.placeId,
+                            // One-shot: drop the placeId once ChatView resolves it so revisits
+                            // don't re-trigger resolution or override manual session switches.
+                            onPlaceIdConsumed = { ChatStackOps.consumePlaceContext(chatStack) },
                             navigator = chatNavigatorDelegate
                         )
                     }
