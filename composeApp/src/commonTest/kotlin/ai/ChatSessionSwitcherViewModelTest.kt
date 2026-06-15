@@ -14,6 +14,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -155,33 +156,127 @@ class ChatSessionSwitcherViewModelTest {
         assertEquals(1L, vm.uiState.value.activeSessionId)
     }
 
-    // --- KIM-286 fix: context chips only for places that have a tagged chat session ---
+    // --- KIM-287: place tag derives from the active session's placeId ---
 
     @Test
-    fun contextChipsIncludeOnlyPlacesThatHaveChats() = runTest(dispatcher) {
-        // Helsinki has a tagged session; Oulu is saved but has no chat → no chip for Oulu.
+    fun placeTaggedSessionExposesItsPlaceTag() = runTest(dispatcher) {
+        // Init defaults to the GENERAL session, so a place-tagged session only surfaces its
+        // tag once explicitly selected (here via switchToSession).
         val repo = MultiSessionFakeChatRepository().apply {
             seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
         }
-        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
-        val vm = viewModel(repo, weather)
+        val vm = viewModel(repo)
+        advanceUntilIdle() // init creates/uses a general session, not the Helsinki one
+
+        vm.switchToSession(1L)
         advanceUntilIdle()
 
-        val chipNames = vm.uiState.value.contextChips.map { it.placeName }
-        // null == "All places" sentinel, always present and first.
-        assertEquals(listOf(null, "Helsinki"), chipNames)
+        assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
     }
 
     @Test
-    fun contextChipsAreJustAllPlacesWhenNoSessionIsTagged() = runTest(dispatcher) {
+    fun untaggedSessionHasNoPlaceTag() = runTest(dispatcher) {
         val repo = MultiSessionFakeChatRepository().apply {
             seed(id = 1L, title = "Untagged", ts = 100L, placeId = null)
         }
-        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
-        val vm = viewModel(repo, weather)
+        val vm = viewModel(repo)
         advanceUntilIdle()
 
-        assertEquals(listOf<String?>(null), vm.uiState.value.contextChips.map { it.placeName })
+        assertNull(vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun switchingToPlaceTaggedSessionUpdatesPlaceTag() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Tarifa: gusts?", ts = 100L, placeId = "Tarifa")
+            seed(id = 2L, title = "General", ts = 200L, placeId = null) // newest → active on init
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.currentPlaceTag) // started on the untagged session
+
+        vm.switchToSession(1L)
+        advanceUntilIdle()
+
+        assertEquals("Tarifa", vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun startingNewChatClearsPlaceTag() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        // Init defaults to a general session; switch into the place chat to get a tag first.
+        vm.switchToSession(1L)
+        advanceUntilIdle()
+        assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
+
+        vm.startNewChat()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.currentPlaceTag)
+    }
+
+    // --- Place → Chat entry point (direct fix per Kimmo) ---
+
+    @Test
+    fun openPlaceChatSwitchesToExistingTaggedSession() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Untagged", ts = 100L)
+            seed(id = 2L, title = "Helsinki: wind?", ts = 200L, placeId = "Helsinki", messages = listOf(
+                ChatMessage(role = MessageRole.USER, content = "how windy in Helsinki?")
+            ))
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(2L, state.activeSessionId)
+        assertEquals(listOf("how windy in Helsinki?"), state.messages.map { it.content })
+        assertFalse(state.isSessionSwitcherOpen)
+    }
+
+    @Test
+    fun openPlaceChatCreatesNewTaggedSessionWhenNoneExists() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Oulu chat", ts = 100L, placeId = "Oulu")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        val newId = state.activeSessionId!!
+        // Fresh session, tagged with the requested place, showing only the greeting.
+        assertEquals("Helsinki", repo.sessionPlaceId(newId))
+        assertEquals(1, state.messages.size)
+        assertEquals(MessageRole.ASSISTANT, state.messages.single().role)
+        assertFalse(state.isSessionSwitcherOpen)
+    }
+
+    @Test
+    fun openPlaceChatReusesSessionOnReentryRatherThanCreatingDuplicates() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository()
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+        val firstId = vm.uiState.value.activeSessionId
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+        val secondId = vm.uiState.value.activeSessionId
+
+        assertEquals(firstId, secondId, "re-entering the same place must reuse its session")
     }
 
     @Test
@@ -271,10 +366,12 @@ private class MultiSessionFakeChatRepository : ChatRepository {
 
     override suspend fun createSession(placeId: String?): Long {
         val id = nextId++
-        sessions[id] = Session(id, ChatSessionLogic.DEFAULT_TITLE, id, mutableListOf())
+        sessions[id] = Session(id, ChatSessionLogic.DEFAULT_TITLE, id, mutableListOf(), placeId)
         currentId = id
         return id
     }
+
+    fun sessionPlaceId(id: Long): String? = sessions[id]?.placeId
 
     override suspend fun switchToSession(sessionId: Long): List<ChatMessage>? {
         val session = sessions[sessionId] ?: return null

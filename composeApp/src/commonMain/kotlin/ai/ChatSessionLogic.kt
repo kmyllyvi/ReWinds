@@ -105,21 +105,15 @@ object ChatSessionLogic {
         sessionsNewestFirst.firstOrNull { it.placeId == null }?.id
 
     /**
-     * Derives the place names that should appear as context chips: only places that
-     * actually have at least one chat session tagged with them. A saved place with zero
-     * tagged sessions is excluded, because selecting its chip would filter to an empty
-     * list (the bug this fixes).
+     * Resolves which session a "Ask AI about this place" intent should land on.
      *
-     * @param savedPlaceNames all places the user has saved (chip source / display order)
-     * @param taggedPlaceIds the `placeId` of every saved session (nulls are ignored)
-     * @return [savedPlaceNames] filtered to those present in [taggedPlaceIds], order preserved
+     * Returns the id of the most-recent existing session already tagged with [placeId],
+     * or null when none exists — in which case the caller creates a fresh session tagged
+     * with that place. [sessions] is newest-activity-first (the [ChatSessionSummary]
+     * ordering contract), so the first match is the most recent.
      */
-    fun placesWithSessions(
-        savedPlaceNames: List<String>,
-        taggedPlaceIds: List<String?>
-    ): List<String> {
-        val tagged = taggedPlaceIds.filterNotNull().toSet()
-        return savedPlaceNames.filter { it in tagged }
+    fun resolveSessionForPlace(placeId: String, sessions: List<ChatSessionSummary>): Long? {
+        return sessions.firstOrNull { it.placeId == placeId }?.id
     }
 
     private fun truncate(raw: String): String? {

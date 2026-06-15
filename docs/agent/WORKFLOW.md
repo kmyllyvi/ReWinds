@@ -82,19 +82,26 @@ Linear tools: `mcp__linear-server__get_issue`, `list_issues`, `save_issue`. Team
 
 ## Acceptance criteria
 - [ ] <observable, testable, one behaviour per line — code-reviewer ticks these>
+- [ ] <if this ticket is exempt from the standard "new tests required" DoD item, say so here with
+      the reason, e.g. "No new tests required — pure annotation of existing Composables, no new
+      logic">
 
 ## Definition of done
 - [ ] Builds on Android (`./gradlew buildAndroidOnly`)
 - [ ] Tests pass (`./gradlew :composeApp:testDebugUnitTest`)
-- [ ] New tests written in the same commit for all non-trivial logic (ViewModel, Repository, pure functions, bug fixes). No "tests later". Exempt only: pure UI styling, config/doc-only changes — state the reason explicitly.
+- [ ] New tests written in the same commit for all non-trivial logic (ViewModel, Repository, pure functions, bug fixes). No "tests later". Exempt only: pure UI styling, config/doc-only changes — see AC for this ticket's exemption status.
 - [ ] No MV* violations (see ARCHITECTURE-RULES.md)
 - [ ] No new lint violations
-- [ ] <issue-specific items>
 
 ## Notes
 Priority set by po (Kimmo reranks freely); size proposed — Kimmo decides scope at Gate 1.
 Reviewers needed: code-reviewer [+ qa-test-agent if logic-heavy] [+ ux-ui-reviewer if UI]
 ```
+
+The five DoD bullets above are **generic and standard for every ticket** — po should not rewrite or
+restate them per ticket (they're project-wide policy, not per-issue content). Anything
+ticket-specific (including exemptions to the "new tests required" rule) belongs in
+**Acceptance criteria**, not DoD.
 
 ### Dev → Review handover convention
 
