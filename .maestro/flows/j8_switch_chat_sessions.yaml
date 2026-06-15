@@ -1,0 +1,29 @@
+# J8 — Switch between chat sessions (KIM-291 P0)
+#
+# Preconditions: at least two chat sessions exist. This flow seeds the second
+#   session via "New chat" (CHAT_NEW_SESSION_BUTTON) so it is self-contained.
+# Expected: the session switcher bottom sheet lists sessions; tapping a non-active
+#   session row dismisses the sheet and loads that session's messages.
+appId: ${APP_ID}
+---
+- launchApp
+- tapOn:
+    id: "tab_chat"                       # TestTags.TAB_CHAT
+# Seed a second session so the list has more than one entry to switch between.
+- tapOn:
+    id: "chat_session_switcher_button"   # TestTags.CHAT_SESSION_SWITCHER_BUTTON
+- assertVisible:
+    id: "chat_session_list"              # TestTags.CHAT_SESSION_LIST
+- tapOn:
+    id: "chat_new_session_button"        # TestTags.CHAT_NEW_SESSION_BUTTON
+# Re-open the switcher; now expect at least one selectable session row.
+- tapOn:
+    id: "chat_session_switcher_button"
+- assertVisible:
+    id: "chat_session_list_item"         # TestTags.CHAT_SESSION_LIST_ITEM
+- tapOn:
+    id: "chat_session_list_item"
+    index: 0
+# Sheet dismisses; we are back on the chat surface (message list visible).
+- assertVisible:
+    id: "chat_message_list"              # TestTags.CHAT_MESSAGE_LIST

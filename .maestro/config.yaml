@@ -1,0 +1,13 @@
+# Maestro suite-level config (KIM-294)
+#
+# Applied to every flow in this directory. Keep flow-local `appId`/selectors
+# referencing the constants documented in .maestro/README.md.
+#
+# `flows` scopes `maestro test .maestro/` to the smoke suite only, so stray
+# scratch files in this tree are never picked up by a full-suite run.
+flows:
+  - flows/*.yaml
+
+# Selector defaults. The app tags elements via core/TestTags.kt; those values
+# are used as Maestro `id:` selectors. `id:` matches Android testTag and iOS
+# accessibilityIdentifier, which Compose Multiplatform maps testTag onto for both.

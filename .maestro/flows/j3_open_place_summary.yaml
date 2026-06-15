@@ -1,0 +1,24 @@
+# J3 — Open a saved place's summary (KIM-291 P0)
+#
+# Preconditions: at least one saved place. This flow runs J2 first so it is
+#   self-contained against a fresh install; if a seeded place already exists,
+#   the runForFlow is harmless (it just adds another place).
+# Expected: tapping a PlaceRow navigates to PlaceSummaryView; the year selector
+#   strip and month grid render; back returns to Home.
+appId: ${APP_ID}
+---
+- launchApp
+# Ensure at least one place exists before opening a summary.
+- runFlow: j2_add_place_via_search.yaml
+- tapOn:
+    id: "home_place_row"                 # TestTags.HOME_PLACE_ROW
+- extendedWaitUntil:
+    visible:
+      id: "place_year_selector"          # TestTags.PLACE_YEAR_SELECTOR
+    timeout: 15000
+- assertVisible:
+    id: "place_month_grid"               # TestTags.PLACE_MONTH_GRID
+# Back navigation returns to Home (search field is Home-only).
+- back
+- assertVisible:
+    id: "home_search_field"              # TestTags.HOME_SEARCH_FIELD

@@ -1,0 +1,31 @@
+# J6 — Ask the AI chat a weather question and receive a response (KIM-291 P0)
+#
+# Preconditions: Anthropic API key configured (see README "Test data / keys")
+#   and at least one place exists.
+# Expected: typing a question + tapping send adds a user bubble immediately, then
+#   an assistant bubble after the response; the input field clears.
+#
+# NOTE: J6 requires a working Anthropic key and network. In CI this hits the live
+#   Anthropic API (cost + latency) — that is why this suite is nightly/pre-release
+#   only, not per-PR. If no key is provisioned the run will surface the J7 dialog
+#   instead; keep J6 and J7 runs separated by key state.
+appId: ${APP_ID}
+---
+- launchApp
+- tapOn:
+    id: "tab_chat"                       # TestTags.TAB_CHAT
+- assertVisible:
+    id: "chat_message_list"              # TestTags.CHAT_MESSAGE_LIST
+# The static place-tag pill (KIM-287) confirms chat context is bound to a place.
+- assertVisible:
+    id: "chat_place_tag_pill"            # TestTags.CHAT_PLACE_TAG_PILL
+- tapOn:
+    id: "chat_input_field"               # TestTags.CHAT_INPUT_FIELD
+- inputText: "What's the wind forecast for Helsinki?"
+- hideKeyboard                           # iOS: unobscure send button; Android: no-op
+- tapOn:
+    id: "chat_send_button"               # TestTags.CHAT_SEND_BUTTON
+# Assistant reply arrives asynchronously; allow generous time for the API round-trip.
+- extendedWaitUntil:
+    visible: "Helsinki"                  # response references the queried place
+    timeout: 60000
