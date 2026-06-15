@@ -92,6 +92,18 @@ object ChatSessionLogic {
     }
 
     /**
+     * Resolves which session a "Ask AI about this place" intent should land on.
+     *
+     * Returns the id of the most-recent existing session already tagged with [placeId],
+     * or null when none exists — in which case the caller creates a fresh session tagged
+     * with that place. [sessions] is newest-activity-first (the [ChatSessionSummary]
+     * ordering contract), so the first match is the most recent.
+     */
+    fun resolveSessionForPlace(placeId: String, sessions: List<ChatSessionSummary>): Long? {
+        return sessions.firstOrNull { it.placeId == placeId }?.id
+    }
+
+    /**
      * Derives the place names that should appear as context chips: only places that
      * actually have at least one chat session tagged with them. A saved place with zero
      * tagged sessions is excluded, because selecting its chip would filter to an empty
