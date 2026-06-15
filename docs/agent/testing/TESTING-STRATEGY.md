@@ -18,6 +18,33 @@
 
 ---
 
+## Layered UI testing strategy
+
+> The unit/integration plan in the rest of this document predates the UI testing
+> epic (**KIM-289**). The sections below remain the plan for **logic** coverage.
+> For **UI** coverage, the epic defines a three-layer model — deterministic gates
+> on the inside, exploratory discovery on the outside:
+
+| Layer | Suite                                    | Scope                                      | When it runs                     | Gates? | Reference / location                                  |
+| ----- | ---------------------------------------- | ------------------------------------------ | -------------------------------- | ------ | ----------------------------------------------------- |
+| **1** | **Compose semantic UI tests** (KIM-293)  | Single-screen behaviour, Android           | **Every PR**                     | Yes    | `composeApp/src/androidUnitTest/` (Robolectric)       |
+| **2** | **Maestro E2E smoke suite** (KIM-294)    | End-to-end critical journeys, Android + iOS| **Manual / release to master**   | Yes (release) | `.maestro/flows/`, [`.maestro/README.md`](../../../.maestro/README.md) |
+| **3** | **Agentic exploratory testing** (KIM-296)| Unscripted "click around like a human"     | **Periodic, manual**             | **No** | [`AGENTIC-EXPLORATORY-TESTING.md`](./AGENTIC-EXPLORATORY-TESTING.md) |
+
+**How the layers relate.** Layers 1 and 2 lock down journeys we already know
+about (the 5–10 critical journeys defined in **KIM-291**). Layer 3 — a
+human-triggered vision/computer-use agent exercising the running app without a
+script — is for finding the broken states we _haven't_ thought of yet. Its
+findings feed back **inward**: a confirmed bug becomes a Linear ticket, and a
+recurring or critical-path bug is promoted into a Maestro flow (Layer 2) or a
+Compose semantic test (Layer 1) so it can never silently regress. Layer 3 is
+explicitly **non-CI-gating** — it never blocks a PR or a release. See
+[`AGENTIC-EXPLORATORY-TESTING.md`](./AGENTIC-EXPLORATORY-TESTING.md) for the full
+runbook, seed exploration goals, cadence, feedback loop, and cost budget — the
+direct answer to **KIM-288**.
+
+---
+
 ## 1. Current Test Coverage Analysis
 
 ### 1.1 Existing Test Inventory
