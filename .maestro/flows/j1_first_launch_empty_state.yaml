@@ -1,0 +1,19 @@
+# J1 — First launch / empty state with no API keys configured (KIM-291 P0)
+#
+# Preconditions: fresh install, no places saved, no Anthropic/Visual Crossing keys.
+#   `clearState` gives us the fresh-install precondition deterministically.
+# Expected: Home renders with search field, empty place list, and the VC key nudge
+#   banner (since isWeatherKeyConfigured == false). No crash, no error dialog.
+appId: ${APP_ID}
+---
+- clearState
+- launchApp
+# Home tab is the default landing tab.
+- assertVisible:
+    id: "home_search_field"              # TestTags.HOME_SEARCH_FIELD
+# VC key nudge is non-dismissible while the Visual Crossing key is unset.
+- assertVisible:
+    id: "home_vc_key_nudge_action"       # TestTags.HOME_VC_KEY_NUDGE_ACTION
+# Empty state: no saved places means no PlaceRow is present.
+- assertNotVisible:
+    id: "home_place_row"                 # TestTags.HOME_PLACE_ROW

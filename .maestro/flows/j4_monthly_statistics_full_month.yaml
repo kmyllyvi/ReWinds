@@ -1,0 +1,34 @@
+# J4 — View monthly statistics for a FULL (downloaded) month (KIM-291 P0)
+#
+# Preconditions: place summary open with at least one month cell in FULL state.
+# Expected: tapping a FULL month cell navigates to MonthlyStatisticsView and the
+#   stat card grid + day list render without error.
+#
+# SELECTOR GAP (called out per KIM-294 AC): TestTags.PLACE_MONTH_CELL is
+#   intentionally non-indexed and state-agnostic — there is NO TestTags constant
+#   that distinguishes a FULL cell from a NO_DATA cell. Maestro cannot pick "a
+#   FULL cell" by id alone. This flow taps the first month cell and asserts on
+#   the destination; for a deterministic FULL-month precondition the runner must
+#   seed downloaded data first (see README "Test data / keys"). If month cells
+#   later gain a state-encoded testTag (KIM-290 follow-up), replace `index: 0`
+#   with that id.
+appId: ${APP_ID}
+---
+- launchApp
+- runFlow: j3_open_place_summary.yaml
+- tapOn:
+    id: "home_place_row"                 # re-open the summary after J3 returned Home
+- extendedWaitUntil:
+    visible:
+      id: "place_month_grid"             # TestTags.PLACE_MONTH_GRID
+    timeout: 15000
+# No state-specific selector exists; tap the first cell (precondition: seeded FULL).
+- tapOn:
+    id: "place_month_cell"               # TestTags.PLACE_MONTH_CELL
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "month_stat_card_grid"         # TestTags.MONTH_STAT_CARD_GRID
+    timeout: 15000
+- assertVisible:
+    id: "month_day_list"                 # TestTags.MONTH_DAY_LIST

@@ -1,0 +1,33 @@
+# J7 — Chat blocked when Anthropic API key is missing (KIM-291 P0)
+#
+# Preconditions: no Anthropic API key configured. `clearState` guarantees this.
+# Expected: typing + send raises the "API Key Not Configured" dialog; tapping
+#   "Go to Settings" navigates to SettingsView and dismisses the dialog.
+#
+# SELECTOR GAP (called out per KIM-294 AC): the API-key-missing AlertDialog in
+#   ChatView (ChatView.kt:203) has NO TestTags on its title or "Go to Settings"
+#   button — there is no TestTags constant for it. Per "don't invent ad-hoc
+#   selectors silently", this flow falls back to localized text for the dialog
+#   only. Adding CHAT_API_KEY_DIALOG_* constants is KIM-290 follow-up territory.
+#
+# LOCALE FORK: text selectors assume English ("API Key Not Configured" / "Go to
+#   Settings"). German: "API-Schlüssel nicht konfiguriert" / "Zu Einstellungen".
+#   Run with the device locale set to English, or swap these strings.
+appId: ${APP_ID}
+---
+- clearState                             # ensure no Anthropic key persisted
+- launchApp
+- tapOn:
+    id: "tab_chat"                       # TestTags.TAB_CHAT
+- tapOn:
+    id: "chat_input_field"               # TestTags.CHAT_INPUT_FIELD
+- inputText: "Will it rain tomorrow?"
+- hideKeyboard
+- tapOn:
+    id: "chat_send_button"               # TestTags.CHAT_SEND_BUTTON
+# GAP fallback: dialog has no testTag — match localized title + action text.
+- assertVisible: "API Key Not Configured"
+- tapOn: "Go to Settings"
+# Navigation landed on Settings — assert via a Settings testTag (locale-independent).
+- assertVisible:
+    id: "settings_anthropic_key_row"     # TestTags.SETTINGS_ANTHROPIC_KEY_ROW

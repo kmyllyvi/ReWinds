@@ -1,0 +1,42 @@
+# J5 — Download missing days for a NO_DATA month (KIM-291 P0)
+#
+# Preconditions: place summary open with at least one month cell in NO_DATA state
+#   (a fresh place with no downloaded data satisfies this).
+# Expected: tapping a NO_DATA cell opens the "Download full month?" dialog;
+#   tapping Download dismisses it without crashing.
+#
+# SELECTOR GAPS (called out per KIM-294 AC):
+#   1. State-agnostic month cell — same gap as J4: no TestTags constant marks a
+#      cell as NO_DATA. A fresh, never-downloaded place makes the first cell
+#      NO_DATA, so we tap index 0 (see README "Test data / keys").
+#   2. DownloadMissingDaysDialog (PlaceSummaryView.kt:181) has NO TestTags on its
+#      title, Download, or Cancel elements. There is no TestTags constant for
+#      this dialog. Per the ticket's "don't invent ad-hoc selectors silently"
+#      rule, this is an explicit fallback to localized text matching. Adding
+#      DOWNLOAD_DIALOG_* constants is KIM-290 follow-up territory.
+#
+# PLATFORM/LOCALE FORK: the text selectors below assume English ("Download full
+#   month?" / "Download"). Under German locale they are "Ganzen Monat
+#   herunterladen?" / "Download". Run the suite with the simulator/emulator set
+#   to English, or swap these strings. testTag-based selectors (the rest of the
+#   suite) are locale-independent; these two are the exception forced by the gap.
+appId: ${APP_ID}
+---
+- launchApp
+- runFlow: j3_open_place_summary.yaml
+- tapOn:
+    id: "home_place_row"
+- extendedWaitUntil:
+    visible:
+      id: "place_month_grid"             # TestTags.PLACE_MONTH_GRID
+    timeout: 15000
+# NO_DATA precondition: first cell of a fresh place has no downloaded data.
+- tapOn:
+    id: "place_month_cell"               # TestTags.PLACE_MONTH_CELL
+    index: 0
+# GAP fallback: dialog has no testTag — match the localized title text.
+- assertVisible: "Download full month?"
+- tapOn: "Download"                       # confirmButton (no testTag available)
+# Dialog dismisses; we are back on the summary's month grid, no crash.
+- assertVisible:
+    id: "place_month_grid"

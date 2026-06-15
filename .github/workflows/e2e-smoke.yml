@@ -1,0 +1,118 @@
+name: E2E Smoke Suite
+
+# Layer 2 of the UI testing strategy (KIM-294). Runs the Maestro P0 smoke suite
+# against a built app on an emulator/simulator. Deliberately NOT wired to PRs —
+# these are slow and J6 hits the live Anthropic API. Per-PR gating is KIM-293.
+#
+# Trigger cadence (KIM-294): manual + on release-to-master only. No nightly cron —
+# this is a private repo on GitHub's free plan where macOS runners bill 10x and
+# even the Android emulator job costs real minutes; nightly would burn the ~200
+# min/month budget on a low-traffic personal project for no benefit.
+on:
+  push:
+    branches: [master]          # runs when a release lands on master
+  workflow_dispatch:            # manual pre-release / on-demand trigger
+
+env:
+  MAESTRO_VERSION: "1.39.0"     # keep in sync with .maestro/README.md
+
+jobs:
+  android-e2e:
+    name: Android E2E (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: ./gradlew :composeApp:assembleDebug -PincludeAllTargets=false --no-daemon --stacktrace
+
+      - name: Install pinned Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION="${MAESTRO_VERSION}" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Enable KVM (emulator acceleration)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Maestro suite on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Provisioned in repo secrets so search (J2/J3) and chat (J6) work.
+          # Absent secrets degrade gracefully: J6 falls back to the J7 path.
+          MAESTRO_APP_ANTHROPIC_KEY: ${{ secrets.E2E_ANTHROPIC_API_KEY }}
+          MAESTRO_APP_WEATHER_KEY: ${{ secrets.E2E_VISUAL_CROSSING_API_KEY }}
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            adb install -r composeApp/build/outputs/apk/debug/*.apk
+            export APP_ID=com.km.rewinds
+            maestro test .maestro/ --format junit --output maestro-report.xml
+
+      - name: Upload Maestro report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-android-report
+          path: |
+            maestro-report.xml
+            ~/.maestro/tests/**
+          retention-days: 14
+
+  # iOS runs on a macOS runner. Kept separate (and allowed to be added later) so a
+  # missing simulator/codesign setup never blocks the Android job. KIM-295 uses
+  # these results as the evidence for the "Maestro-only for iOS" decision.
+  ios-e2e:
+    name: iOS E2E (simulator)
+    runs-on: macos-14
+    timeout-minutes: 75
+    # Opt-in until simulator provisioning + signing are wired up; flip to always-on
+    # once the first green simulator run is confirmed (tracked under KIM-295).
+    if: ${{ vars.ENABLE_IOS_E2E == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pinned Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION="${MAESTRO_VERSION}" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Build & install on booted simulator
+        run: |
+          xcrun simctl boot "iPhone 15" || true
+          xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp \
+            -configuration Debug -sdk iphonesimulator -derivedDataPath build
+          xcrun simctl install booted \
+            build/Build/Products/Debug-iphonesimulator/iosApp.app
+
+      - name: Run Maestro suite on simulator
+        run: |
+          export APP_ID="$(xcrun simctl listapps booted | grep -i rewinds | head -1 | sed -E 's/.*"([^"]*rewinds[^"]*)".*/\1/')"
+          maestro test .maestro/ --format junit --output maestro-report.xml
+
+      - name: Upload Maestro report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-ios-report
+          path: |
+            maestro-report.xml
+            ~/.maestro/tests/**
+          retention-days: 14

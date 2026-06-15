@@ -1,0 +1,26 @@
+# J2 — Add a place via search (KIM-291 P0)
+#
+# Preconditions: app launched, Home tab active, network reachable, a Visual
+#   Crossing key configured so search resolves (see README "Test data / keys").
+# Expected: typing a query surfaces suggestions; tapping one adds a PlaceRow.
+#
+# PLATFORM FORK (keyboard): on iOS the software keyboard can overlap the
+#   suggestion list. `hideKeyboard` after typing is a no-op on Android but keeps
+#   the iOS suggestion list tappable. It is safe to run on both platforms.
+appId: ${APP_ID}
+---
+- launchApp
+- tapOn:
+    id: "home_search_field"              # TestTags.HOME_SEARCH_FIELD
+- inputText: "Helsinki"
+- hideKeyboard                           # iOS: reveal suggestions; Android: no-op
+# Search is async (isSearching -> results); wait for the suggestion to resolve.
+- extendedWaitUntil:
+    visible:
+      id: "home_search_suggestion"       # TestTags.HOME_SEARCH_SUGGESTION
+    timeout: 15000
+- tapOn:
+    id: "home_search_suggestion"
+# The newly added place appears as a row in the list.
+- assertVisible:
+    id: "home_place_row"                 # TestTags.HOME_PLACE_ROW
