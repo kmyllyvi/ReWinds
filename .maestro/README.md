@@ -10,7 +10,8 @@ Compose maps `Modifier.testTag(...)` onto the Android `testTag` and the iOS
 `accessibilityIdentifier`, so the same `id:` selector works on both platforms.
 
 > These flows run against a **built app + emulator/simulator**. They are slow and
-> (for J6) hit the live Anthropic API, so they run **nightly / pre-release only**,
+> (for J6) hit the live Anthropic API, so they run **manually / on release to
+> master only** (no nightly cron — keeps CI minutes in budget on the free plan),
 > never on every PR. Per-PR UI gating is KIM-293 (Compose semantic tests).
 
 ## Pinned Maestro version
@@ -31,7 +32,7 @@ maestro --version   # must print 1.39.0
 brew install maestro
 ```
 
-CI installs the same pinned version (see `.github/workflows/nightly-e2e.yml`).
+CI installs the same pinned version (see `.github/workflows/e2e-smoke.yml`).
 
 ## App id (`${APP_ID}`)
 

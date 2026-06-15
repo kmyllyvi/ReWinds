@@ -1,12 +1,17 @@
-name: Nightly E2E (Maestro)
+name: E2E Smoke Suite
 
 # Layer 2 of the UI testing strategy (KIM-294). Runs the Maestro P0 smoke suite
 # against a built app on an emulator/simulator. Deliberately NOT wired to PRs —
 # these are slow and J6 hits the live Anthropic API. Per-PR gating is KIM-293.
+#
+# Trigger cadence (KIM-294): manual + on release-to-master only. No nightly cron —
+# this is a private repo on GitHub's free plan where macOS runners bill 10x and
+# even the Android emulator job costs real minutes; nightly would burn the ~200
+# min/month budget on a low-traffic personal project for no benefit.
 on:
-  schedule:
-    - cron: "0 3 * * *"        # nightly at 03:00 UTC
-  workflow_dispatch:            # manual pre-release trigger
+  push:
+    branches: [master]          # runs when a release lands on master
+  workflow_dispatch:            # manual pre-release / on-demand trigger
 
 env:
   MAESTRO_VERSION: "1.39.0"     # keep in sync with .maestro/README.md
@@ -71,7 +76,7 @@ jobs:
           retention-days: 14
 
   # iOS runs on a macOS runner. Kept separate (and allowed to be added later) so a
-  # missing simulator/codesign setup never blocks the Android nightly. KIM-295 uses
+  # missing simulator/codesign setup never blocks the Android job. KIM-295 uses
   # these results as the evidence for the "Maestro-only for iOS" decision.
   ios-e2e:
     name: iOS E2E (simulator)

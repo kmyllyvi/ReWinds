@@ -244,3 +244,31 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   - `AppStringsCompletenessTest` - German strings not blank
   - `AppStringsGermanNotEnglishTest` - German differs from English
   - `LanguageManagerTest` - StateFlow updates correctly
+
+## Chat place pill testTag (post KIM-287 / KIM-290)
+- KIM-287 (PR #27) replaced the interactive `ContextChipRow`/`ContextChip` composables in
+  `ai/ChatView.kt` with a single static `PlaceTagPill(placeName: String)` (display-only; switching
+  chats is the session switcher's job, KIM-286).
+- testTag for it: `TestTags.CHAT_PLACE_TAG_PILL` ("chat_place_tag_pill"), on PlaceTagPill's root Row.
+  The old `CHAT_CONTEXT_CHIP_ROW` / `CHAT_CONTEXT_CHIP` constants were removed — do not reintroduce.
+- `ChatLayoutTest.kt` lives in androidInstrumentedTest (NOT commonTest), uses text matching, runs via
+  connectedAndroidTest — it is NOT executed by `:composeApp:testDebugUnitTest`.
+
+## Maestro E2E suite (KIM-294)
+- Lives in `.maestro/`: 8 flows (J1-J8 from KIM-291) + `config.yaml` (scopes runs to `flows/*.yaml`).
+  Pinned Maestro **1.39.0**; run manually / on release-to-master only via
+  `.github/workflows/e2e-smoke.yml` (push:[master] + workflow_dispatch, NOT per-PR; no nightly
+  cron — saves CI minutes on free plan). Per-PR UI gating is KIM-293 (Compose semantic tests).
+- Cross-platform via `appId: ${APP_ID}`. Android `com.km.rewinds`; iOS bundle id is
+  `${BUNDLE_ID}${TEAM_ID}` (base `com.km.rewinds` + Apple TEAM_ID suffix). Resolve installed iOS id:
+  `xcrun simctl listapps booted | grep -i rewinds`. Selectors are TestTags constants used as `id:`.
+- TestTags GAPS (no constant exists → flows use commented text/index fallback, documented in
+  `.maestro/README.md`): month-cell FULL/NO_DATA state (PLACE_MONTH_CELL is state-agnostic),
+  DownloadMissingDaysDialog (PlaceSummaryView.kt:181), chat API-key dialog (ChatView.kt:203).
+  Candidate KIM-290 follow-up to add `PLACE_MONTH_CELL_FULL/_NO_DATA`, `DOWNLOAD_DIALOG_*`,
+  `CHAT_API_KEY_DIALOG_*`.
+- App identifiers: Android applicationId/namespace `com.km.rewinds` (composeApp/build.gradle.kts);
+  iOS base bundle in `iosApp/Configuration/Config.xcconfig` (`BUNDLE_ID=com.km.rewinds`), TEAM_ID in
+  `iosApp/Config.local.xcconfig`.
+- gh tip: PR/commit bodies with apostrophes break bash heredocs — write to a temp file and use
+  `gh pr create --body-file`.

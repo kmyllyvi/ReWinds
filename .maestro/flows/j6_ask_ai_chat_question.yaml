@@ -6,8 +6,8 @@
 #   an assistant bubble after the response; the input field clears.
 #
 # NOTE: J6 requires a working Anthropic key and network. In CI this hits the live
-#   Anthropic API (cost + latency) — that is why this suite is nightly/pre-release
-#   only, not per-PR. If no key is provisioned the run will surface the J7 dialog
+#   Anthropic API (cost + latency) — that is why this suite is manual / release-to-
+#   master only, not per-PR. If no key is provisioned the run will surface the J7 dialog
 #   instead; keep J6 and J7 runs separated by key state.
 appId: ${APP_ID}
 ---
