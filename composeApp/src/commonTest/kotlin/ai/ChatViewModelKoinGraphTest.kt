@@ -45,7 +45,7 @@ class ChatViewModelKoinGraphTest {
             modules(
                 module {
                     single<WeatherRepository> { GraphFakeWeatherRepository() }
-                    single { AiRepository(AnthropicClient(apiKey = "test", enableLogs = false), WeatherTools, get()) }
+                    single<AiConversationRepository> { AiRepository(AnthropicClient(apiKey = "test", enableLogs = false), WeatherTools, get()) }
                     single<ChatRepository> { FakeChatRepository() }
 
                     // Must match DI.kt: explicit lambda, NOT viewModelOf. No

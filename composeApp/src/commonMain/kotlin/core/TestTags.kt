@@ -23,8 +23,14 @@ object TestTags {
     const val TAB_CHAT = "tab_chat"
     const val TAB_SETTINGS = "tab_settings"
 
+    // ── Shared components ───────────────────────────────────────────────────────
+    /** Title Text inside the reusable AppHeader. Same tag on every screen's header. */
+    const val APP_HEADER_TITLE = "app_header_title"
+
     // ── Chat ───────────────────────────────────────────────────────────────────
     const val CHAT_MESSAGE_LIST = "chat_message_list"
+    /** A single rendered chat message bubble (user or assistant). Non-indexed; select by content. */
+    const val CHAT_MESSAGE_BUBBLE = "chat_message_bubble"
     const val CHAT_INPUT_FIELD = "chat_input_field"
     const val CHAT_SEND_BUTTON = "chat_send_button"
     const val CHAT_SESSION_SWITCHER_BUTTON = "chat_session_switcher_button"

@@ -272,3 +272,27 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   `iosApp/Config.local.xcconfig`.
 - gh tip: PR/commit bodies with apostrophes break bash heredocs — write to a temp file and use
   `gh pr create --body-file`.
+
+## Compose semantic UI tests (KIM-293, Layer 1) — canonical pattern
+- Doc: `composeApp/src/androidInstrumentedTest/README.md`. Tests in `uitest/` package; shared fakes
+  in `uitest/Fakes.kt` (FakeWeatherRepository, FakeAiConversationRepository, FakeChatRepository,
+  FakeDatabase). Run: `./gradlew :composeApp:connectedDebugAndroidTest` (needs emulator).
+  Compile-only check (no device): `./gradlew :composeApp:compileDebugAndroidTestKotlin`.
+- androidInstrumentedTest does NOT see commonTest. Shared doubles visible to both go in
+  `src/commonTestFixtures/kotlin` (added to commonTest `kotlin.srcDir` AND android `androidTest`
+  srcDirs in build.gradle.kts). FakeNavigator was moved there from commonTest.
+- Every screen composable takes vm + navigator as params → build the REAL ViewModel from fakes and
+  pass it directly (no Koin singleton → order-independent). koinViewModel() only used if no vm arg.
+- Testability seams added: `ai.AiConversationRepository` interface (AiRepository implements it;
+  ChatViewModel depends on the interface so chat is fakeable w/o Anthropic network). DI binds
+  `single<AiConversationRepository> { AiRepository(...) }`. `core.ApiKeyChecker` fun interface +
+  `PlatformApiKeyChecker` default, injected into ChatViewModel & SettingsViewModel so the Anthropic
+  key present/absent branch is deterministic (no SharedPreferences/BuildConfig dependence).
+- Koin: SettingsViewModel switched viewModelOf→`viewModel { SettingsViewModel(get(), get()) }` so the
+  defaulted apiKeyChecker isn't resolved by reflection (same reason ChatViewModel uses a lambda).
+- Compose merged-tree gotcha: a clickable Row merges descendant Text into its own node. Assert a
+  row's chip via `hasTestTag(...).and(hasText(chip, substring=true))` on the merged tree —
+  hasAnyDescendant(hasText) finds nothing. `assertExists()`/`onNode`/`onAllNodes` are MEMBERS
+  (no import); assertIsDisplayed/assertCountEquals/performClick are extension imports.
+- New shared tags: `TestTags.APP_HEADER_TITLE` (AppHeader title), `TestTags.CHAT_MESSAGE_BUBBLE`
+  (ChatMessageBubble) — added for the ChatLayoutTest tag migration.

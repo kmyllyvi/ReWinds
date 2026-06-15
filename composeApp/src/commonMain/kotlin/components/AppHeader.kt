@@ -19,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import core.LocalAppStrings
+import core.TestTags
 import core.isIOS
 import ui.components.IsobarLogo
 import ui.theme.rewinds
@@ -93,7 +95,8 @@ fun AppHeader(
                     else
                         MaterialTheme.typography.headlineSmall,
                     fontWeight = titleFontWeight,
-                    color = MaterialTheme.rewinds.textPrimary
+                    color = MaterialTheme.rewinds.textPrimary,
+                    modifier = Modifier.testTag(TestTags.APP_HEADER_TITLE)
                 )
             }
 
