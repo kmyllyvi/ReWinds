@@ -3,6 +3,7 @@ package core
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -121,7 +122,12 @@ fun Navigation() {
                 TabBar(activeTab = activeTab, onTabSelected = tabVm::selectTab)
             }
         ) { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+            ) {
                 when (activeTab) {
                     AppTab.PLACES   -> HomeView(navigator = placesNavigatorDelegate)
                     AppTab.CHAT     -> {
