@@ -16,6 +16,11 @@
 
 **Strategic Approach:** Prioritize high-value unit tests for ViewModels (easily testable) while building platform-specific tests for iOS/Android boundary conditions.
 
+> **iOS UI testing decision (KIM-295):** iOS UI coverage is delivered by the
+> cross-platform **Maestro** E2E suite, not a native Kotlin/Native Compose UI
+> test target. See [§5.1 iOS Testing](#51-ios-testing) for the decision record
+> and [`.maestro/README.md`](../../../.maestro/README.md) for the suite itself.
+
 ---
 
 ## 1. Current Test Coverage Analysis
@@ -220,7 +225,7 @@
 1. **HomeView Compose Tests** (3 hours) - Android UI
 2. **PlaceSummaryView Tests** (2.5 hours) - Android UI
 3. **Navigation UI Tests** (2 hours) - E2E
-4. **iOS Manual UI Tests** (Setup) - In Xcode
+4. **iOS UI coverage** — via the Maestro E2E suite (see §5.1 decision / `.maestro/`), not a native Gradle/Xcode UI target
 5. **Large Dataset Tests** (1 hour) - Performance baseline
 6. **Transaction Consistency Tests** (1.5 hours) - Database
 
@@ -234,7 +239,7 @@
 - **Focus**: Performance, edge cases, all UI flows
 
 ### 4.2 Additions
-1. **iOS UI Tests** (10 tests) - In Xcode
+1. **iOS UI Tests** — covered by the Maestro E2E suite (see §5.1 decision / `.maestro/`), not a native Xcode/Gradle UI target
 2. **Performance Baseline Tests** (5 tests)
 3. **Edge Case Coverage** (comprehensive)
 4. **Documentation & Patterns** (test guide)
@@ -245,37 +250,54 @@
 
 ### 5.1 iOS Testing
 
-**Challenges & Solutions**:
-- **Kotlin/Native Compilation**: 40+ minutes first run
-  - Solution: Use conditional test targets, iOS subset only
-  - Status: ✅ Already implemented
+#### iOS UI test approach — DECISION (KIM-295)
 
-- **Memory Constraints**: 6GB heap limitation
-  - Solution: Keep iOS tests minimal, feature gating
-  - Status: ✅ Existing approach working
+**Decision: Maestro is the primary (and only) iOS UI test path. No native
+`iosSimulatorArm64` Compose UI test target is pursued for UI testing.**
 
-- **Simulator-Only Testing**: Device builds fail
-  - Solution: Use arm64 simulator
-  - Command: `./gradlew :composeApp:iosSimulatorArm64Test`
+The cross-platform Maestro E2E smoke suite (KIM-294, `.maestro/`) drives the
+**built** app on a simulator through the P0 critical journeys — the same flow
+files run on Android and iOS via shared `id:` selectors. iOS UI coverage comes
+from there, not from a Gradle/Kotlin-Native UI test target.
 
-- **No Xcode Integration in Gradle Tests**
-  - Solution: Separate Gradle tests (unit/integration) from Xcode tests (UI)
+**Rationale (one line):** Kotlin/Native UI-test infra is not viable here —
+40+ min compile times, OOM risk on the 6GB/8GB heap, immature tooling, and
+CLAUDE.md mandates Xcode (not Gradle) for iOS builds; Maestro already exercises
+the real app on a simulator and costs us nothing extra to extend to iOS.
 
-**Recommended iOS Test Structure**:
+See **[`.maestro/README.md`](../../../.maestro/README.md)** for the full Maestro
+setup, the iOS run instructions, and the per-journey selector gaps. In CI the iOS
+Maestro job is opt-in behind `vars.ENABLE_IOS_E2E` (see
+`.github/workflows/e2e-smoke.yml`) until simulator provisioning + signing are
+wired up.
+
+**Revisit conditions:** native iOS Compose UI tests would only be reconsidered if
+Maestro proves insufficient (e.g. it can't reach an iOS-only UI state, or its
+flake/maintenance cost outweighs its coverage). Reopening the question requires a
+time-boxed spike measuring: Kotlin/Native UI-test **compile time**, **OOM
+behavior** under the current heap, and **CI feasibility** (macOS runner minutes /
+budget). No such spike is performed as part of KIM-295.
+
+#### Existing iOS platform/unit tests (unaffected by the decision above)
+
+The 4 existing Kotlin/Native tests under `iosTest/` are **non-UI** platform/unit
+tests and remain in place — the UI-test decision does not touch them:
+
 ```
-iosTest/kotlin/                    (Gradle tests - 5-10 tests)
+iosTest/kotlin/                    (Gradle Kotlin/Native — platform & unit tests, NOT UI)
 ├── core/
 │   ├── PlatformFunctionsTest.kt    ✅ Exists
 │   └── DatabaseDriverFactoryTest.kt ✅ Exists
 └── integration/
     ├── DatabaseIntegrationTest.kt   ✅ Exists
     └── CoroutineDispatchersTest.kt  ✅ Exists
-
-iosApp/UITests/                    (Xcode tests - manual)
-├── AppLaunchUITest.swift
-├── NavigationUITest.swift
-└── DataPersistenceUITest.swift
 ```
+
+> ~~`iosApp/UITests/*.swift` (XCUITest) and `./gradlew
+> :composeApp:iosSimulatorArm64Test` as a *UI-testing* path are **superseded** by
+> the Maestro decision above.~~ The `iosSimulatorArm64Test` Gradle task still
+> exists and is fine for the **platform/unit** tests listed above; it is simply
+> **not** the iOS UI-testing mechanism.
 
 ### 5.2 Android Testing
 
@@ -324,7 +346,7 @@ iosApp/UITests/                    (Xcode tests - manual)
 16. HomeView Compose Tests (3 hrs)
 17. PlaceSummaryView Tests (2.5 hrs)
 18. Navigation UI Tests (2 hrs)
-19. iOS Manual UI Tests (Setup only)
+19. iOS UI coverage via Maestro (see §5.1 decision / `.maestro/`)
 
 ### Month 3: Polish & Optimization
 **Effort**: 5 hours
@@ -372,7 +394,7 @@ iosApp/UITests/                    (Xcode tests - manual)
 | Integration Tests | 25 |
 | E2E Tests | 20 |
 | UI Tests (Android) | 15 |
-| UI Tests (iOS) | 10 |
+| UI Tests (iOS) | via Maestro E2E (§5.1) |
 | Performance Tests | 5 |
 | **Total** | **165** |
 

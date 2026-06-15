@@ -4,6 +4,8 @@ Layer 2 of the [UI testing strategy](../docs/) (EPIC KIM-289): black-box,
 accessibility-tree-driven E2E flows that drive the **built** app through the 8 P0
 critical journeys (J1–J8) defined in KIM-291. This is also the **primary iOS UI
 test path** (KIM-295) — no native Compose UI test target is stood up for iOS.
+The decision record (rationale + revisit conditions) lives in
+[`docs/agent/testing/TESTING-STRATEGY.md` §5.1](../docs/agent/testing/TESTING-STRATEGY.md#51-ios-testing).
 
 Selectors come from `composeApp/src/commonMain/kotlin/core/TestTags.kt` (KIM-290).
 Compose maps `Modifier.testTag(...)` onto the Android `testTag` and the iOS
