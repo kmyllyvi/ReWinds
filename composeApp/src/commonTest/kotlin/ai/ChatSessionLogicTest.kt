@@ -137,34 +137,4 @@ class ChatSessionLogicTest {
         // Clock skew shouldn't produce negative deltas.
         assertEquals("Just now", ChatSessionLogic.relativeTimeLabel(now + 60_000L, now))
     }
-
-    // --- KIM-286 fix: context chips only for places that have chats ---
-
-    @Test
-    fun placesWithSessionsExcludesPlacesWithNoTaggedSession() {
-        val saved = listOf("Helsinki", "Oulu", "Tampere")
-        val tagged = listOf("Helsinki", null, "Helsinki") // only Helsinki has chats
-        assertEquals(listOf("Helsinki"), ChatSessionLogic.placesWithSessions(saved, tagged))
-    }
-
-    @Test
-    fun placesWithSessionsPreservesSavedOrderNotSessionOrder() {
-        val saved = listOf("Helsinki", "Oulu", "Tampere")
-        val tagged = listOf("Tampere", "Helsinki") // session order differs from chip order
-        assertEquals(listOf("Helsinki", "Tampere"), ChatSessionLogic.placesWithSessions(saved, tagged))
-    }
-
-    @Test
-    fun placesWithSessionsIsEmptyWhenNoSessionsAreTagged() {
-        val saved = listOf("Helsinki", "Oulu")
-        assertTrue(ChatSessionLogic.placesWithSessions(saved, listOf(null, null)).isEmpty())
-    }
-
-    @Test
-    fun placesWithSessionsIgnoresTagsForUnsavedPlaces() {
-        // A tag pointing at a place no longer in the saved list shouldn't resurrect a chip.
-        val saved = listOf("Helsinki")
-        val tagged = listOf("Helsinki", "DeletedPlace")
-        assertEquals(listOf("Helsinki"), ChatSessionLogic.placesWithSessions(saved, tagged))
-    }
 }

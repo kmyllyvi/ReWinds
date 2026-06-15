@@ -69,28 +69,12 @@ class ChatViewModelErrorHandlingTest {
         assertFalse(ChatUiState(inputText = "hello", isLoading = true).isSendEnabled)
     }
 
-    // --- Context chips (KIM-271) ---
+    // --- Place tag (KIM-287) ---
 
     @Test
-    fun defaultStateHasAllPlacesChipSelected() {
-        val chips = ChatUiState().contextChips
-        assertTrue(chips.size == 1)
-        val allPlaces = chips.single()
-        assertNull(allPlaces.placeName)
-        assertTrue(allPlaces.isSelected)
-    }
-
-    @Test
-    fun chipSelectionIsMutuallyExclusive() {
-        val chips = listOf(
-            ContextChip(placeName = null, isSelected = true),
-            ContextChip(placeName = "Konstanz", isSelected = false),
-            ContextChip(placeName = "Helsinki", isSelected = false)
-        )
-        // Mirrors ChatViewModel.selectContextChip mapping logic.
-        val updated = chips.map { it.copy(isSelected = it.placeName == "Konstanz") }
-        assertTrue(updated.single { it.isSelected }.placeName == "Konstanz")
-        assertFalse(updated.first { it.placeName == null }.isSelected)
+    fun defaultStateHasNoPlaceTag() {
+        // A fresh/general chat is untagged → no place pill is shown.
+        assertNull(ChatUiState().currentPlaceTag)
     }
 
     // --- AnthropicException HTTP status ---

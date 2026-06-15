@@ -91,24 +91,6 @@ object ChatSessionLogic {
         return availableIdsNewestFirst.firstOrNull()
     }
 
-    /**
-     * Derives the place names that should appear as context chips: only places that
-     * actually have at least one chat session tagged with them. A saved place with zero
-     * tagged sessions is excluded, because selecting its chip would filter to an empty
-     * list (the bug this fixes).
-     *
-     * @param savedPlaceNames all places the user has saved (chip source / display order)
-     * @param taggedPlaceIds the `placeId` of every saved session (nulls are ignored)
-     * @return [savedPlaceNames] filtered to those present in [taggedPlaceIds], order preserved
-     */
-    fun placesWithSessions(
-        savedPlaceNames: List<String>,
-        taggedPlaceIds: List<String?>
-    ): List<String> {
-        val tagged = taggedPlaceIds.filterNotNull().toSet()
-        return savedPlaceNames.filter { it in tagged }
-    }
-
     private fun truncate(raw: String): String? {
         val collapsed = raw.trim().replace(Regex("\\s+"), " ")
         if (collapsed.isEmpty()) return null

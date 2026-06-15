@@ -14,6 +14,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -155,33 +156,59 @@ class ChatSessionSwitcherViewModelTest {
         assertEquals(1L, vm.uiState.value.activeSessionId)
     }
 
-    // --- KIM-286 fix: context chips only for places that have a tagged chat session ---
+    // --- KIM-287: place tag derives from the active session's placeId ---
 
     @Test
-    fun contextChipsIncludeOnlyPlacesThatHaveChats() = runTest(dispatcher) {
-        // Helsinki has a tagged session; Oulu is saved but has no chat → no chip for Oulu.
+    fun placeTaggedSessionExposesItsPlaceTag() = runTest(dispatcher) {
         val repo = MultiSessionFakeChatRepository().apply {
             seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
         }
-        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
-        val vm = viewModel(repo, weather)
-        advanceUntilIdle()
+        val vm = viewModel(repo)
+        advanceUntilIdle() // init's loadActiveSession picks the most recent (only) session
 
-        val chipNames = vm.uiState.value.contextChips.map { it.placeName }
-        // null == "All places" sentinel, always present and first.
-        assertEquals(listOf(null, "Helsinki"), chipNames)
+        assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
     }
 
     @Test
-    fun contextChipsAreJustAllPlacesWhenNoSessionIsTagged() = runTest(dispatcher) {
+    fun untaggedSessionHasNoPlaceTag() = runTest(dispatcher) {
         val repo = MultiSessionFakeChatRepository().apply {
             seed(id = 1L, title = "Untagged", ts = 100L, placeId = null)
         }
-        val weather = SwitcherFakeWeatherRepository(savedPlaces = listOf("Helsinki", "Oulu"))
-        val vm = viewModel(repo, weather)
+        val vm = viewModel(repo)
         advanceUntilIdle()
 
-        assertEquals(listOf<String?>(null), vm.uiState.value.contextChips.map { it.placeName })
+        assertNull(vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun switchingToPlaceTaggedSessionUpdatesPlaceTag() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Tarifa: gusts?", ts = 100L, placeId = "Tarifa")
+            seed(id = 2L, title = "General", ts = 200L, placeId = null) // newest → active on init
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.currentPlaceTag) // started on the untagged session
+
+        vm.switchToSession(1L)
+        advanceUntilIdle()
+
+        assertEquals("Tarifa", vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun startingNewChatClearsPlaceTag() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
+
+        vm.startNewChat()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.currentPlaceTag)
     }
 
     @Test
