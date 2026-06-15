@@ -161,8 +161,10 @@ probes the **edges around** known-good paths.
 | **Scope**    | Android first. Escalate to the iOS simulator only when a finding looks platform-specific. |
 
 The cadence is intentionally loose: this layer is a safety net, not a gate. A
-missed week costs nothing; the deterministic layers still run on every PR and
-release.
+missed week costs nothing; the deterministic layers still run on their own
+cadence — Layer 1 unit tests (`:composeApp:testDebugUnitTest`) on every PR, with
+the KIM-293 instrumented journey tests run manually / via `connectedAndroidTest`
+(not yet per-PR), and Layer 2 Maestro (KIM-294) manually / on push to master.
 
 ---
 
@@ -217,7 +219,7 @@ non-gating layer of the strategy:
 
 | Layer | Suite                          | When it runs                  | Gates?                                |
 | ----- | ------------------------------ | ----------------------------- | ------------------------------------- |
-| 1     | Compose semantic (KIM-293)     | **Every PR**                  | **Yes** — red blocks merge            |
+| 1     | Compose semantic (KIM-293)     | **Manual / `connectedAndroidTest`** | **Not yet** — per-PR CI runs only `:composeApp:testDebugUnitTest`; instrumented journey tests not yet wired in |
 | 2     | Maestro E2E (KIM-294)          | **Manual / release to master**| **Yes for the release** — red blocks  |
 | **3** | **Agentic exploratory (this)** | **Periodic, manual**          | **No — never blocks anything**        |
 
@@ -269,8 +271,9 @@ feeling expensive, shrink the seed goal and the step cap — don't widen the wan
 - **KIM-289** — EPIC: UI Testing Strategy & Automation (the 3-layer plan).
 - **KIM-291** — the 5–10 critical user journeys (J1–J11); seed goals here probe
   the edges around them.
-- **KIM-293** — Layer 1: Compose semantic UI tests (per-PR gate). Promotion
-  target for single-screen / logic regressions.
+- **KIM-293** — Layer 1: Compose semantic UI tests (instrumented; run manually /
+  via `connectedAndroidTest`, not yet a per-PR gate). Promotion target for
+  single-screen / logic regressions.
 - **KIM-294** — Layer 2: Maestro E2E smoke suite (`.maestro/flows/`). Promotion
   target for end-to-end / cross-platform regressions.
 - `docs/agent/testing/TESTING-STRATEGY.md` — overall strategy; this doc is its
