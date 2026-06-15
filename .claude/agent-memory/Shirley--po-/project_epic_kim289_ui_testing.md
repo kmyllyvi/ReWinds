@@ -5,18 +5,31 @@ metadata:
   type: project
 ---
 
-KIM-289 (UI Testing Strategy epic) child tickets KIM-290-296 were drafted by Seppo/Armin with
-reasonable AC text, but only KIM-290 and KIM-291 have the standard ReWinds DoD block
-(Android build, tests, MV* check, lint) and the `spec-ready` label.
+KIM-289 (UI Testing Strategy epic): KIM-290, 291, 292, 293, 294 are Done.
 
-KIM-292 (nav testing strategy), KIM-293 (Compose flow tests), KIM-294 (Maestro suite),
-KIM-295 (iOS test approach decision), KIM-296 (agentic exploration runbook) are still in
-Backlog without `spec-ready` — they are not yet at Gate 1 despite looking plausible.
+KIM-295 (iOS UI test approach decision) — specced 2026-06-15, moved to Todo (High
+priority), handoff comment posted. Doc-only ticket: the decision (Maestro-only for
+iOS, no native Compose UI test target) is already implemented in practice via
+KIM-294's `.maestro/README.md`; remaining work is formalizing it in the stale
+`docs/agent/testing/TESTING-STRATEGY.md` Section 5.1 and cross-linking the two docs.
 
-**Why**: Seppo asked PO to "review/refine AC across the epic" but the bigger gap is the
-missing DoD/spec-ready formality, not AC wording.
+KIM-296 (agentic/AI exploratory testing runbook) — still in Backlog, no spec yet,
+set to Low priority per its own notes (depends on KIM-293/294 landing first, which
+they now have — but it's a process/runbook ticket, lowest urgency of the two
+remaining children). Needs a full spec pass (DoD block + spec-ready) when picked
+up next — same pattern as KIM-292/293/295.
 
-**How to apply**: When KIM-292/293/294 are picked up (293/294 depend on KIM-290 landing and
-KIM-291, which is done), do a full spec pass — add DoD block, verify AC are atomic/testable,
-add `spec-ready`. KIM-292 may need scope-splitting (touches Navigator/Router across multiple
-ViewModels — check against the 1-3hr session sizing rule in [[feedback_ticket_splitting]]).
+**Why**: epic children get specced one at a time as they're picked up; KIM-295 was
+prioritized over KIM-296 because it closes a concrete decision/doc gap with an
+existing CI hook (`ENABLE_IOS_E2E` var in `.github/workflows/e2e-smoke.yml`)
+already pointing at it, whereas KIM-296 is a standalone process doc with no
+blocking dependency.
+
+**How to apply**: when KIM-296 is picked up, do the same spec pass (Spec/AC/DoD,
+generic DoD block per WORKFLOW.md, spec-ready label). Note: the open KIM-293
+CI-wiring follow-up question (instrumented tests on every PR) remains parked for
+Kimmo separately — do not resolve it as part of KIM-296.
+
+Note on KIM-289 itself: this is the epic/parent — once 295 and 296 are both Done,
+consider whether the epic itself should be closed (PO doesn't move epics; flag to
+Kimmo when both children land).
