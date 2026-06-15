@@ -98,6 +98,41 @@ class ChatSessionLogicTest {
         assertNull(ChatSessionLogic.resolveActiveSessionId(5L, emptyList()))
     }
 
+    // --- General (untagged) session resolution: bottom-nav Chat tab default ---
+
+    private fun summary(id: Long, ts: Long, placeId: String?) =
+        ChatSessionSummary(id = id, title = "s$id", lastMessageTimestamp = ts, messageCount = 0, placeId = placeId)
+
+    @Test
+    fun resolveGeneralPicksMostRecentUntaggedSession() {
+        // Newest-first list with a place-tagged head; the general session is older but must win.
+        val sessions = listOf(
+            summary(id = 5L, ts = 500L, placeId = "Tarifa"), // most recent overall, but tagged
+            summary(id = 4L, ts = 400L, placeId = null),      // most recent GENERAL
+            summary(id = 3L, ts = 300L, placeId = null)
+        )
+        assertEquals(4L, ChatSessionLogic.resolveGeneralSessionId(sessions))
+    }
+
+    @Test
+    fun resolveGeneralIgnoresAllPlaceTaggedSessions() {
+        val sessions = listOf(
+            summary(id = 2L, ts = 200L, placeId = "Oulu"),
+            summary(id = 1L, ts = 100L, placeId = "Helsinki")
+        )
+        assertNull(ChatSessionLogic.resolveGeneralSessionId(sessions))
+    }
+
+    @Test
+    fun resolveGeneralIsNullWhenNoSessionsExist() {
+        assertNull(ChatSessionLogic.resolveGeneralSessionId(emptyList()))
+    }
+
+    @Test
+    fun resolveGeneralReturnsLoneUntaggedSession() {
+        assertEquals(7L, ChatSessionLogic.resolveGeneralSessionId(listOf(summary(7L, 100L, null))))
+    }
+
     // --- relativeTimeLabel (KIM-286) ---
 
     private val now = 1_000_000_000_000L
