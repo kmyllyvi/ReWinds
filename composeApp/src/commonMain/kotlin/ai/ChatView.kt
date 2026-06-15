@@ -41,10 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
 import core.LocalAppStrings
 import core.Navigator
+import core.TestTags
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
 import ui.components.IsobarBackground
@@ -106,7 +108,10 @@ fun ChatView(
             title = strings.chatTitle,
             onBackClick = { navigator.navigateBack() },
             rightContent = {
-                IconButton(onClick = vm::openSessionSwitcher) {
+                IconButton(
+                    onClick = vm::openSessionSwitcher,
+                    modifier = Modifier.testTag(TestTags.CHAT_SESSION_SWITCHER_BUTTON)
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,
                         contentDescription = strings.sessionSwitcherIconDesc,
@@ -128,6 +133,7 @@ fun ChatView(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .testTag(TestTags.CHAT_MESSAGE_LIST)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .clickable(
                     indication = null,
@@ -264,6 +270,7 @@ fun ChatView(
 private fun PlaceTagPill(placeName: String) {
     Row(
         modifier = Modifier
+            .testTag(TestTags.CHAT_PLACE_TAG_PILL)
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.rewinds.surfaceRaised)
@@ -372,7 +379,9 @@ fun ChatInputArea(
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChange,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .testTag(TestTags.CHAT_INPUT_FIELD),
             placeholder = {
                 Text(
                     strings.messagePlaceholder,
@@ -397,7 +406,9 @@ fun ChatInputArea(
                 focusManager.clearFocus()
             },
             enabled = isSendEnabled,
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .testTag(TestTags.CHAT_SEND_BUTTON)
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,

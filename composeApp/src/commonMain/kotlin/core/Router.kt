@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -45,12 +46,12 @@ private val TabBarActive   = ReWindsColors.accentBlue
 private val TabBarInactive = ReWindsColors.textTertiary
 private val TabBarHeight   = 72.dp
 
-private data class TabItem(val tab: AppTab, val label: String, val icon: ImageVector)
+private data class TabItem(val tab: AppTab, val label: String, val icon: ImageVector, val testTag: String)
 
 private val tabItems = listOf(
-    TabItem(AppTab.PLACES,   "Places",   Icons.Filled.Place),
-    TabItem(AppTab.CHAT,     "Chat",     Icons.Filled.Chat),
-    TabItem(AppTab.SETTINGS, "Settings", Icons.Filled.Settings),
+    TabItem(AppTab.PLACES,   "Places",   Icons.Filled.Place,    TestTags.TAB_PLACES),
+    TabItem(AppTab.CHAT,     "Chat",     Icons.Filled.Chat,     TestTags.TAB_CHAT),
+    TabItem(AppTab.SETTINGS, "Settings", Icons.Filled.Settings, TestTags.TAB_SETTINGS),
 )
 
 @Composable
@@ -178,6 +179,7 @@ private fun TabBar(activeTab: AppTab, onTabSelected: (AppTab) -> Unit) {
         ) {
             tabItems.forEach { item ->
                 NavigationBarItem(
+                    modifier = Modifier.testTag(item.testTag),
                     selected = activeTab == item.tab,
                     onClick = { onTabSelected(item.tab) },
                     icon = {

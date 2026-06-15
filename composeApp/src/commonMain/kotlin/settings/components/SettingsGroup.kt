@@ -74,9 +74,10 @@ private fun RowDivider() {
 @Composable
 private fun SettingsRowScaffold(
     onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
-    val base = Modifier
+    val base = modifier
         .fillMaxWidth()
         .let { if (onClick != null) it.clickable(onClick = onClick) else it }
         .padding(horizontal = 14.dp, vertical = 12.dp)
@@ -98,9 +99,10 @@ fun SettingsValueRow(
     label: String,
     value: String? = null,
     showChevron: Boolean = true,
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    SettingsRowScaffold(onClick = onClick) {
+    SettingsRowScaffold(onClick = onClick, modifier = modifier) {
         Text(
             text = label,
             color = MaterialTheme.rewinds.textPrimary,
@@ -167,9 +169,10 @@ fun SettingsKeyRow(
     configured: Boolean,
     configuredChipText: String,
     notSetChipText: String,
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
-    SettingsRowScaffold(onClick = onClick) {
+    SettingsRowScaffold(onClick = onClick, modifier = modifier) {
         Column {
             Text(
                 text = title,

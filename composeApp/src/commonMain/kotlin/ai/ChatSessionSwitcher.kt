@@ -24,9 +24,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
+import core.TestTags
 import kotlin.time.Clock
 import ui.theme.rewinds
 
@@ -81,7 +83,9 @@ fun ChatSessionSwitcher(
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier
+                        .testTag(TestTags.CHAT_SESSION_LIST)
+                        .padding(top = 8.dp)
                 ) {
                     items(items = sessions, key = { it.id }) { session ->
                         SessionRow(
@@ -104,6 +108,7 @@ private fun NewChatRow(label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.CHAT_NEW_SESSION_BUTTON)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.rewinds.surfaceRaised)
             .border(
@@ -141,6 +146,7 @@ private fun SessionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.CHAT_SESSION_LIST_ITEM)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.rewinds.surfaceRaised)
             .border(

@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import components.AppHeader
@@ -34,6 +35,7 @@ import core.ApiKeyManager
 import core.Language
 import core.LocalAppStrings
 import core.Navigator
+import core.TestTags
 import core.WeatherApiKeyManager
 import core.deleteApiKeyPlatform
 import core.deleteWeatherApiKeyPlatform
@@ -97,6 +99,7 @@ fun SettingsView(
                             SettingsValueRow(
                                 label = strings.languageTitle,
                                 value = language.displayName,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_LANGUAGE_ROW),
                                 onClick = {
                                     // Single toggle between the two supported languages.
                                     vm.setLanguage(
@@ -110,6 +113,7 @@ fun SettingsView(
                             SettingsValueRow(
                                 label = strings.settingsRowUnits,
                                 value = units.displayName,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_UNITS_ROW),
                                 onClick = {
                                     vm.setUnits(
                                         if (units == UnitSystem.METRIC) UnitSystem.IMPERIAL
@@ -122,6 +126,7 @@ fun SettingsView(
                             SettingsValueRow(
                                 label = strings.settingsRowWindSpeed,
                                 value = windSpeedUnit.displayName,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_WIND_SPEED_ROW),
                                 onClick = {
                                     // Cycle through the supported wind units.
                                     val next = when (windSpeedUnit) {
@@ -147,6 +152,7 @@ fun SettingsView(
                                 configured = anthropicConfigured,
                                 configuredChipText = strings.settingsKeyConfiguredChip,
                                 notSetChipText = strings.settingsKeyNotSetChip,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_ANTHROPIC_KEY_ROW),
                                 onClick = { openDialog = SettingsDialog.ANTHROPIC_KEY }
                             )
                         },
@@ -157,6 +163,7 @@ fun SettingsView(
                                 configured = weatherConfigured,
                                 configuredChipText = strings.settingsKeyConfiguredChip,
                                 notSetChipText = strings.settingsKeyNotSetChip,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_WEATHER_KEY_ROW),
                                 onClick = { openDialog = SettingsDialog.WEATHER_KEY }
                             )
                         }
@@ -295,7 +302,9 @@ private fun ApiKeyDialog(
                 OutlinedTextField(
                     value = key,
                     onValueChange = { key = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.SETTINGS_API_KEY_FIELD),
                     placeholder = { Text(strings.apiKeyPlaceholder) },
                     label = { Text(strings.apiKeyFieldLabel) },
                     visualTransformation = PasswordVisualTransformation(),
@@ -317,7 +326,8 @@ private fun ApiKeyDialog(
                         onDismiss()
                     }
                 },
-                enabled = key.isNotBlank()
+                enabled = key.isNotBlank(),
+                modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_SAVE_BUTTON)
             ) {
                 Text(strings.saveKey)
             }
@@ -329,11 +339,15 @@ private fun ApiKeyDialog(
                         onDelete()
                         onDismiss()
                     },
-                    enabled = configured
+                    enabled = configured,
+                    modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_DELETE_BUTTON)
                 ) {
                     Text(strings.delete)
                 }
-                TextButton(onClick = onDismiss) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_CANCEL_BUTTON)
+                ) {
                     Text(strings.cancel)
                 }
             }
