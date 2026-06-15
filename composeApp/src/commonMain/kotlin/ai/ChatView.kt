@@ -72,6 +72,8 @@ fun ChatView(
         if (!placeId.isNullOrEmpty()) {
             vm.openPlaceChat(placeId)
             onPlaceIdConsumed()
+        } else {
+            vm.ensureGeneralChat()
         }
     }
 

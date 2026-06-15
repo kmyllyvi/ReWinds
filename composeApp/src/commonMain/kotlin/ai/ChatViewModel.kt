@@ -270,6 +270,21 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Re-resolves the bottom-nav Chat tab to the general session when the currently
+     * displayed session is place-tagged. Called on every plain (non place-specific)
+     * entry to the Chat tab so a prior "Ask AI about this place" visit (or a manual
+     * switch to a place-tagged session) doesn't leak into subsequent tab visits —
+     * the Chat tab always opens the general chat (KIM-297). No-op if the current
+     * session is already untagged.
+     */
+    fun ensureGeneralChat() {
+        if (_uiState.value.currentPlaceTag == null) return
+        viewModelScope.launch(ioDispatcher) {
+            loadActiveSession(requestedId = null)
+        }
+    }
+
     private suspend fun persistMessage(message: ChatMessage) {
         val sessionId = currentSessionId ?: run {
             Log.d("ChatViewModel: session not ready, skipping persist")
