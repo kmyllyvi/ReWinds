@@ -40,15 +40,6 @@ data class ChatMessage(
 )
 
 /**
- * A selectable context chip shown above the message list. [placeName] is null
- * for the "All places" chip; a non-null value targets a specific saved place.
- */
-data class ContextChip(
-    val placeName: String?,
-    val isSelected: Boolean
-)
-
-/**
  * Details about a pending data fetch that requires user permission.
  */
 data class PendingDataFetch(
@@ -73,8 +64,13 @@ data class ChatUiState(
     val showApiKeyMissingDialog: Boolean = false,
     val showApiKeyInvalidError: Boolean = false,
     val pendingDataFetch: PendingDataFetch? = null,
-    /** Context chips above the message list. The "All places" chip is always present. */
-    val contextChips: List<ContextChip> = listOf(ContextChip(placeName = null, isSelected = true)),
+    /**
+     * Place this chat is tagged to, shown as a static informational pill above the
+     * messages. Null for a general/untagged chat, in which case no pill is shown.
+     * Switching between place-specific chats is the session switcher's job (KIM-286),
+     * not this tag — it is display-only.
+     */
+    val currentPlaceTag: String? = null,
     /** Whether the session switcher (bottom sheet) is currently open. */
     val isSessionSwitcherOpen: Boolean = false,
     /**
@@ -126,7 +122,6 @@ class ChatViewModel(
         viewModelScope.launch(ioDispatcher) {
             loadActiveSession(requestedId = null)
         }
-        loadContextChips()
     }
 
     /**
@@ -135,19 +130,20 @@ class ChatViewModel(
      * original single-chat launch behaviour is preserved.
      */
     private suspend fun loadActiveSession(requestedId: Long?) {
-        val sessionIds = chatRepository.listSessions().map { it.id }
-        val resolvedId = ChatSessionLogic.resolveActiveSessionId(requestedId, sessionIds)
+        val sessions = chatRepository.listSessions()
+        val resolvedId = ChatSessionLogic.resolveActiveSessionId(requestedId, sessions.map { it.id })
             ?: chatRepository.createSession()
 
         currentSessionId = resolvedId
+        val placeTag = sessions.firstOrNull { it.id == resolvedId }?.placeId
         val savedMessages = chatRepository.loadUiMessages(resolvedId)
         if (savedMessages.isNotEmpty()) {
             val history = chatRepository.loadConversationHistory(resolvedId)
             aiRepository.loadHistory(history)
-            _uiState.update { it.copy(messages = savedMessages, activeSessionId = resolvedId) }
+            _uiState.update { it.copy(messages = savedMessages, activeSessionId = resolvedId, currentPlaceTag = placeTag) }
             Log.d("ChatViewModel: loaded ${savedMessages.size} messages from session $resolvedId")
         } else {
-            _uiState.update { it.copy(activeSessionId = resolvedId) }
+            _uiState.update { it.copy(activeSessionId = resolvedId, currentPlaceTag = placeTag) }
             Log.d("ChatViewModel: session $resolvedId has no messages, starting fresh")
         }
     }
@@ -188,6 +184,7 @@ class ChatViewModel(
                         )
                     ),
                     activeSessionId = newId,
+                    currentPlaceTag = null,
                     isSessionSwitcherOpen = false,
                     error = null,
                     pendingDataFetch = null
@@ -210,12 +207,14 @@ class ChatViewModel(
                 return@launch
             }
             currentSessionId = sessionId
+            val placeTag = chatRepository.listSessions().firstOrNull { it.id == sessionId }?.placeId
             val history = chatRepository.loadConversationHistory(sessionId)
             aiRepository.loadHistory(history)
             _uiState.update {
                 it.copy(
                     messages = messages,
                     activeSessionId = sessionId,
+                    currentPlaceTag = placeTag,
                     isSessionSwitcherOpen = false
                 )
             }
@@ -247,50 +246,18 @@ class ChatViewModel(
                     )
                 )
             }
+            val placeTag = sessions.firstOrNull { it.id == targetId }?.placeId ?: placeId
             _uiState.update {
                 it.copy(
                     messages = resolvedMessages,
                     activeSessionId = targetId,
+                    currentPlaceTag = placeTag,
                     isSessionSwitcherOpen = false,
                     error = null,
                     pendingDataFetch = null
                 )
             }
             Log.d("ChatViewModel: opened place chat for '$placeId' (session $targetId, existing=${existingId != null})")
-        }
-    }
-
-    /**
-     * Builds the context-chip row. "All places" is always first and starts selected; a
-     * per-place chip is added only for places that have at least one tagged chat session
-     * (selecting a chip for a place with no chats would filter to an empty list).
-     */
-    private fun loadContextChips() {
-        viewModelScope.launch(ioDispatcher) {
-            val placeNames = runCatching { weatherRepository.getSavedPlaceNames() }
-                .getOrDefault(emptyList())
-            val taggedPlaceIds = runCatching { chatRepository.listSessions().map { it.placeId } }
-                .getOrDefault(emptyList())
-            val placesWithChats = ChatSessionLogic.placesWithSessions(placeNames, taggedPlaceIds)
-            val chips = buildList {
-                add(ContextChip(placeName = null, isSelected = true))
-                placesWithChats.forEach { add(ContextChip(placeName = it, isSelected = false)) }
-            }
-            _uiState.update { it.copy(contextChips = chips) }
-        }
-    }
-
-    /**
-     * Selects a context chip by place name (null == "All places").
-     * Selection is mutually exclusive and lives in UI state, not local composable state.
-     */
-    fun selectContextChip(placeName: String?) {
-        _uiState.update { state ->
-            state.copy(
-                contextChips = state.contextChips.map { chip ->
-                    chip.copy(isSelected = chip.placeName == placeName)
-                }
-            )
         }
     }
 
