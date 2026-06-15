@@ -25,6 +25,23 @@ data class ConversationMessage(
 )
 
 /**
+ * The conversation seam [ChatViewModel] depends on: send a turn and manage history.
+ *
+ * Extracted so the chat screen can be driven by a deterministic fake in tests (KIM-293,
+ * journey J6) without a real Anthropic network call. Production binds [AiRepository].
+ */
+interface AiConversationRepository {
+    /** Sends a user turn and returns the final assistant response (may run the agentic loop). */
+    suspend fun sendMessage(userMessage: String): AiMessageResult
+
+    /** Clears the in-memory conversation history for a fresh session. */
+    fun clearHistory()
+
+    /** Seeds the conversation history from persisted messages (e.g. on session switch/restart). */
+    fun loadHistory(messages: List<ConversationMessage>)
+}
+
+/**
  * AiRepository orchestrates the agentic loop.
  * Maintains conversation history, sends requests to Claude, and handles tool calls.
  */
@@ -32,7 +49,7 @@ class AiRepository(
     private val anthropicClient: AnthropicClient,
     private val weatherTools: WeatherTools,
     private val weatherRepository: WeatherRepository
-) {
+) : AiConversationRepository {
     // Maintain conversation history for the session
     private val conversationHistory = mutableListOf<ConversationMessage>()
 
@@ -43,7 +60,7 @@ class AiRepository(
      * @param userMessage The user's input message.
      * @return An AiMessageResult containing the final response and tool call information.
      */
-    suspend fun sendMessage(userMessage: String): AiMessageResult {
+    override suspend fun sendMessage(userMessage: String): AiMessageResult {
         Log.d("AiRepository: starting message exchange with user message: '$userMessage'")
 
         // Add user message to history
@@ -222,7 +239,7 @@ class AiRepository(
     /**
      * Clears the conversation history for a fresh start.
      */
-    fun clearHistory() {
+    override fun clearHistory() {
         conversationHistory.clear()
         Log.d("AiRepository: conversation history cleared")
     }
@@ -230,7 +247,7 @@ class AiRepository(
     /**
      * Seeds the conversation history from persisted messages (e.g. on app restart).
      */
-    fun loadHistory(messages: List<ConversationMessage>) {
+    override fun loadHistory(messages: List<ConversationMessage>) {
         conversationHistory.clear()
         conversationHistory.addAll(messages)
         Log.d("AiRepository: loaded ${messages.size} messages from persistence")

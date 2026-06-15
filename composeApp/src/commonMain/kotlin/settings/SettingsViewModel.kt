@@ -4,12 +4,13 @@ import ai.AnthropicClient
 import ai.DaysOfInterestParser
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import core.ApiKeyChecker
 import core.AppSettingsStore
 import core.DaysOfInterestFilter
 import core.Language
 import core.LanguageManager
+import core.PlatformApiKeyChecker
 import core.WeatherApiKeyManager
-import core.isAnthropicApiKeyConfigured
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +40,9 @@ enum class WindSpeedUnit(val displayName: String) {
 
 class SettingsViewModel(
     private val settingsRepo: AppSettingsStore,
-    private val anthropicClient: AnthropicClient
+    private val anthropicClient: AnthropicClient,
+    /** Anthropic key gate. Injectable so the Configured chip is testable without the platform store (J10). */
+    private val apiKeyChecker: ApiKeyChecker = PlatformApiKeyChecker
 ) : ViewModel() {
 
     private val _doiState = MutableStateFlow<DaysOfInterestUiState>(DaysOfInterestUiState.Idle)
@@ -109,7 +112,7 @@ class SettingsViewModel(
 
     /** Re-reads platform key stores into the configured flags. Call after save/delete. */
     fun refreshKeyStatus() {
-        _anthropicKeyConfigured.value = isAnthropicApiKeyConfigured()
+        _anthropicKeyConfigured.value = apiKeyChecker.isAnthropicKeyConfigured()
         _visualCrossingKeyConfigured.value = WeatherApiKeyManager.hasValidKey()
     }
 

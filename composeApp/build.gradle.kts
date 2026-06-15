@@ -74,9 +74,16 @@ kotlin {
 
     sourceSets {
 
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+            }
+            // Shared test doubles (e.g. FakeNavigator, KIM-292) reused by both the JVM unit
+            // tests here and the Android Compose UI tests (KIM-293). Kept in one place so the
+            // two test layers never drift. The same dir is added to the Android androidTest
+            // source set below.
+            kotlin.srcDir("src/commonTestFixtures/kotlin")
         }
 
         commonMain.dependencies {
@@ -198,7 +205,12 @@ android {
     sourceSets["main"].res.srcDirs("src/androidMain/res")
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
     sourceSets["debug"].manifest.srcFile("src/androidDebug/AndroidManifest.xml")
-    sourceSets["androidTest"].java.srcDirs("src/androidInstrumentedTest/kotlin")
+    sourceSets["androidTest"].java.srcDirs(
+        "src/androidInstrumentedTest/kotlin",
+        // Shared test doubles (FakeNavigator, KIM-292) — same dir commonTest uses, so the
+        // Compose UI tests and the JVM unit tests assert against one navigator fake.
+        "src/commonTestFixtures/kotlin"
+    )
 
     defaultConfig {
         applicationId = "com.km.rewinds"

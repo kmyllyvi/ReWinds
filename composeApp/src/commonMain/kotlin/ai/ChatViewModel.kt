@@ -2,8 +2,9 @@ package ai
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import core.ApiKeyChecker
 import core.Log
-import core.isAnthropicApiKeyConfigured
+import core.PlatformApiKeyChecker
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -91,11 +92,13 @@ data class ChatUiState(
  * Manages conversation state and delegates to AiRepository for AI logic.
  */
 class ChatViewModel(
-    private val aiRepository: AiRepository,
+    private val aiRepository: AiConversationRepository,
     private val weatherRepository: core.WeatherRepository,
     private val chatRepository: ChatRepository,
     /** Background dispatcher for repository I/O. Injectable so tests can substitute a TestDispatcher. */
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    /** Anthropic key gate. Injectable so tests can force the "key missing" branch (J7). */
+    private val apiKeyChecker: ApiKeyChecker = PlatformApiKeyChecker
 ) : ViewModel() {
 
     /**
@@ -314,7 +317,7 @@ class ChatViewModel(
         }
 
         // Check if API key is configured
-        if (!isAnthropicApiKeyConfigured()) {
+        if (!apiKeyChecker.isAnthropicKeyConfigured()) {
             Log.d("ChatViewModel: API key not configured, showing dialog")
             _uiState.update { it.copy(showApiKeyMissingDialog = true) }
             return

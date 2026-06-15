@@ -1,3 +1,4 @@
+import ai.AiConversationRepository
 import ai.AiRepository
 import ai.AnthropicClient
 import ai.ChatRepository
@@ -37,7 +38,8 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // AI/Chat components
     single { AnthropicClient(apiKey = getAnthropicApiKey(), enableLogs = enableNetworkLogs) }
     single { WeatherTools }
-    single { AiRepository(get(), get(), get()) } // AnthropicClient, WeatherTools, WeatherRepository
+    // Bound as the interface ChatViewModel depends on; AiRepository is the only implementation.
+    single<AiConversationRepository> { AiRepository(get(), get(), get()) } // AnthropicClient, WeatherTools, WeatherRepository
     single<ChatRepository> { ChatRepositoryImpl(get()) } // AppDatabase
 
     // App settings
@@ -52,8 +54,10 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // Explicit lambda (not viewModelOf): ioDispatcher has a default and must not be
     // resolved from the graph. Constructor-reflection would try to inject a
     // CoroutineDispatcher, which isn't registered, and crash the chat screen.
-    viewModel { ChatViewModel(get(), get(), get()) } // AiRepository, WeatherRepository, ChatRepository
-    viewModelOf(::SettingsViewModel)
+    viewModel { ChatViewModel(get(), get(), get()) } // AiConversationRepository, WeatherRepository, ChatRepository
+    // Explicit lambda (not viewModelOf): apiKeyChecker has a default and must not be resolved
+    // from the graph — no ApiKeyChecker is registered, so reflection would fail to construct it.
+    viewModel { SettingsViewModel(get(), get()) } // AppSettingsStore, AnthropicClient
     viewModelOf(::TabNavigationViewModel)
 }
 

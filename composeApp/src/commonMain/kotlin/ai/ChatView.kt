@@ -304,6 +304,7 @@ fun ChatMessageBubble(message: ChatMessage) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.CHAT_MESSAGE_BUBBLE)
             .padding(vertical = 4.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
