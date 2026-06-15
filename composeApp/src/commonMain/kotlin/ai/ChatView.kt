@@ -37,6 +37,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,13 +69,22 @@ fun ChatView(
     val focusManager = LocalFocusManager.current
     val strings = LocalAppStrings.current
 
+    // Tracks whether this composable instance was ever entered with a place context, so the
+    // placeId-consume transition (non-null -> null, see ChatStackOps.consumePlaceContext)
+    // doesn't immediately re-trigger ensureGeneralChat() and revert the place chat it just
+    // opened (KIM-297).
+    var hadPlaceId by remember { mutableStateOf(false) }
+
     // "Ask AI about this place" — resolve to (or create) the session tagged with this place,
     // then signal the host to clear the one-shot placeId so revisits behave normally.
     LaunchedEffect(placeId) {
         if (!placeId.isNullOrEmpty()) {
+            hadPlaceId = true
             vm.openPlaceChat(placeId)
             onPlaceIdConsumed()
-        } else {
+        } else if (!hadPlaceId) {
+            // Plain entry to the Chat tab (no place context, and none was just consumed):
+            // make sure we're showing the general session, not a stale place-tagged one.
             vm.ensureGeneralChat()
         }
     }
