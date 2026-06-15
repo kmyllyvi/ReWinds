@@ -28,8 +28,9 @@ object TestTags {
     const val CHAT_INPUT_FIELD = "chat_input_field"
     const val CHAT_SEND_BUTTON = "chat_send_button"
     const val CHAT_SESSION_SWITCHER_BUTTON = "chat_session_switcher_button"
-    const val CHAT_CONTEXT_CHIP_ROW = "chat_context_chip_row"
-    const val CHAT_CONTEXT_CHIP = "chat_context_chip"
+    // Static place pill (KIM-287 replaced the interactive context-chip row with a single
+    // non-interactive PlaceTagPill). One tag, not a row of chips.
+    const val CHAT_PLACE_TAG_PILL = "chat_place_tag_pill"
 
     // ── Chat session switcher ─────────────────────────────────────────────────────
     const val CHAT_SESSION_LIST = "chat_session_list"

@@ -38,7 +38,6 @@ data class AppStrings(
     val chatTitle: String,
     val messagePlaceholder: String,
     val sendMessageDesc: String,
-    val allPlacesChip: String,
     // Chat session switcher (KIM-286)
     val sessionSwitcherIconDesc: String,
     val sessionSwitcherTitle: String,
@@ -252,7 +251,6 @@ data class AppStrings(
             chatTitle = "Chat",
             messagePlaceholder = "Type your message...",
             sendMessageDesc = "Send message",
-            allPlacesChip = "All places",
             sessionSwitcherIconDesc = "Chat history",
             sessionSwitcherTitle = "Your chats",
             sessionSwitcherNewChat = "New chat",
@@ -462,7 +460,6 @@ data class AppStrings(
             chatTitle = "Chat",
             messagePlaceholder = "Nachricht eingeben...",
             sendMessageDesc = "Nachricht senden",
-            allPlacesChip = "Alle Orte",
             sessionSwitcherIconDesc = "Chatverlauf",
             sessionSwitcherTitle = "Ihre Chats",
             sessionSwitcherNewChat = "Neuer Chat",

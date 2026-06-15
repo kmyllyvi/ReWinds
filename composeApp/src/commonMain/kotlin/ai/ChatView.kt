@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,14 +12,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -53,11 +53,27 @@ import ui.components.IsobarBackground
 import ui.theme.rewinds
 
 @Composable
-fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel(), navigator: Navigator) {
+fun ChatView(
+    initialMessage: String? = null,
+    placeId: String? = null,
+    /** Invoked after the one-shot [placeId] has been resolved, so the host can drop it. */
+    onPlaceIdConsumed: () -> Unit = {},
+    vm: ChatViewModel = koinViewModel(),
+    navigator: Navigator
+) {
     val uiState by vm.uiState.collectAsState()
     val lazyListState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
     val strings = LocalAppStrings.current
+
+    // "Ask AI about this place" — resolve to (or create) the session tagged with this place,
+    // then signal the host to clear the one-shot placeId so revisits behave normally.
+    LaunchedEffect(placeId) {
+        if (!placeId.isNullOrEmpty()) {
+            vm.openPlaceChat(placeId)
+            onPlaceIdConsumed()
+        }
+    }
 
     // Pre-fill input with initial message (e.g. "Chat about Helsinki")
     LaunchedEffect(initialMessage) {
@@ -105,11 +121,11 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
             }
         )
 
-        // Context chips: which place the chat is scoped to (driven by ViewModel state)
-        ContextChipRow(
-            chips = uiState.contextChips,
-            onChipClick = vm::selectContextChip
-        )
+        // Static place tag: shown only when this chat is tagged to a place. Informational
+        // only — switching chats is the session switcher's job (KIM-286), not this pill.
+        uiState.currentPlaceTag?.let { placeTag ->
+            PlaceTagPill(placeName = placeTag)
+        }
 
         // Messages area with keyboard dismissal on click
         LazyColumn(
@@ -246,56 +262,35 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
 }
 
 /**
- * Horizontal row of context chips scoping the chat to a saved place or "All places".
- * Selection is owned by the ViewModel; chips never hold local state.
+ * Static, non-interactive pill naming the place this chat is tagged to. Display-only:
+ * a place-tagged chat shows exactly this place; switching chats is the session
+ * switcher's job (KIM-286), so there is nothing to tap here.
  */
 @Composable
-private fun ContextChipRow(
-    chips: List<ContextChip>,
-    onChipClick: (String?) -> Unit
-) {
-    val strings = LocalAppStrings.current
-
+private fun PlaceTagPill(placeName: String) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TestTags.CHAT_CONTEXT_CHIP_ROW)
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        chips.forEach { chip ->
-            ContextChip(
-                label = chip.placeName ?: strings.allPlacesChip,
-                isSelected = chip.isSelected,
-                onClick = { onChipClick(chip.placeName) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun ContextChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .testTag(TestTags.CHAT_CONTEXT_CHIP)
+            .testTag(TestTags.CHAT_PLACE_TAG_PILL)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.rewinds.surfaceRaised)
             .border(
                 width = 1.dp,
-                color = if (isSelected) MaterialTheme.rewinds.accentBlue else MaterialTheme.rewinds.border,
+                color = MaterialTheme.rewinds.border,
                 shape = RoundedCornerShape(20.dp)
             )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(
+            imageVector = Icons.Filled.LocationOn,
+            contentDescription = null,
+            tint = MaterialTheme.rewinds.accentBlue,
+            modifier = Modifier.size(16.dp)
+        )
         Text(
-            text = label,
+            text = placeName,
             color = MaterialTheme.rewinds.accentBlue,
             style = MaterialTheme.typography.labelMedium
         )

@@ -72,8 +72,20 @@ fun Navigation() {
     // instead of pushing onto the Places back stack. Push destinations (PlaceSummary)
     // share this so "Chat about <place>" lands on the Chat tab, not the Places stack.
     // Note: initial message deep-link is deferred to a follow-up ticket (KIM-267 spec).
-    val placesNavigatorDelegate = remember(placesNav, tabVm) {
-        TabRoutingNavigator(base = placesNav, selectTab = tabVm::selectTab)
+    val placesNavigatorDelegate = remember(placesNav, tabVm, chatStack) {
+        TabRoutingNavigator(
+            base = placesNav,
+            selectTab = tabVm::selectTab,
+            // "Ask AI about this place" — tag the Chat tab's top route with this place so the
+            // Chat tab resolves to that place's session, then switch. Replacing (not pushing)
+            // keeps the chat stack at a constant size across repeated place entries.
+            onChatRequested = { initialMessage, placeId ->
+                if (placeId != null) {
+                    ChatStackOps.setPlaceContext(chatStack, placeId, initialMessage)
+                }
+                tabVm.selectTab(AppTab.CHAT)
+            }
+        )
     }
 
     // Chat-tab navigator: back from the chat root returns to the Places tab rather than
@@ -112,7 +124,19 @@ fun Navigation() {
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 when (activeTab) {
                     AppTab.PLACES   -> HomeView(navigator = placesNavigatorDelegate)
-                    AppTab.CHAT     -> ChatView(initialMessage = null, navigator = chatNavigatorDelegate)
+                    AppTab.CHAT     -> {
+                        // Top of the chat stack carries the place context (if entered via
+                        // "Ask AI about this place"); null placeId is the normal Chat tab.
+                        val chatRoute = chatStack.lastOrNull() as? ChatRoute
+                        ChatView(
+                            initialMessage = null,
+                            placeId = chatRoute?.placeId,
+                            // One-shot: drop the placeId once ChatView resolves it so revisits
+                            // don't re-trigger resolution or override manual session switches.
+                            onPlaceIdConsumed = { ChatStackOps.consumePlaceContext(chatStack) },
+                            navigator = chatNavigatorDelegate
+                        )
+                    }
                     AppTab.SETTINGS -> SettingsView(navigator = settingsNav)
                 }
             }
