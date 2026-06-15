@@ -33,6 +33,25 @@ class TabRoutingNavigatorTest {
     }
 
     @Test
+    fun navigateToChatForwardsPlaceIdToChatRequestedHandler() {
+        var capturedPlaceId: String? = "unset"
+        var capturedMessage: String? = "unset"
+        val nav = TabRoutingNavigator(
+            base = placesNavigator(HomeRoute, PlaceSummaryRoute("Helsinki")),
+            selectTab = {},
+            onChatRequested = { message, placeId ->
+                capturedMessage = message
+                capturedPlaceId = placeId
+            }
+        )
+
+        nav.navigateToChat(placeId = "Helsinki")
+
+        assertEquals("Helsinki", capturedPlaceId)
+        assertNull(capturedMessage)
+    }
+
+    @Test
     fun navigateToSettingsSwitchesToSettingsTab() {
         var selected: AppTab? = null
         val nav = TabRoutingNavigator(base = placesNavigator(HomeRoute), selectTab = { selected = it })

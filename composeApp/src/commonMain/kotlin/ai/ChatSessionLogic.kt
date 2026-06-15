@@ -91,6 +91,18 @@ object ChatSessionLogic {
         return availableIdsNewestFirst.firstOrNull()
     }
 
+    /**
+     * Resolves which session a "Ask AI about this place" intent should land on.
+     *
+     * Returns the id of the most-recent existing session already tagged with [placeId],
+     * or null when none exists — in which case the caller creates a fresh session tagged
+     * with that place. [sessions] is newest-activity-first (the [ChatSessionSummary]
+     * ordering contract), so the first match is the most recent.
+     */
+    fun resolveSessionForPlace(placeId: String, sessions: List<ChatSessionSummary>): Long? {
+        return sessions.firstOrNull { it.placeId == placeId }?.id
+    }
+
     private fun truncate(raw: String): String? {
         val collapsed = raw.trim().replace(Regex("\\s+"), " ")
         if (collapsed.isEmpty()) return null

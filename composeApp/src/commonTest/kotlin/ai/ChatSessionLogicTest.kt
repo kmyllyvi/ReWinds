@@ -137,4 +137,43 @@ class ChatSessionLogicTest {
         // Clock skew shouldn't produce negative deltas.
         assertEquals("Just now", ChatSessionLogic.relativeTimeLabel(now + 60_000L, now))
     }
+
+    // --- Place → Chat session resolution (direct fix per Kimmo) ---
+
+    private fun summary(id: Long, ts: Long, placeId: String?) =
+        ChatSessionSummary(id = id, title = "t$id", lastMessageTimestamp = ts, messageCount = 0, placeId = placeId)
+
+    @Test
+    fun resolveSessionForPlaceReturnsMatchingSessionId() {
+        val sessions = listOf(
+            summary(3L, ts = 300L, placeId = "Oulu"),
+            summary(2L, ts = 200L, placeId = "Helsinki"),
+            summary(1L, ts = 100L, placeId = null)
+        )
+        assertEquals(2L, ChatSessionLogic.resolveSessionForPlace("Helsinki", sessions))
+    }
+
+    @Test
+    fun resolveSessionForPlaceReturnsNullWhenNoSessionTaggedWithPlace() {
+        val sessions = listOf(
+            summary(1L, ts = 100L, placeId = "Oulu"),
+            summary(2L, ts = 200L, placeId = null)
+        )
+        assertNull(ChatSessionLogic.resolveSessionForPlace("Helsinki", sessions))
+    }
+
+    @Test
+    fun resolveSessionForPlacePicksMostRecentWhenMultipleTagged() {
+        // listSessions is newest-first; resolution must take the first (most recent) match.
+        val sessions = listOf(
+            summary(9L, ts = 900L, placeId = "Helsinki"),
+            summary(4L, ts = 400L, placeId = "Helsinki")
+        )
+        assertEquals(9L, ChatSessionLogic.resolveSessionForPlace("Helsinki", sessions))
+    }
+
+    @Test
+    fun resolveSessionForPlaceReturnsNullForEmptyList() {
+        assertNull(ChatSessionLogic.resolveSessionForPlace("Helsinki", emptyList()))
+    }
 }

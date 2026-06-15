@@ -222,6 +222,45 @@ class ChatViewModel(
         }
     }
 
+    /**
+     * Resolves the "Ask AI about this place" entry point: switches to the existing chat
+     * session tagged with [placeId], or creates a new one tagged with that place when none
+     * exists. Either way the place's session becomes active. Idempotent — re-entering for a
+     * place that is already active reloads the same session.
+     */
+    fun openPlaceChat(placeId: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val sessions = runCatching { chatRepository.listSessions() }.getOrDefault(emptyList())
+            val existingId = ChatSessionLogic.resolveSessionForPlace(placeId, sessions)
+            val targetId = existingId ?: chatRepository.createSession(placeId = placeId)
+
+            val messages = chatRepository.switchToSession(targetId) ?: emptyList()
+            currentSessionId = targetId
+            aiRepository.loadHistory(chatRepository.loadConversationHistory(targetId))
+
+            val resolvedMessages = messages.ifEmpty {
+                listOf(
+                    ChatMessage(
+                        role = MessageRole.ASSISTANT,
+                        content = "Let's talk about the weather!"
+                    )
+                )
+            }
+            val placeTag = sessions.firstOrNull { it.id == targetId }?.placeId ?: placeId
+            _uiState.update {
+                it.copy(
+                    messages = resolvedMessages,
+                    activeSessionId = targetId,
+                    currentPlaceTag = placeTag,
+                    isSessionSwitcherOpen = false,
+                    error = null,
+                    pendingDataFetch = null
+                )
+            }
+            Log.d("ChatViewModel: opened place chat for '$placeId' (session $targetId, existing=${existingId != null})")
+        }
+    }
+
     private suspend fun persistMessage(message: ChatMessage) {
         val sessionId = currentSessionId ?: run {
             Log.d("ChatViewModel: session not ready, skipping persist")

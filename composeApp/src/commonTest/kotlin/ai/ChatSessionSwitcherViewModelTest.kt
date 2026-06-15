@@ -211,6 +211,65 @@ class ChatSessionSwitcherViewModelTest {
         assertNull(vm.uiState.value.currentPlaceTag)
     }
 
+    // --- Place → Chat entry point (direct fix per Kimmo) ---
+
+    @Test
+    fun openPlaceChatSwitchesToExistingTaggedSession() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Untagged", ts = 100L)
+            seed(id = 2L, title = "Helsinki: wind?", ts = 200L, placeId = "Helsinki", messages = listOf(
+                ChatMessage(role = MessageRole.USER, content = "how windy in Helsinki?")
+            ))
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(2L, state.activeSessionId)
+        assertEquals(listOf("how windy in Helsinki?"), state.messages.map { it.content })
+        assertFalse(state.isSessionSwitcherOpen)
+    }
+
+    @Test
+    fun openPlaceChatCreatesNewTaggedSessionWhenNoneExists() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository().apply {
+            seed(id = 1L, title = "Oulu chat", ts = 100L, placeId = "Oulu")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        val newId = state.activeSessionId!!
+        // Fresh session, tagged with the requested place, showing only the greeting.
+        assertEquals("Helsinki", repo.sessionPlaceId(newId))
+        assertEquals(1, state.messages.size)
+        assertEquals(MessageRole.ASSISTANT, state.messages.single().role)
+        assertFalse(state.isSessionSwitcherOpen)
+    }
+
+    @Test
+    fun openPlaceChatReusesSessionOnReentryRatherThanCreatingDuplicates() = runTest(dispatcher) {
+        val repo = MultiSessionFakeChatRepository()
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+        val firstId = vm.uiState.value.activeSessionId
+
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+        val secondId = vm.uiState.value.activeSessionId
+
+        assertEquals(firstId, secondId, "re-entering the same place must reuse its session")
+    }
+
     @Test
     fun startNewChatCreatesSessionMakesItActiveAndClosesSwitcher() = runTest(dispatcher) {
         val repo = MultiSessionFakeChatRepository().apply { seed(1L, "Existing", 100L) }
@@ -298,10 +357,12 @@ private class MultiSessionFakeChatRepository : ChatRepository {
 
     override suspend fun createSession(placeId: String?): Long {
         val id = nextId++
-        sessions[id] = Session(id, ChatSessionLogic.DEFAULT_TITLE, id, mutableListOf())
+        sessions[id] = Session(id, ChatSessionLogic.DEFAULT_TITLE, id, mutableListOf(), placeId)
         currentId = id
         return id
     }
+
+    fun sessionPlaceId(id: Long): String? = sessions[id]?.placeId
 
     override suspend fun switchToSession(sessionId: Long): List<ChatMessage>? {
         val session = sessions[sessionId] ?: return null

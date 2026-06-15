@@ -19,8 +19,8 @@ class NavigatorImpl(
         backStack.add(MonthlyStatisticsRoute(placeName, year, month))
     }
 
-    override fun navigateToChat(initialMessage: String?) {
-        backStack.add(ChatRoute(initialMessage))
+    override fun navigateToChat(initialMessage: String?, placeId: String?) {
+        backStack.add(ChatRoute(initialMessage, placeId))
     }
 
     override fun navigateToSettings() {
