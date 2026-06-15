@@ -30,11 +30,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import core.LocalAppStrings
 import core.MonthlyStatisticsRoute
+import core.TestTags
 import core.isIOS
 import core.utils.formatDecimal
 import core.utils.monthName
@@ -111,6 +113,7 @@ fun MonthlyStatisticsView(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
+                        .testTag(TestTags.MONTH_DAY_LIST)
                         .padding(horizontal = 12.dp)
                 ) {
                     item {
@@ -221,14 +224,20 @@ private fun MonthSummaryHeader(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPreviousMonth) {
+                IconButton(
+                    onClick = onPreviousMonth,
+                    modifier = Modifier.testTag(TestTags.MONTH_PREVIOUS_BUTTON)
+                ) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = strings.previousMonth,
                         tint = MaterialTheme.rewinds.accentBlue
                     )
                 }
-                IconButton(onClick = onNextMonth) {
+                IconButton(
+                    onClick = onNextMonth,
+                    modifier = Modifier.testTag(TestTags.MONTH_NEXT_BUTTON)
+                ) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = strings.nextMonth,
@@ -258,7 +267,10 @@ private fun MonthSummaryHeader(
 private fun StatCardGrid(stats: CalculatedStats) {
     val strings = LocalAppStrings.current
 
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+    Column(
+        modifier = Modifier.testTag(TestTags.MONTH_STAT_CARD_GRID),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             MonthStatCard(
                 label = strings.statTempLabel,

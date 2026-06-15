@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +49,7 @@ import components.AppHeader
 import core.LocalAppStrings
 import core.Navigator
 import core.PlaceSummaryRoute
+import core.TestTags
 import org.koin.compose.viewmodel.koinViewModel
 import place.components.initialYear
 import ui.components.IsobarBackground
@@ -109,7 +111,10 @@ fun PlaceSummaryView(
                 },
                 rightContent = {
                     // Map entry point — non-accent icon button, opens the station map sheet.
-                    IconButton(onClick = { vm.openStationMap() }) {
+                    IconButton(
+                        onClick = { vm.openStationMap() },
+                        modifier = Modifier.testTag(TestTags.PLACE_STATION_MAP_BUTTON)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Map,
                             contentDescription = strings.openMapButton,
@@ -233,7 +238,7 @@ private fun YearSelectorStrip(
 
     LazyRow(
         state = listState,
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.PLACE_YEAR_SELECTOR),
         horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         items(availableYears) { year ->
@@ -251,6 +256,7 @@ private fun YearTab(year: Int, isSelected: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .testTag(TestTags.PLACE_YEAR_TAB)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 6.dp)
@@ -284,7 +290,7 @@ private fun MonthGrid(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.testTag(TestTags.PLACE_MONTH_GRID),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(monthCells.chunked(2)) { rowCells ->
@@ -326,6 +332,7 @@ private fun MonthCell(
     val shape = RoundedCornerShape(16.dp)
 
     val base = modifier
+        .testTag(TestTags.PLACE_MONTH_CELL)
         .height(96.dp)
         .clip(shape)
         .clickable(onClick = onClick)

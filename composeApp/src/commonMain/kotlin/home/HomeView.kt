@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ import components.AppHeader
 import core.GeoSearchResult
 import core.LocalAppStrings
 import core.Navigator
+import core.TestTags
 import ui.components.IsobarBackground
 import ui.theme.ReWindsColors
 import ui.theme.rewinds
@@ -246,6 +248,7 @@ private fun PlaceRow(place: PlaceDisplayData, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.HOME_PLACE_ROW)
             .padding(horizontal = 12.dp, vertical = 5.dp)
             .background(
                 color = MaterialTheme.rewinds.surface.copy(alpha = 0.75f),
@@ -368,6 +371,7 @@ private fun PlacesSearchBar(
             onValueChange = onSearchTextChange,
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag(TestTags.HOME_SEARCH_FIELD)
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.rewinds.border,
@@ -439,6 +443,7 @@ private fun SuggestionCell(name: String, region: String, country: String, onClic
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.HOME_SEARCH_SUGGESTION)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
@@ -491,7 +496,10 @@ private fun VcKeyNudgeBanner(onSetUpNow: () -> Unit) {
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
-        TextButton(onClick = onSetUpNow) {
+        TextButton(
+            onClick = onSetUpNow,
+            modifier = Modifier.testTag(TestTags.HOME_VC_KEY_NUDGE_ACTION)
+        ) {
             Text(
                 text = strings.vcKeyNudgeAction,
                 color = MaterialTheme.colorScheme.error,

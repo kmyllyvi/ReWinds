@@ -41,10 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
 import core.LocalAppStrings
 import core.Navigator
+import core.TestTags
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
 import ui.components.IsobarBackground
@@ -90,7 +92,10 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
             title = strings.chatTitle,
             onBackClick = { navigator.navigateBack() },
             rightContent = {
-                IconButton(onClick = vm::openSessionSwitcher) {
+                IconButton(
+                    onClick = vm::openSessionSwitcher,
+                    modifier = Modifier.testTag(TestTags.CHAT_SESSION_SWITCHER_BUTTON)
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,
                         contentDescription = strings.sessionSwitcherIconDesc,
@@ -112,6 +117,7 @@ fun ChatView(initialMessage: String? = null, vm: ChatViewModel = koinViewModel()
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .testTag(TestTags.CHAT_MESSAGE_LIST)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .clickable(
                     indication = null,
@@ -253,6 +259,7 @@ private fun ContextChipRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag(TestTags.CHAT_CONTEXT_CHIP_ROW)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 12.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -276,6 +283,7 @@ private fun ContextChip(
 ) {
     Box(
         modifier = Modifier
+            .testTag(TestTags.CHAT_CONTEXT_CHIP)
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.rewinds.surfaceRaised)
             .border(
@@ -376,7 +384,9 @@ fun ChatInputArea(
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChange,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .testTag(TestTags.CHAT_INPUT_FIELD),
             placeholder = {
                 Text(
                     strings.messagePlaceholder,
@@ -401,7 +411,9 @@ fun ChatInputArea(
                 focusManager.clearFocus()
             },
             enabled = isSendEnabled,
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .testTag(TestTags.CHAT_SEND_BUTTON)
         ) {
             Icon(
                 imageVector = Icons.Filled.Send,
