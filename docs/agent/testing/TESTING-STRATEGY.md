@@ -27,9 +27,17 @@
 
 | Layer | Suite                                    | Scope                                      | When it runs                     | Gates? | Reference / location                                  |
 | ----- | ---------------------------------------- | ------------------------------------------ | -------------------------------- | ------ | ----------------------------------------------------- |
-| **1** | **Compose semantic UI tests** (KIM-293)  | Single-screen behaviour, Android           | **Every PR**                     | Yes    | `composeApp/src/androidUnitTest/` (Robolectric)       |
+| **1** | **Compose semantic UI tests** (KIM-293)  | Single-screen behaviour, Android           | **Manual / `connectedAndroidTest`** | Not yet (see note) | `composeApp/src/androidInstrumentedTest/kotlin/` (instrumented, `AndroidJUnitRunner`) |
 | **2** | **Maestro E2E smoke suite** (KIM-294)    | End-to-end critical journeys, Android + iOS| **Manual / release to master**   | Yes (release) | `.maestro/flows/`, [`.maestro/README.md`](../../../.maestro/README.md) |
 | **3** | **Agentic exploratory testing** (KIM-296)| Unscripted "click around like a human"     | **Periodic, manual**             | **No** | [`AGENTIC-EXPLORATORY-TESTING.md`](./AGENTIC-EXPLORATORY-TESTING.md) |
+
+> **Note on Layer 1 CI gating.** The KIM-293 Compose semantic tests are
+> _instrumented_ Android tests (`AndroidJUnitRunner`, not Robolectric). The
+> per-PR CI workflow (`ci.yml`) currently runs only
+> `:composeApp:testDebugUnitTest`, **not** `connectedAndroidTest`, so Layer 1 is
+> **not yet gated per-PR** — it is run manually / on demand. Wiring Layer 1 into
+> per-PR CI (which needs an emulator on the runner) is the still-open KIM-293
+> follow-up parked for Kimmo.
 
 **How the layers relate.** Layers 1 and 2 lock down journeys we already know
 about (the 5–10 critical journeys defined in **KIM-291**). Layer 3 — a

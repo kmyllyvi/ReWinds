@@ -10,8 +10,12 @@ A periodic, **human-triggered** session where a computer-use / vision agent
 simulator) exercises the **running** ReWinds app _without a scripted journey_, to
 surface issues the deterministic suites miss:
 
-- **Layer 1 — KIM-293** Compose semantic UI tests (Android, every PR; in
-  `composeApp/src/androidUnitTest/`).
+- **Layer 1 — KIM-293** Compose semantic UI tests (Android, instrumented; in
+  `composeApp/src/androidInstrumentedTest/kotlin/`, wired to the `androidTest`
+  source set). These run as instrumented Compose UI tests via
+  `AndroidJUnitRunner` (not Robolectric), and are currently run
+  manually / via `connectedAndroidTest` — they are **not yet wired into per-PR
+  CI** (`ci.yml` only runs `:composeApp:testDebugUnitTest`).
 - **Layer 2 — KIM-294** Maestro E2E smoke suite (Android + iOS, manual / on
   release to master; in `.maestro/flows/`).
 
@@ -22,8 +26,9 @@ content overflow, and visual glitches that an assertion-based test never looks a
 
 > **This process is NOT CI-gating.** It never blocks a PR or a release. It runs
 > manually, on a cadence, and its only output is _notes + new tickets_. This is
-> the key distinction from Layer 1 (per-PR gate) and Layer 2 (release-branch
-> gate). See [Non-CI-gating](#non-ci-gating) below.
+> the key distinction from Layer 1 (deterministic Compose tests, intended as a
+> per-PR gate once wired into CI) and Layer 2 (release-branch gate). See
+> [Non-CI-gating](#non-ci-gating) below.
 
 ---
 
