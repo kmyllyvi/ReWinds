@@ -160,11 +160,16 @@ class ChatSessionSwitcherViewModelTest {
 
     @Test
     fun placeTaggedSessionExposesItsPlaceTag() = runTest(dispatcher) {
+        // Init defaults to the GENERAL session, so a place-tagged session only surfaces its
+        // tag once explicitly selected (here via switchToSession).
         val repo = MultiSessionFakeChatRepository().apply {
             seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
         }
         val vm = viewModel(repo)
-        advanceUntilIdle() // init's loadActiveSession picks the most recent (only) session
+        advanceUntilIdle() // init creates/uses a general session, not the Helsinki one
+
+        vm.switchToSession(1L)
+        advanceUntilIdle()
 
         assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
     }
@@ -202,6 +207,10 @@ class ChatSessionSwitcherViewModelTest {
             seed(id = 1L, title = "Helsinki: wind?", ts = 100L, placeId = "Helsinki")
         }
         val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        // Init defaults to a general session; switch into the place chat to get a tag first.
+        vm.switchToSession(1L)
         advanceUntilIdle()
         assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
 

@@ -100,8 +100,8 @@ class ChatViewModel(
 
     /**
      * Session the VM is currently reading from / writing to. Resolved on launch via
-     * [ChatSessionLogic.resolveActiveSessionId] (defaults to the most recent session)
-     * and updated by [switchToSession]. Replaces the old "always load the latest" rule.
+     * [ChatSessionLogic.resolveGeneralSessionId] (the bottom-nav Chat tab defaults to the
+     * most-recent GENERAL/untagged session) and updated by [switchToSession].
      */
     private var currentSessionId: Long? = null
 
@@ -125,14 +125,20 @@ class ChatViewModel(
     }
 
     /**
-     * Resolves and loads the active session. With [requestedId] null (app launch) the
-     * most recent session is used; a session is auto-created when none exist, so the
-     * original single-chat launch behaviour is preserved.
+     * Resolves and loads the active session.
+     *
+     * With [requestedId] null this is the bottom-nav Chat tab entry: it always resolves
+     * to the most-recent GENERAL session (`placeId == null`), creating an untagged one
+     * when none exists. Visiting a place-tagged chat therefore never leaks into the main
+     * Chat tab. A non-null [requestedId] (e.g. an explicit jump) is honoured when it
+     * still exists, otherwise it falls back to the general session.
      */
     private suspend fun loadActiveSession(requestedId: Long?) {
         val sessions = chatRepository.listSessions()
-        val resolvedId = ChatSessionLogic.resolveActiveSessionId(requestedId, sessions.map { it.id })
-            ?: chatRepository.createSession()
+        val honouredRequest = requestedId?.takeIf { id -> sessions.any { it.id == id } }
+        val resolvedId = honouredRequest
+            ?: ChatSessionLogic.resolveGeneralSessionId(sessions)
+            ?: chatRepository.createSession(placeId = null)
 
         currentSessionId = resolvedId
         val placeTag = sessions.firstOrNull { it.id == resolvedId }?.placeId

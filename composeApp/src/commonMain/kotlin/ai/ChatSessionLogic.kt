@@ -92,6 +92,19 @@ object ChatSessionLogic {
     }
 
     /**
+     * Resolves the session the bottom-nav Chat tab should default to: the most-recent
+     * GENERAL session (one with `placeId == null`), or null when no untagged session
+     * exists yet (caller creates one via `createSession(placeId = null)`).
+     *
+     * This deliberately ignores place-tagged sessions so visiting a place chat doesn't
+     * leak into the main Chat tab. [sessionsNewestFirst] mirrors [ChatSessionSummary]
+     * list ordering (newest activity first), so the first untagged match is the most
+     * recent one.
+     */
+    fun resolveGeneralSessionId(sessionsNewestFirst: List<ChatSessionSummary>): Long? =
+        sessionsNewestFirst.firstOrNull { it.placeId == null }?.id
+
+    /**
      * Resolves which session a "Ask AI about this place" intent should land on.
      *
      * Returns the id of the most-recent existing session already tagged with [placeId],
