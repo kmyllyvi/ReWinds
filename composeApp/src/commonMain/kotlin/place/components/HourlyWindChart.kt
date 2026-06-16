@@ -38,6 +38,7 @@ import core.utils.formatDecimal
 import place.HOURLY_WIND_SLOT_COUNT
 import place.HourlyWindPoint
 import place.WINDOW_START_HOUR
+import place.yAxisTicks
 import ui.theme.rewinds
 
 private val CHART_HEIGHT = 180.dp
@@ -46,13 +47,22 @@ private val ARROW_VISUAL = 12.dp
 private val ARROW_TOUCH = 18.dp
 private val LEGEND_SWATCH = 8.dp
 
+/** Left gutter reserved for y-axis labels; the plot area and the rows below are inset by this. */
+private val Y_AXIS_WIDTH = 32.dp
+
 /**
  * Dual-series line chart of hourly wind speed and gusts for one day, over the 09:00–21:00 window.
  *
  * Speed and gust polylines are drawn on a transparent Canvas (the sheet surface shows through),
- * with horizontal grid lines. Below the chart sit the hour labels and a per-hour wind-direction
- * arrow row, then a two-item legend. The y-axis is normalised against the highest gust so both
- * series share a scale.
+ * with horizontal grid lines. A y-axis scale sits in a reserved left gutter ([Y_AXIS_WIDTH]); the
+ * plot and the rows below are inset by that gutter so every column stays aligned. Below the chart
+ * sit the hour labels and a per-hour wind-direction arrow row, then a two-item legend. The y-axis is
+ * normalised against a rounded ceiling (see [yAxisTicks]) at or above the highest gust, so both
+ * series share a scale and the top gridline carries a round value.
+ *
+ * [unitLabel] is the speed unit shown once on the top y-axis label (km/h today). It is a parameter
+ * rather than hardcoded so a future user unit preference can be threaded in without touching the
+ * chart internals.
  *
  * The x-axis is a fixed 13-slot grid spanning 09:00–21:00, regardless of how many points exist.
  * Each [HourlyWindPoint] is placed in the slot matching its local hour; slots without data stay
@@ -67,7 +77,8 @@ private val LEGEND_SWATCH = 8.dp
 fun HourlyWindChart(
     date: String,
     points: List<HourlyWindPoint>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    unitLabel: String = "km/h"
 ) {
     val strings = LocalAppStrings.current
     val speedColor = MaterialTheme.rewinds.accentBlue
@@ -82,8 +93,12 @@ fun HourlyWindChart(
     val minSpeed = speeds.minOrNull() ?: 0.0
     val maxSpeed = speeds.maxOrNull() ?: 0.0
     val maxGust = gusts.maxOrNull() ?: 0.0
-    // Shared y-scale: gusts are always ≥ speed, so the highest gust is the ceiling.
-    val yMax = maxOf(maxGust, maxSpeed)
+    // Shared y-scale: gusts are always ≥ speed, so the highest gust drives the data ceiling.
+    val dataMax = maxOf(maxGust, maxSpeed)
+    // Round the ceiling up to a nice tick value so the top gridline carries a round label and the
+    // series normalises against that same value — keeping the highest point on, not above, the top line.
+    val ticks = yAxisTicks(dataMax)
+    val yMax = ticks.first()
 
     val chartDesc = strings.hourlyWindChartDesc(
         date,
@@ -101,21 +116,38 @@ fun HourlyWindChart(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Canvas(
+        // Chart row: y-axis labels in the reserved left gutter, plot Canvas inset to its right.
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(CHART_HEIGHT)
-                .semantics { contentDescription = chartDesc }
         ) {
-            drawGrid(gridColor)
-            drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
-            drawSeries(slots.map { it?.windgust }, yMax, gustColor)
+            YAxisLabels(
+                ticks = ticks,
+                unitLabel = unitLabel,
+                color = axisColor,
+                modifier = Modifier
+                    .width(Y_AXIS_WIDTH)
+                    .height(CHART_HEIGHT)
+            )
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(CHART_HEIGHT)
+                    .padding(start = Y_AXIS_WIDTH)
+                    .semantics { contentDescription = chartDesc }
+            ) {
+                drawGrid(gridColor)
+                drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
+                drawSeries(slots.map { it?.windgust }, yMax, gustColor)
+            }
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
         // Hour labels on the fixed 13-slot grid: the slot's own label, or its frame hour if empty.
-        Row(modifier = Modifier.fillMaxWidth()) {
+        // Inset by the y-axis gutter so they align under the plot area, not the full canvas width.
+        Row(modifier = Modifier.fillMaxWidth().padding(start = Y_AXIS_WIDTH)) {
             slots.forEachIndexed { index, point ->
                 val label = point?.label ?: (WINDOW_START_HOUR + index).toString().padStart(2, '0')
                 Text(
@@ -131,7 +163,8 @@ fun HourlyWindChart(
         Spacer(modifier = Modifier.height(4.dp))
 
         // Wind-direction arrows on the same 13-slot grid; empty slots draw no arrow but keep alignment.
-        Row(modifier = Modifier.fillMaxWidth()) {
+        // Same y-axis inset as the labels and plot so every column stays vertically aligned.
+        Row(modifier = Modifier.fillMaxWidth().padding(start = Y_AXIS_WIDTH)) {
             slots.forEach { point ->
                 Box(
                     modifier = Modifier.weight(1f),
@@ -161,6 +194,39 @@ fun HourlyWindChart(
             gustLabel = strings.hourlyWindGustLegend,
             labelColor = labelColor
         )
+    }
+}
+
+/**
+ * Y-axis scale in the reserved left gutter: tick values (high to low) right-aligned against the
+ * plot edge, spaced top-to-bottom to line up with the chart's evenly-spaced gridlines.
+ *
+ * [ticks] come from [yAxisTicks] and are already ordered high-to-low with an equal step, so
+ * [Arrangement.SpaceBetween] places the first on the top edge and the last on the bottom edge with
+ * even gaps between — matching the gridlines. The unit ([unitLabel]) is shown once on the top label
+ * to avoid repeating it on every row.
+ */
+@Composable
+private fun YAxisLabels(
+    ticks: List<Double>,
+    unitLabel: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(end = 4.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.End
+    ) {
+        ticks.forEachIndexed { index, value ->
+            val text = if (index == 0) "${formatDecimal(value)} $unitLabel" else formatDecimal(value)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
 
