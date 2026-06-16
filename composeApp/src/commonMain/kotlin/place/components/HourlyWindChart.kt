@@ -1,7 +1,6 @@
 package place.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -309,18 +307,26 @@ private fun LegendRow(
     sustainedLabel: String,
     thresholdLabel: String
 ) {
-    Row(
-        // Scrolls horizontally as a safety net so the four-item shaded legend never clips on
-        // narrow (~320dp) screens; the layout is otherwise unchanged.
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        LegendItem(speedColor, speedLabel, labelColor)
-        LegendItem(gustColor, gustLabel, labelColor)
-        if (sustainedColor != null) ShadingLegendItem(sustainedColor, sustainedLabel, labelColor)
-        if (thresholdColor != null) ShadingLegendItem(thresholdColor, thresholdLabel, labelColor)
+    // Split across two rows so items wrap naturally instead of relying on horizontal scroll,
+    // which gave children infinite width and broke Text measurement (letters stacked vertically).
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            LegendItem(speedColor, speedLabel, labelColor)
+            LegendItem(gustColor, gustLabel, labelColor)
+        }
+        if (sustainedColor != null || thresholdColor != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                if (sustainedColor != null) ShadingLegendItem(sustainedColor, sustainedLabel, labelColor)
+                if (thresholdColor != null) ShadingLegendItem(thresholdColor, thresholdLabel, labelColor)
+            }
+        }
     }
 }
 
