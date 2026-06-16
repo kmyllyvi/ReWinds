@@ -52,7 +52,7 @@ private val ARROW_TOUCH = 18.dp
 private val LEGEND_SWATCH = 8.dp
 
 /** Left gutter reserved for y-axis labels; the plot area and the rows below are inset by this. */
-private val Y_AXIS_WIDTH = 32.dp
+private val Y_AXIS_WIDTH = 40.dp
 
 /**
  * Dual-series line chart of hourly wind speed and gusts for one day, over the 09:00–21:00 window.
