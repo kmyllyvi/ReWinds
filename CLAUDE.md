@@ -71,26 +71,25 @@ xcodebuild -workspace iosApp/iosApp.xcworkspace \
 
 ## Development Workflow
 
-This project uses a **two-agent workflow** for development and quality assurance:
+This project uses a named agent team. See `docs/agent/WORKFLOW.md` for the full lane and handover protocol.
 
-### Coder Agent
-**Responsibilities**: Implementation, bug fixes, feature development
-- Makes code changes and commits
-- Verifies code compiles (metadata tests)
-- Follows architectural rules (MV* pattern, etc.)
+### ⚠️ Code changes go to Randy — always
 
-**Invocation**: "Coder Agent, implement [feature/fix]" or "Coder Agent, work on [task description]"
+**Claude must never edit source files directly.** Whenever a task requires touching the codebase (any file under `composeApp/src/`, build files, CI workflows, etc.), hand it off to the **Randy (developer)** agent instead. This keeps authorship, testing, and the Linear handover protocol consistent.
 
-### QA Agent
-**Responsibilities**: Testing, code review, validation
-- Runs full test suite on committed changes
-- Reviews code against CLAUDE.md rules and conventions
-- Identifies regressions, edge cases, or violations
-- Reports findings and suggests fixes
+> Exceptions: CLAUDE.md itself, docs, and agent files (`.claude/agents/`) may be edited directly when updating project-level instructions.
 
-**Invocation**: "QA Agent, test and review the latest commit" or "QA Agent, test commit [hash]"
+### Agent roster
 
-**Workflow**: User tells Coder Agent to implement → Coder commits → User tells QA Agent to review/test → QA reports back
+| Agent | Persona | Role |
+|-------|---------|------|
+| `Randy (developer)` | Randy | Implementation, bug fixes, commits, PR + Linear handover |
+| `Marcy (code-reviewer)` | Marcy | Code review against AC/DoD/MV* rules (auto-triggered on PR open) |
+| `Shirley (po)` | Shirley | Spec + acceptance criteria for Backlog items |
+| `Armin (codebase-architect)` | Armin | Architecture exploration, technical planning |
+| `Seppo (qa-test-agent)` | Seppo | Testing (manual dispatch) |
+| `Mr.T (ux-ui-reviewer)` | Mr.T | UI/UX review (manual dispatch) |
+| `Phill (doc-agent)` | Phill | Docs update after merge (auto-triggered) |
 
 ## Project Structure
 ```
