@@ -203,6 +203,13 @@ data class AppStrings(
     val daySunrise: (String) -> String,
     val daySunset: (String) -> String,
 
+    // DayDetailSheet (hourly wind chart)
+    val hourlyWindSpeedLegend: String,
+    val hourlyWindGustLegend: String,
+    val noHourlyData: String,
+    val hourlyWindChartDesc: (String, String, String, String) -> String,
+    val windDirectionDesc: (String) -> String,
+
     // CalendarSelectors
     val selectYear: String,
     val selectMonth: String,
@@ -411,6 +418,13 @@ data class AppStrings(
             dayRainfall = { mm -> "Rainfall: $mm mm" },
             daySunrise = { time -> "Sunrise: $time" },
             daySunset = { time -> "Sunset: $time" },
+            hourlyWindSpeedLegend = "Wind speed",
+            hourlyWindGustLegend = "Gusts",
+            noHourlyData = "No hourly data available for this day",
+            hourlyWindChartDesc = { date, minSpeed, maxSpeed, maxGust ->
+                "Hourly wind chart for $date. Speed range $minSpeed–$maxSpeed km/h, gusts up to $maxGust km/h."
+            },
+            windDirectionDesc = { compass -> "Wind direction: $compass" },
 
             // CalendarSelectors
             selectYear = "Select Year:",
@@ -620,6 +634,13 @@ data class AppStrings(
             dayRainfall = { mm -> "Niederschlag: $mm mm" },
             daySunrise = { time -> "Sonnenaufgang: $time" },
             daySunset = { time -> "Sonnenuntergang: $time" },
+            hourlyWindSpeedLegend = "Windgeschwindigkeit",
+            hourlyWindGustLegend = "Böen",
+            noHourlyData = "Keine stündlichen Daten für diesen Tag verfügbar",
+            hourlyWindChartDesc = { date, minSpeed, maxSpeed, maxGust ->
+                "Stündliches Winddiagramm für $date. Geschwindigkeitsbereich $minSpeed–$maxSpeed km/h, Böen bis $maxGust km/h."
+            },
+            windDirectionDesc = { compass -> "Windrichtung: $compass" },
 
             // CalendarSelectors
             selectYear = "Jahr ausw\u00E4hlen:",

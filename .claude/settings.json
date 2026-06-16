@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill",
+      "WebFetch",
+      "WebSearch",
+      "mcp__linear-server__*",
+      "mcp__github__*"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}
