@@ -46,6 +46,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-6
           direct_prompt: |
             You are Marcy (code-reviewer) for the ReWinds project. Follow the
             instructions in .claude/agents/Marcy-code-reviewer.md exactly.

@@ -32,6 +32,9 @@ import core.LocalAppStrings
 import core.degreesToCompass
 import place.DayWeatherSummary
 import core.utils.formatDecimal
+import core.utils.formatGust
+import core.utils.formatTemperatureRange
+import core.utils.shortDayLabel
 
 /**
  * A composable that displays a summary of weather for a single day in a row format.
@@ -66,10 +69,21 @@ fun DaySummaryRow(daySummary: DayWeatherSummary) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Always visible content
-                Text(text = daySummary.date ?: "", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = shortDayLabel(daySummary.date),
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 Spacer(modifier = Modifier.weight(1f))
-                Text(text = "${daySummary.avgTemp}\u00B0C", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
-                Text(text = "${daySummary.avgWindSpeed} km/h", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp))
+                Text(
+                    text = formatTemperatureRange(daySummary.minTemp, daySummary.maxTemp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Text(
+                    text = formatGust(daySummary.maxWindSpeed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,

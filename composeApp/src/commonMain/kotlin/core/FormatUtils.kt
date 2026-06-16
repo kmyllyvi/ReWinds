@@ -16,6 +16,65 @@ fun formatDecimal(value: Double): String {
     return "$sign$intPart.$decPart"
 }
 
+private val WEEKDAY_ABBREVIATIONS =
+    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+/**
+ * Formats a "YYYY-MM-DD" date string into a short "Mon 13." label
+ * (three-letter weekday abbreviation, day-of-month, trailing period).
+ *
+ * KMP-safe: parses via string splitting and derives the weekday with a
+ * Sakamoto-style integer calculation — no JVM date classes.
+ *
+ * Falls back to the raw [date] string when it is unparseable, or "--" when null.
+ */
+fun shortDayLabel(date: String?): String {
+    if (date == null) return "--"
+    val parts = date.split("-")
+    if (parts.size != 3) return date
+    val year = parts[0].toIntOrNull()
+    val month = parts[1].toIntOrNull()
+    val day = parts[2].toIntOrNull()
+    if (year == null || month == null || day == null) return date
+    if (month !in 1..12 || day !in 1..31) return date
+
+    val weekday = WEEKDAY_ABBREVIATIONS[mondayBasedWeekday(year, month, day)]
+    return "$weekday $day."
+}
+
+/**
+ * Returns the day of week as 0=Monday .. 6=Sunday using Sakamoto's algorithm.
+ */
+private fun mondayBasedWeekday(year: Int, month: Int, day: Int): Int {
+    val monthOffsets = intArrayOf(0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4)
+    val y = if (month < 3) year - 1 else year
+    // Sakamoto yields 0=Sunday .. 6=Saturday; shift to 0=Monday .. 6=Sunday.
+    val sundayBased =
+        (y + y / 4 - y / 100 + y / 400 + monthOffsets[month - 1] + day) % 7
+    return (sundayBased + 6) % 7
+}
+
+/**
+ * Formats a temperature range as "min–max °C", rendering each missing value as "--".
+ * Example: 12.0, 19.0 → "12–19 °C"; null, 19.0 → "--–19 °C".
+ */
+fun formatTemperatureRange(minTemp: Double?, maxTemp: Double?): String {
+    val min = minTemp?.let { formatWhole(it) } ?: "--"
+    val max = maxTemp?.let { formatWhole(it) } ?: "--"
+    return "$min–$max °C"
+}
+
+/**
+ * Formats a wind/gust speed as a whole number followed by "km/h".
+ * Example: 32.4 → "32 km/h"; null → "-- km/h".
+ */
+fun formatGust(speed: Double?): String {
+    val value = speed?.let { formatWhole(it) } ?: "--"
+    return "$value km/h"
+}
+
+private fun formatWhole(value: Double): String = value.roundToLong().toString()
+
 // Helper for month name (consider a KMM-friendly date library for more robust formatting)
 fun monthName(month: Int): String {
     return when (month) {

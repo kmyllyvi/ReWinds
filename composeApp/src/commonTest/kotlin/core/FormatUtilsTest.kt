@@ -1,7 +1,10 @@
 package core
 
 import core.utils.formatDecimal
+import core.utils.formatGust
+import core.utils.formatTemperatureRange
 import core.utils.monthName
+import core.utils.shortDayLabel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -58,5 +61,61 @@ class FormatUtilsTest {
         assertEquals("Unknown", monthName(0))
         assertEquals("Unknown", monthName(13))
         assertEquals("Unknown", monthName(-1))
+    }
+
+    @Test
+    fun shortDayLabel_formatsKnownWeekdays() {
+        // 2026-06-16 is a Tuesday, 2026-06-15 a Monday, 2026-06-21 a Sunday.
+        assertEquals("Tue 16.", shortDayLabel("2026-06-16"))
+        assertEquals("Mon 15.", shortDayLabel("2026-06-15"))
+        assertEquals("Sun 21.", shortDayLabel("2026-06-21"))
+    }
+
+    @Test
+    fun shortDayLabel_handlesLeapDayAndYearBoundaries() {
+        // 2024-02-29 is a Thursday; 2000-01-01 is a Saturday.
+        assertEquals("Thu 29.", shortDayLabel("2024-02-29"))
+        assertEquals("Sat 1.", shortDayLabel("2000-01-01"))
+    }
+
+    @Test
+    fun shortDayLabel_dropsLeadingZeroOnDayNumber() {
+        assertEquals("Mon 1.", shortDayLabel("2026-06-01"))
+    }
+
+    @Test
+    fun shortDayLabel_fallsBackToRawStringWhenUnparseable() {
+        assertEquals("not-a-date", shortDayLabel("not-a-date"))
+        assertEquals("2026/06/16", shortDayLabel("2026/06/16"))
+        assertEquals("2026-13-40", shortDayLabel("2026-13-40"))
+    }
+
+    @Test
+    fun shortDayLabel_nullReturnsPlaceholder() {
+        assertEquals("--", shortDayLabel(null))
+    }
+
+    @Test
+    fun formatTemperatureRange_bothValues() {
+        assertEquals("12–19 °C", formatTemperatureRange(12.0, 19.0))
+        assertEquals("12–20 °C", formatTemperatureRange(11.6, 19.5))
+    }
+
+    @Test
+    fun formatTemperatureRange_missingValuesShowPlaceholder() {
+        assertEquals("--–19 °C", formatTemperatureRange(null, 19.0))
+        assertEquals("12–-- °C", formatTemperatureRange(12.0, null))
+        assertEquals("--–-- °C", formatTemperatureRange(null, null))
+    }
+
+    @Test
+    fun formatGust_roundsToWholeKmh() {
+        assertEquals("32 km/h", formatGust(32.4))
+        assertEquals("33 km/h", formatGust(32.6))
+    }
+
+    @Test
+    fun formatGust_nullShowsPlaceholder() {
+        assertEquals("-- km/h", formatGust(null))
     }
 }
