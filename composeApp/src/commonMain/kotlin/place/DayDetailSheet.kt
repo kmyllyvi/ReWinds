@@ -35,6 +35,7 @@ private val CHART_AREA_HEIGHT = 180.dp
  * @param day The selected day's summary; supplies the header date and chart [contentDescription].
  * @param hours The 09:00–21:00 local-time points resolved by the ViewModel; empty means no data.
  * @param isLoading True while [hours] is still being resolved.
+ * @param shadingTiers Per-slot criteria shading derived by the ViewModel; empty renders no shading.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +43,8 @@ fun DayDetailSheet(
     day: DayWeatherSummary,
     hours: List<HourlyWindPoint>,
     isLoading: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    shadingTiers: List<ShadingTier> = emptyList()
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateLabel = shortDayLabel(day.date)
@@ -67,7 +69,11 @@ fun DayDetailSheet(
             when {
                 isLoading -> ChartLoading()
                 hours.isEmpty() -> EmptyHourlyData(dateLabel = dateLabel)
-                else -> HourlyWindChart(date = dateLabel, points = hours)
+                else -> HourlyWindChart(
+                    date = dateLabel,
+                    points = hours,
+                    shadingTiers = shadingTiers
+                )
             }
         }
     }

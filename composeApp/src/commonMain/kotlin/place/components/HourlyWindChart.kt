@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,8 +40,9 @@ import androidx.compose.foundation.background
 import core.LocalAppStrings
 import core.degreesToCompass
 import core.utils.formatDecimal
-import place.HOURLY_WIND_SLOT_COUNT
 import place.HourlyWindPoint
+import place.ShadingTier
+import place.hourlyWindSlots
 import place.WINDOW_START_HOUR
 import place.windFlowBearing
 import place.yAxisTicks
@@ -50,6 +53,18 @@ private val GRID_LINE_COUNT = 4
 private val ARROW_VISUAL = 12.dp
 private val ARROW_TOUCH = 18.dp
 private val LEGEND_SWATCH = 8.dp
+private val LEGEND_RECT_WIDTH = 16.dp
+private val LEGEND_RECT_HEIGHT = 8.dp
+private val LEGEND_RECT_CORNER = 2.dp
+
+// Criteria-shading opacities (KIM-305), applied to accentBlue. Tier 2 (sustained) reads stronger
+// than Tier 1 (threshold); the top-edge stroke marks the qualifying block's upper boundary.
+private const val TIER_THRESHOLD_ALPHA = 0.07f
+private const val TIER_SUSTAINED_ALPHA = 0.18f
+private const val TIER_SUSTAINED_EDGE_ALPHA = 0.55f
+
+/** Physical thickness of the sustained block's top-edge stroke, resolved to px inside the Canvas. */
+private val TIER_SUSTAINED_EDGE_WIDTH = 1.5.dp
 
 /** Left gutter reserved for y-axis labels; the plot area and the rows below are inset by this. */
 private val Y_AXIS_WIDTH = 40.dp
@@ -82,7 +97,8 @@ fun HourlyWindChart(
     date: String,
     points: List<HourlyWindPoint>,
     modifier: Modifier = Modifier,
-    unitLabel: String = "km/h"
+    unitLabel: String = "km/h",
+    shadingTiers: List<ShadingTier> = emptyList()
 ) {
     val strings = LocalAppStrings.current
     val speedColor = MaterialTheme.rewinds.accentBlue
@@ -91,6 +107,13 @@ fun HourlyWindChart(
     val axisColor = MaterialTheme.rewinds.textSecondary
     val arrowTint = MaterialTheme.rewinds.textTertiary
     val labelColor = MaterialTheme.rewinds.textPrimary
+
+    // Shading is active only when the caller supplied a tier per slot; otherwise the chart renders
+    // exactly as before (no fills, no extra legend items).
+    val showShading = shadingTiers.isNotEmpty()
+    val thresholdFill = speedColor.copy(alpha = TIER_THRESHOLD_ALPHA)
+    val sustainedFill = speedColor.copy(alpha = TIER_SUSTAINED_ALPHA)
+    val sustainedEdge = speedColor.copy(alpha = TIER_SUSTAINED_EDGE_ALPHA)
 
     val speeds = points.mapNotNull { it.windspeed }
     val gusts = points.mapNotNull { it.windgust }
@@ -111,13 +134,8 @@ fun HourlyWindChart(
         formatDecimal(maxGust)
     )
 
-    // Fixed 13-slot frame: index 0 == 09:00 … index 12 == 21:00. A point lands in the slot matching
-    // its local hour; unfilled slots stay null so the axis width never depends on how many hours exist.
-    val slots = arrayOfNulls<HourlyWindPoint>(HOURLY_WIND_SLOT_COUNT)
-    points.forEach { point ->
-        val slot = point.hour - WINDOW_START_HOUR
-        if (slot in slots.indices) slots[slot] = point
-    }
+    // Fixed 13-slot frame (09:00–21:00); shared with the shading input so columns stay index-aligned.
+    val slots = hourlyWindSlots(points)
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Unit shown once above the gutter so it never wraps against, or overlaps, the top tick.
@@ -150,6 +168,10 @@ fun HourlyWindChart(
                     .padding(start = Y_AXIS_WIDTH)
                     .semantics { contentDescription = chartDesc }
             ) {
+                // Shading first so grid lines and data series always render on top of it.
+                if (showShading) {
+                    drawColumnShading(shadingTiers, thresholdFill, sustainedFill, sustainedEdge)
+                }
                 drawGrid(gridColor)
                 drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
                 drawSeries(slots.map { it?.windgust }, yMax, gustColor)
@@ -210,7 +232,12 @@ fun HourlyWindChart(
             gustColor = gustColor,
             speedLabel = strings.hourlyWindSpeedLegend,
             gustLabel = strings.hourlyWindGustLegend,
-            labelColor = labelColor
+            labelColor = labelColor,
+            // Tier swatches only when shading is active — they explain marks the chart isn't drawing otherwise.
+            sustainedColor = if (showShading) sustainedFill else null,
+            thresholdColor = if (showShading) thresholdFill else null,
+            sustainedLabel = strings.hourlySustainedWindowLegend,
+            thresholdLabel = strings.hourlyMeetsThresholdLegend
         )
     }
 }
@@ -262,33 +289,78 @@ private fun YAxisLabels(
     }
 }
 
-/** Two filled-circle swatch + label items, in the speed and gust series colours. */
+/**
+ * Series legend: two filled-circle swatches for the speed and gust lines, followed — when shading
+ * is active ([sustainedColor]/[thresholdColor] non-null) — by two rounded-rectangle swatches for
+ * the criteria-shading tiers. The tier swatches are omitted entirely when shading is off, so a
+ * threshold-less filter renders the same legend as before.
+ */
 @Composable
 private fun LegendRow(
     speedColor: Color,
     gustColor: Color,
     speedLabel: String,
     gustLabel: String,
-    labelColor: Color
+    labelColor: Color,
+    sustainedColor: Color?,
+    thresholdColor: Color?,
+    sustainedLabel: String,
+    thresholdLabel: String
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        LegendItem(speedColor, speedLabel, labelColor)
-        LegendItem(gustColor, gustLabel, labelColor)
+    // Split across two rows so items wrap naturally instead of relying on horizontal scroll,
+    // which gave children infinite width and broke Text measurement (letters stacked vertically).
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            LegendItem(speedColor, speedLabel, labelColor)
+            LegendItem(gustColor, gustLabel, labelColor)
+        }
+        if (sustainedColor != null || thresholdColor != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                if (sustainedColor != null) ShadingLegendItem(sustainedColor, sustainedLabel, labelColor)
+                if (thresholdColor != null) ShadingLegendItem(thresholdColor, thresholdLabel, labelColor)
+            }
+        }
     }
 }
 
+/** Circle swatch + label for a data series. */
 @Composable
 private fun LegendItem(swatch: Color, label: String, labelColor: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    LegendRowItem(label, labelColor) {
         Box(
             modifier = Modifier
                 .size(LEGEND_SWATCH)
                 .clip(CircleShape)
                 .background(swatch)
         )
+    }
+}
+
+/** Rounded-rectangle swatch + label for a criteria-shading tier (KIM-305). */
+@Composable
+private fun ShadingLegendItem(swatch: Color, label: String, labelColor: Color) {
+    LegendRowItem(label, labelColor) {
+        Box(
+            modifier = Modifier
+                .size(width = LEGEND_RECT_WIDTH, height = LEGEND_RECT_HEIGHT)
+                .clip(RoundedCornerShape(LEGEND_RECT_CORNER))
+                .background(swatch)
+        )
+    }
+}
+
+/** Shared swatch-plus-label layout so series and tier legend items align identically. */
+@Composable
+private fun LegendRowItem(label: String, labelColor: Color, swatch: @Composable () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        swatch()
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = label,
@@ -296,6 +368,59 @@ private fun LegendItem(swatch: Color, label: String, labelColor: Color) {
             color = labelColor
         )
     }
+}
+
+/**
+ * Fills each slot's full-width, full-height column with its criteria-shading tier colour and draws
+ * a single top-edge stroke spanning each contiguous run of sustained slots (KIM-305).
+ *
+ * [tiers] is one entry per x-axis slot, parallel to the chart's slot grid; its size sets the column
+ * width so shading stays aligned with the series and hour labels. Threshold and sustained slots get
+ * their fills; [ShadingTier.NONE] slots are left clear. Adjacent sustained slots share one stroke so
+ * an unbroken band shows no interior seams.
+ */
+private fun DrawScope.drawColumnShading(
+    tiers: List<ShadingTier>,
+    thresholdFill: Color,
+    sustainedFill: Color,
+    sustainedEdge: Color
+) {
+    if (tiers.isEmpty()) return
+    val columnWidth = size.width / tiers.size
+
+    tiers.forEachIndexed { index, tier ->
+        val fill = when (tier) {
+            ShadingTier.THRESHOLD -> thresholdFill
+            ShadingTier.SUSTAINED -> sustainedFill
+            ShadingTier.NONE -> null
+        } ?: return@forEachIndexed
+        drawRect(
+            color = fill,
+            topLeft = Offset(columnWidth * index, 0f),
+            size = Size(columnWidth, size.height)
+        )
+    }
+
+    // One top-edge stroke per contiguous run of sustained slots, so a merged band has no seams.
+    var runStart = -1
+    fun flush(endExclusive: Int) {
+        if (runStart < 0) return
+        drawLine(
+            color = sustainedEdge,
+            start = Offset(columnWidth * runStart, 0f),
+            end = Offset(columnWidth * endExclusive, 0f),
+            strokeWidth = TIER_SUSTAINED_EDGE_WIDTH.toPx()
+        )
+        runStart = -1
+    }
+    tiers.forEachIndexed { index, tier ->
+        if (tier == ShadingTier.SUSTAINED) {
+            if (runStart < 0) runStart = index
+        } else {
+            flush(index)
+        }
+    }
+    flush(tiers.size)
 }
 
 /** Evenly-spaced horizontal grid lines spanning the full chart width. */

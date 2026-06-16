@@ -206,6 +206,8 @@ data class AppStrings(
     // DayDetailSheet (hourly wind chart)
     val hourlyWindSpeedLegend: String,
     val hourlyWindGustLegend: String,
+    val hourlySustainedWindowLegend: String,
+    val hourlyMeetsThresholdLegend: String,
     val noHourlyData: String,
     val hourlyWindChartDesc: (String, String, String, String) -> String,
     val windDirectionDesc: (String) -> String,
@@ -420,6 +422,8 @@ data class AppStrings(
             daySunset = { time -> "Sunset: $time" },
             hourlyWindSpeedLegend = "Wind speed",
             hourlyWindGustLegend = "Gusts",
+            hourlySustainedWindowLegend = "Sustained window",
+            hourlyMeetsThresholdLegend = "Meets threshold",
             noHourlyData = "No hourly data available for this day",
             hourlyWindChartDesc = { date, minSpeed, maxSpeed, maxGust ->
                 "Hourly wind chart for $date. Speed range $minSpeed–$maxSpeed km/h, gusts up to $maxGust km/h."
@@ -636,6 +640,8 @@ data class AppStrings(
             daySunset = { time -> "Sonnenuntergang: $time" },
             hourlyWindSpeedLegend = "Windgeschwindigkeit",
             hourlyWindGustLegend = "Böen",
+            hourlySustainedWindowLegend = "Konstantes Fenster",
+            hourlyMeetsThresholdLegend = "Erreicht Schwelle",
             noHourlyData = "Keine stündlichen Daten für diesen Tag verfügbar",
             hourlyWindChartDesc = { date, minSpeed, maxSpeed, maxGust ->
                 "Stündliches Winddiagramm für $date. Geschwindigkeitsbereich $minSpeed–$maxSpeed km/h, Böen bis $maxGust km/h."
