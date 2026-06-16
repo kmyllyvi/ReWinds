@@ -164,6 +164,22 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   the place screen overrides the Chat tab. Routing logic is unit-tested in `TabRoutingNavigatorTest`.
 - Chat-tab root back is NOT a no-op anymore: `onRootBack = { selectTab(PLACES); true }`.
 
+## Keyboard/IME inset handling (KIM-298)
+- iOS CMP gotcha: `consumeWindowInsets(innerPadding)` does NOT reliably subtract a consumed
+  inset (e.g. Scaffold bottomBar / 72.dp tab bar) from `WindowInsets.ime` downstream. A child
+  `imePadding()` then double-counts the tab-bar height → empty gap (~tab-bar height) between the
+  chat input and the keyboard. Was tried in PR #35 and DID NOT fix iOS.
+- Working fix: handle the bottom inset in ONE place. In `core/Router.kt` Scaffold content lambda,
+  pad the content Box by `bottom = maxOf(innerPadding.calculateBottomPadding(), imeBottom)` where
+  `imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()`. Removed `imePadding()`
+  from `ai/ChatView.kt`'s Column so the inset isn't applied twice. Keyboard closed → tab-bar inset;
+  open → content rises to sit on the keyboard.
+- Scaffold uses `contentWindowInsets = WindowInsets(0)`, so `innerPadding` is ONLY the bottomBar
+  height (no IME/system bars) — that's why IME must be read separately and combined manually.
+- API note: `PaddingValues.calculate{Bottom,Top}Padding()` are MEMBER fns (no import);
+  `calculate{Start,End}Padding(layoutDirection)` are EXTENSIONS needing import + LocalLayoutDirection.
+- Not unit-testable (no IME in JVM unit tests) — layout-only change, allowed testing exception.
+
 ## Reproducing iOS runtime crashes locally (no Gradle iOS build)
 - Build: `xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp -configuration Debug
   -sdk iphonesimulator -destination "id=<UDID>" -derivedDataPath build`.
