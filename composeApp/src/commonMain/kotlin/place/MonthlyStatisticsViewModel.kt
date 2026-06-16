@@ -2,7 +2,7 @@ package place
 
 import androidx.lifecycle.ViewModel // KMM ViewModel
 import androidx.lifecycle.viewModelScope
-import core.AppSettingsRepository
+import core.AppSettingsStore
 import core.Day
 import core.DaysOfInterestFilter
 import core.Hour
@@ -42,7 +42,7 @@ data class CalculatedStats(
 class MonthlyStatisticsViewModel(
     route: MonthlyStatisticsRoute,
     private val weatherRepository: WeatherRepository,
-    private val settingsRepo: AppSettingsRepository
+    private val settingsRepo: AppSettingsStore
 ) : ViewModel() { // Extend androidx.lifecycle.ViewModel
 
     val placeName: String = route.placeName
@@ -68,6 +68,21 @@ class MonthlyStatisticsViewModel(
     /** Index into [dailySummaries] of the day with the peak sustained wind speed, or -1 when none. */
     private val _peakWindDayIndex = MutableStateFlow(-1)
     val peakWindDayIndex: StateFlow<Int> = _peakWindDayIndex.asStateFlow()
+
+    /** The day whose detail sheet is open. Non-null drives sheet visibility; null means closed. */
+    private val _selectedDay = MutableStateFlow<DayWeatherSummary?>(null)
+    val selectedDay: StateFlow<DayWeatherSummary?> = _selectedDay.asStateFlow()
+
+    /** Hourly wind points (09:00–21:00 local time) for [selectedDay]; empty until loaded or when none. */
+    private val _selectedDayHours = MutableStateFlow<List<HourlyWindPoint>>(emptyList())
+    val selectedDayHours: StateFlow<List<HourlyWindPoint>> = _selectedDayHours.asStateFlow()
+
+    /** True while the selected day's hourly rows are being resolved, so the sheet can show a spinner. */
+    private val _isLoadingHours = MutableStateFlow(false)
+    val isLoadingHours: StateFlow<Boolean> = _isLoadingHours.asStateFlow()
+
+    /** Full place data from the last load, retained so day selection can resolve hours + tzoffset on demand. */
+    private var loadedData: WeatherResponse? = null
 
     private var filter: DaysOfInterestFilter = loadFilter()
 
@@ -122,10 +137,13 @@ class MonthlyStatisticsViewModel(
         // month resolves, and so the day rows emit before the stats card (progressive render).
         _statistics.value = null
         _dailySummaries.value = emptyList()
+        // A reload (month change / download) invalidates any open day sheet.
+        dismissDaySheet()
         viewModelScope.launch {
 
             // Now use the 'this.placeName', 'this.currentYear', 'this.currentMonth' properties
             val allDaysForPlace = weatherRepository.getSavedDataFor(placeName)
+            loadedData = allDaysForPlace
             val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, currentYear, currentMonth)
             _dailySummaries.value = relevantDaysSummary
             _peakWindDayIndex.value = peakSustainedWindIndex(relevantDaysSummary)
@@ -229,6 +247,31 @@ class MonthlyStatisticsViewModel(
             }
         }
         return peakIndex
+    }
+
+    /**
+     * Opens the detail sheet for [summary] and resolves its 09:00–21:00 local-time hourly wind
+     * points on demand. Hours are read from the already-loaded [WeatherResponse] (the full-load
+     * path populates [Day.hours]); the location's [WeatherResponse.tzoffset] drives the local-time
+     * window. Emits 0–12 points — empty means no hourly data for the day, which the sheet renders
+     * as an empty state rather than a chart.
+     */
+    fun selectDay(summary: DayWeatherSummary) {
+        _selectedDay.value = summary
+        _selectedDayHours.value = emptyList()
+        _isLoadingHours.value = true
+        viewModelScope.launch {
+            val day = loadedData?.days?.firstOrNull { it.datetime == summary.date }
+            _selectedDayHours.value = hourlyWindWindow(day?.hours, loadedData?.tzoffset)
+            _isLoadingHours.value = false
+        }
+    }
+
+    /** Closes the detail sheet and clears its hourly data. */
+    fun dismissDaySheet() {
+        _selectedDay.value = null
+        _selectedDayHours.value = emptyList()
+        _isLoadingHours.value = false
     }
 
     private fun calculateStatsInternal(daysData: List<DayWeatherSummary>): CalculatedStats {

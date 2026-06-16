@@ -76,6 +76,9 @@ fun MonthlyStatisticsView(
     val currentYear by vm.year.collectAsState()
     val currentMonth by vm.month.collectAsState()
     val peakWindDayIndex by vm.peakWindDayIndex.collectAsState()
+    val selectedDay by vm.selectedDay.collectAsState()
+    val selectedDayHours by vm.selectedDayHours.collectAsState()
+    val isLoadingHours by vm.isLoadingHours.collectAsState()
     val strings = LocalAppStrings.current
 
     // No LaunchedEffect to (re)load here: the ViewModel's init already loads the initial
@@ -178,12 +181,21 @@ fun MonthlyStatisticsView(
                     }
 
                     items(dailySummaries) { daySummary ->
-                        DaySummaryRow(daySummary)
+                        DaySummaryRow(daySummary, onClick = { vm.selectDay(daySummary) })
                     }
 
                     item { Spacer(modifier = Modifier.height(16.dp)) }
                 }
             }
+        }
+
+        selectedDay?.let { day ->
+            DayDetailSheet(
+                day = day,
+                hours = selectedDayHours,
+                isLoading = isLoadingHours,
+                onDismiss = { vm.dismissDaySheet() }
+            )
         }
     }
 }
