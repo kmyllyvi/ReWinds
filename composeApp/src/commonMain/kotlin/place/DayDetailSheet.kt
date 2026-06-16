@@ -36,6 +36,8 @@ private val CHART_AREA_HEIGHT = 180.dp
  * @param hours The 09:00–21:00 local-time points resolved by the ViewModel; empty means no data.
  * @param isLoading True while [hours] is still being resolved.
  * @param shadingTiers Per-slot criteria shading derived by the ViewModel; empty renders no shading.
+ * @param minThresholdKmh The active filter's minimum wind speed; null draws no min threshold line.
+ * @param maxThresholdKmh The active filter's maximum wind speed; null draws no max threshold line.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +46,9 @@ fun DayDetailSheet(
     hours: List<HourlyWindPoint>,
     isLoading: Boolean,
     onDismiss: () -> Unit,
-    shadingTiers: List<ShadingTier> = emptyList()
+    shadingTiers: List<ShadingTier> = emptyList(),
+    minThresholdKmh: Double? = null,
+    maxThresholdKmh: Double? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateLabel = shortDayLabel(day.date)
@@ -72,7 +76,9 @@ fun DayDetailSheet(
                 else -> HourlyWindChart(
                     date = dateLabel,
                     points = hours,
-                    shadingTiers = shadingTiers
+                    shadingTiers = shadingTiers,
+                    minThresholdKmh = minThresholdKmh,
+                    maxThresholdKmh = maxThresholdKmh
                 )
             }
         }
