@@ -90,6 +90,66 @@ class ChatTabGeneralSessionViewModelTest {
 
         assertEquals(2L, vm.uiState.value.activeSessionId)
     }
+
+    @Test
+    fun ensureGeneralChatSwitchesAwayFromPlaceTaggedSession() = runTest(dispatcher) {
+        val repo = GeneralSessionFakeChatRepository().apply {
+            seed(id = 1L, ts = 100L, placeId = null)
+            seed(id = 2L, ts = 200L, placeId = "Tarifa")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+
+        // Simulate "Ask AI about this place" having put the place chat into view.
+        vm.openPlaceChat("Tarifa")
+        advanceUntilIdle()
+        assertEquals(2L, vm.uiState.value.activeSessionId)
+        assertEquals("Tarifa", vm.uiState.value.currentPlaceTag)
+
+        // Plain re-entry to the Chat tab must reset to the general session.
+        vm.ensureGeneralChat()
+        advanceUntilIdle()
+
+        assertEquals(1L, vm.uiState.value.activeSessionId)
+        assertEquals(null, vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun ensureGeneralChatIsNoOpWhenAlreadyGeneral() = runTest(dispatcher) {
+        val repo = GeneralSessionFakeChatRepository().apply {
+            seed(id = 1L, ts = 100L, placeId = null)
+            seed(id = 2L, ts = 200L, placeId = null)
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        val activeBefore = vm.uiState.value.activeSessionId
+
+        vm.ensureGeneralChat()
+        advanceUntilIdle()
+
+        assertEquals(activeBefore, vm.uiState.value.activeSessionId)
+        assertEquals(null, vm.uiState.value.currentPlaceTag)
+    }
+
+    @Test
+    fun ensureGeneralChatCreatesGeneralSessionWhenOnlyPlaceChatsExist() = runTest(dispatcher) {
+        val repo = GeneralSessionFakeChatRepository().apply {
+            seed(id = 1L, ts = 100L, placeId = "Helsinki")
+        }
+        val vm = viewModel(repo)
+        advanceUntilIdle()
+        // Init already created/resolved a general session. Tag it as place-active to
+        // exercise the switch-away path.
+        vm.openPlaceChat("Helsinki")
+        advanceUntilIdle()
+        assertEquals("Helsinki", vm.uiState.value.currentPlaceTag)
+
+        vm.ensureGeneralChat()
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.currentPlaceTag)
+        assertEquals(null, repo.placeIdOf(vm.uiState.value.activeSessionId))
+    }
 }
 
 /**
