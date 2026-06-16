@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -121,7 +122,7 @@ fun PlaceSummaryView(
                             tint = MaterialTheme.rewinds.textPrimary
                         )
                     }
-                    TextButton(
+                    IconButton(
                         onClick = {
                             // "Ask AI about this place" — Chat tab resolves to (or creates)
                             // a session tagged with this place. initialMessage deep-link is
@@ -129,10 +130,10 @@ fun PlaceSummaryView(
                             navigator.navigateToChat(placeId = currentPlaceName)
                         }
                     ) {
-                        Text(
-                            text = strings.chatButton,
-                            color = MaterialTheme.rewinds.accentBlue,
-                            fontWeight = FontWeight.SemiBold
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = strings.chatButton,
+                            tint = MaterialTheme.rewinds.accentBlue
                         )
                     }
                 }
