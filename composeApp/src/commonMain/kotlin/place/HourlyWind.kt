@@ -9,6 +9,7 @@ import core.Hour
  * a local-time label, the two speed series, and the bearing used to rotate the direction arrow.
  */
 data class HourlyWindPoint(
+    val hour: Int,          // local hour 9..21, used to place the point in its fixed x-axis slot
     val label: String,      // local-time "HH:00", e.g. "09"
     val windspeed: Double?,
     val windgust: Double?,
@@ -16,8 +17,11 @@ data class HourlyWindPoint(
 )
 
 /** Inclusive local-hour window shown in the day detail chart. */
-private const val WINDOW_START_HOUR = 9
-private const val WINDOW_END_HOUR = 21
+internal const val WINDOW_START_HOUR = 9
+internal const val WINDOW_END_HOUR = 21
+
+/** Fixed number of x-axis slots: one per hour in the inclusive 09:00–21:00 window. */
+internal const val HOURLY_WIND_SLOT_COUNT = WINDOW_END_HOUR - WINDOW_START_HOUR + 1
 
 /**
  * Filters [hours] down to the 09:00–21:00 window in the location's local time and maps the
@@ -44,6 +48,7 @@ fun hourlyWindWindow(hours: List<Hour>?, tzoffset: Double?): List<HourlyWindPoin
         .sortedBy { it.first }
         .map { (localHour, hour) ->
             HourlyWindPoint(
+                hour = localHour,
                 label = localHour.toString().padStart(2, '0'),
                 windspeed = hour.windspeed,
                 windgust = hour.windgust,

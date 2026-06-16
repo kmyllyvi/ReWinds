@@ -76,6 +76,27 @@ class HourlyWindWindowTest {
     }
 
     @Test
+    fun exposesLocalHour_forFixedSlotPlacement() {
+        // The chart maps each point to a fixed x-axis slot by (hour - 9), so the numeric local
+        // hour must be carried alongside the label.
+        val hours = listOf(hourAt(9), hourAt(13), hourAt(21))
+
+        val result = hourlyWindWindow(hours, tzoffset = 0.0)
+
+        assertEquals(listOf(9, 13, 21), result.map { it.hour })
+    }
+
+    @Test
+    fun localHourReflectsTzoffset() {
+        // 06:00 UTC at +3h → local hour 9, label "09".
+        val result = hourlyWindWindow(listOf(hourAt(utcHour = 6)), tzoffset = 3.0)
+
+        assertEquals(1, result.size)
+        assertEquals(9, result.first().hour)
+        assertEquals("09", result.first().label)
+    }
+
+    @Test
     fun mapsSpeedGustAndDirectionThrough() {
         val hours = listOf(hourAt(10, speed = 18.5, gust = 26.2, dir = 270.0))
 

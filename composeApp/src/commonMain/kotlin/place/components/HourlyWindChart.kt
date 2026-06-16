@@ -35,7 +35,9 @@ import androidx.compose.foundation.background
 import core.LocalAppStrings
 import core.degreesToCompass
 import core.utils.formatDecimal
+import place.HOURLY_WIND_SLOT_COUNT
 import place.HourlyWindPoint
+import place.WINDOW_START_HOUR
 import ui.theme.rewinds
 
 private val CHART_HEIGHT = 180.dp
@@ -52,9 +54,14 @@ private val LEGEND_SWATCH = 8.dp
  * arrow row, then a two-item legend. The y-axis is normalised against the highest gust so both
  * series share a scale.
  *
- * Renders only the available [points] — no interpolation, no fabricated samples. The caller is
- * responsible for the empty and loading states; this composable assumes [points] is non-empty.
- * All business logic (the local-time window filter) lives in the ViewModel, not here.
+ * The x-axis is a fixed 13-slot grid spanning 09:00–21:00, regardless of how many points exist.
+ * Each [HourlyWindPoint] is placed in the slot matching its local hour; slots without data stay
+ * empty and break the line (no interpolation, no fabricated samples). This keeps a 6-hour partial
+ * day occupying the same horizontal positions as a full day rather than stretching to fill the width.
+ *
+ * Renders only the available [points] — the caller is responsible for the empty and loading states;
+ * this composable assumes [points] is non-empty. All business logic (the local-time window filter)
+ * lives in the ViewModel, not here.
  */
 @Composable
 fun HourlyWindChart(
@@ -85,6 +92,14 @@ fun HourlyWindChart(
         formatDecimal(maxGust)
     )
 
+    // Fixed 13-slot frame: index 0 == 09:00 … index 12 == 21:00. A point lands in the slot matching
+    // its local hour; unfilled slots stay null so the axis width never depends on how many hours exist.
+    val slots = arrayOfNulls<HourlyWindPoint>(HOURLY_WIND_SLOT_COUNT)
+    points.forEach { point ->
+        val slot = point.hour - WINDOW_START_HOUR
+        if (slot in slots.indices) slots[slot] = point
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Canvas(
             modifier = Modifier
@@ -93,17 +108,18 @@ fun HourlyWindChart(
                 .semantics { contentDescription = chartDesc }
         ) {
             drawGrid(gridColor)
-            drawSeries(points.map { it.windspeed }, yMax, speedColor)
-            drawSeries(points.map { it.windgust }, yMax, gustColor)
+            drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
+            drawSeries(slots.map { it?.windgust }, yMax, gustColor)
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Hour labels aligned to the data columns (one equal-weight cell per point).
+        // Hour labels on the fixed 13-slot grid: the slot's own label, or its frame hour if empty.
         Row(modifier = Modifier.fillMaxWidth()) {
-            points.forEach { point ->
+            slots.forEachIndexed { index, point ->
+                val label = point?.label ?: (WINDOW_START_HOUR + index).toString().padStart(2, '0')
                 Text(
-                    text = point.label,
+                    text = label,
                     style = MaterialTheme.typography.labelSmall,
                     color = axisColor,
                     textAlign = TextAlign.Center,
@@ -114,14 +130,14 @@ fun HourlyWindChart(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Wind-direction arrows below the x-axis, one per hour, rotated by raw bearing.
+        // Wind-direction arrows on the same 13-slot grid; empty slots draw no arrow but keep alignment.
         Row(modifier = Modifier.fillMaxWidth()) {
-            points.forEach { point ->
+            slots.forEach { point ->
                 Box(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    point.winddir?.let { degrees ->
+                    point?.winddir?.let { degrees ->
                         Icon(
                             imageVector = Icons.Filled.Navigation,
                             contentDescription = strings.windDirectionDesc(degreesToCompass(degrees)),
@@ -199,13 +215,14 @@ private fun DrawScope.drawGrid(color: Color) {
 }
 
 /**
- * Draws one series as a connected polyline. Null samples break the line — segments are only drawn
- * between consecutive non-null points, so partial data leaves gaps rather than interpolating.
+ * Draws one series as a connected polyline over the fixed-slot grid. [values] is one entry per
+ * x-axis slot (13 of them); null entries break the line, so partial data leaves gaps in place
+ * rather than interpolating or stretching to fill the width.
  */
 private fun DrawScope.drawSeries(values: List<Double?>, yMax: Double, color: Color) {
     if (values.isEmpty() || yMax <= 0.0) return
 
-    // Each point sits at the centre of its equal-width column to align with the labels below.
+    // One equal-width column per slot, so points stay aligned with the labels and arrows below.
     val columnWidth = size.width / values.size
     fun xAt(index: Int) = columnWidth * index + columnWidth / 2f
     fun yAt(value: Double) = size.height * (1f - (value / yMax).toFloat().coerceIn(0f, 1f))

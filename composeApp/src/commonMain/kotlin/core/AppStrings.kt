@@ -204,7 +204,6 @@ data class AppStrings(
     val daySunset: (String) -> String,
 
     // DayDetailSheet (hourly wind chart)
-    val hourlyWindTitle: String,
     val hourlyWindSpeedLegend: String,
     val hourlyWindGustLegend: String,
     val noHourlyData: String,
@@ -419,7 +418,6 @@ data class AppStrings(
             dayRainfall = { mm -> "Rainfall: $mm mm" },
             daySunrise = { time -> "Sunrise: $time" },
             daySunset = { time -> "Sunset: $time" },
-            hourlyWindTitle = "Hourly wind",
             hourlyWindSpeedLegend = "Wind speed",
             hourlyWindGustLegend = "Gusts",
             noHourlyData = "No hourly data available for this day",
@@ -636,7 +634,6 @@ data class AppStrings(
             dayRainfall = { mm -> "Niederschlag: $mm mm" },
             daySunrise = { time -> "Sonnenaufgang: $time" },
             daySunset = { time -> "Sonnenuntergang: $time" },
-            hourlyWindTitle = "Stündlicher Wind",
             hourlyWindSpeedLegend = "Windgeschwindigkeit",
             hourlyWindGustLegend = "Böen",
             noHourlyData = "Keine stündlichen Daten für diesen Tag verfügbar",

@@ -1,5 +1,6 @@
 package place
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -91,7 +92,7 @@ private fun EmptyHourlyData(dateLabel: String) {
         modifier = Modifier
             .fillMaxWidth()
             .height(CHART_AREA_HEIGHT),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
