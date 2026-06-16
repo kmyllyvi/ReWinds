@@ -1,0 +1,81 @@
+name: Code Review — Marcy
+
+# Runs Marcy (code-reviewer agent) automatically on every PR opened or updated
+# against develop. Marcy posts her findings as a PR comment.
+#
+# Required secrets (Settings → Secrets → Actions):
+#   ANTHROPIC_API_KEY — used by the Claude Code action to run the agent
+#
+# Required repo permissions (granted via default GITHUB_TOKEN):
+#   pull-requests: write — post the review comment
+
+on:
+  pull_request:
+    branches: [ develop ]
+    types: [ opened, synchronize ]
+
+jobs:
+  code-review:
+    name: Run Marcy (code-reviewer)
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Extract the first KIM-XXX ticket reference from the PR body so Marcy
+      # knows which acceptance criteria and DoD to verify.
+      - name: Extract ticket from PR body
+        id: ticket
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_BODY=$(gh pr view ${{ github.event.pull_request.number }} --json body --jq '.body // ""')
+          TICKET=$(echo "$PR_BODY" | grep -oE 'KIM-[0-9]+' | head -1 || true)
+          echo "ticket=${TICKET:-none}" >> "$GITHUB_OUTPUT"
+          echo "Ticket: ${TICKET:-none}"
+
+      - name: Run Marcy
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            You are Marcy (code-reviewer) for the ReWinds project. Follow the
+            instructions in .claude/agents/Marcy-code-reviewer.md exactly.
+
+            You are reviewing PR #${{ github.event.pull_request.number }}
+            titled "${{ github.event.pull_request.title }}".
+            Linear ticket: ${{ steps.ticket.outputs.ticket }}
+
+            Steps:
+            1. Read docs/agent/ARCHITECTURE-RULES.md and docs/agent/WORKFLOW.md
+               so you know the MV* rules and the standard DoD checklist.
+            2. Fetch the full diff:
+                 gh pr diff ${{ github.event.pull_request.number }}
+            3. Fetch the PR title and body (contains the AC/DoD written by the developer):
+                 gh pr view ${{ github.event.pull_request.number }} --json title,body
+            4. Review the diff against:
+               - MV* architectural rules (ARCHITECTURE-RULES.md)
+               - Testing rules from your agent file
+               - Each acceptance-criteria checkbox in the PR body
+               - Each definition-of-done item in the PR body
+            5. Post your findings as a PR comment:
+                 gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"
+
+            Important constraints for CI:
+            - Linear MCP is NOT available. Do not attempt to call any linear-server
+              tools. Get all context (AC, DoD, ticket intent) from the PR body and diff.
+            - Do NOT update the Linear issue status or labels — that remains a manual
+              step in the pilot workflow.
+            - Do NOT edit any source files. You are a reviewer only.
+
+            Your comment must follow the output format in your agent file:
+            Summary / Strengths / Issues (by severity) / Questions / Suggestions / Verdict.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
