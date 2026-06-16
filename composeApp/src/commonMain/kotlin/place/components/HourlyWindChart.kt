@@ -3,11 +3,13 @@ package place.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +41,7 @@ import core.utils.formatDecimal
 import place.HOURLY_WIND_SLOT_COUNT
 import place.HourlyWindPoint
 import place.WINDOW_START_HOUR
+import place.windFlowBearing
 import place.yAxisTicks
 import ui.theme.rewinds
 
@@ -116,6 +120,16 @@ fun HourlyWindChart(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
+        // Unit shown once above the gutter so it never wraps against, or overlaps, the top tick.
+        Text(
+            text = unitLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = axisColor,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(Y_AXIS_WIDTH).padding(end = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+
         // Chart row: y-axis labels in the reserved left gutter, plot Canvas inset to its right.
         Box(
             modifier = Modifier
@@ -124,7 +138,6 @@ fun HourlyWindChart(
         ) {
             YAxisLabels(
                 ticks = ticks,
-                unitLabel = unitLabel,
                 color = axisColor,
                 modifier = Modifier
                     .width(Y_AXIS_WIDTH)
@@ -171,6 +184,11 @@ fun HourlyWindChart(
                     contentAlignment = Alignment.Center
                 ) {
                     point?.winddir?.let { degrees ->
+                        // `winddir` is meteorological: the direction the wind blows *from* (e.g. a
+                        // West wind is 270°). The Navigation arrow points North (up) at 0°, so we
+                        // show the *flow* direction the wind blows toward — matching the convention
+                        // users expect from wind apps (W wind → arrow points East).
+                        val flowDegrees = windFlowBearing(degrees)
                         Icon(
                             imageVector = Icons.Filled.Navigation,
                             contentDescription = strings.windDirectionDesc(degreesToCompass(degrees)),
@@ -178,7 +196,7 @@ fun HourlyWindChart(
                             modifier = Modifier
                                 .size(ARROW_TOUCH)
                                 .padding((ARROW_TOUCH - ARROW_VISUAL) / 2)
-                                .rotate(degrees.toFloat())
+                                .rotate(flowDegrees)
                         )
                     }
                 }
@@ -199,32 +217,46 @@ fun HourlyWindChart(
 
 /**
  * Y-axis scale in the reserved left gutter: tick values (high to low) right-aligned against the
- * plot edge, spaced top-to-bottom to line up with the chart's evenly-spaced gridlines.
+ * plot edge, each label centred on the exact y-coordinate of its gridline in the plot area.
  *
- * [ticks] come from [yAxisTicks] and are already ordered high-to-low with an equal step, so
- * [Arrangement.SpaceBetween] places the first on the top edge and the last on the bottom edge with
- * even gaps between — matching the gridlines. The unit ([unitLabel]) is shown once on the top label
- * to avoid repeating it on every row.
+ * [ticks] come from [yAxisTicks] ordered high-to-low. Rather than relying on even [Arrangement]
+ * spacing — which drifts because it ignores text height and gives no anchor to the Canvas plot
+ * area — each label is positioned with the same normalisation the data points use:
+ * `y = plotHeight * (1 - value / yMax)`. The label is then vertically centred on that y so its
+ * middle sits on the gridline, matching what the eye expects.
+ *
+ * Tick values are always whole-number ceilings (see [yAxisTicks]), so they render as integers
+ * with no decimal point. The unit is rendered separately above the gutter by the caller, so it
+ * never overlaps or wraps against the top tick.
  */
 @Composable
 private fun YAxisLabels(
     ticks: List<Double>,
-    unitLabel: String,
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(end = 4.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.End
+    val yMax = ticks.firstOrNull() ?: return
+    val labelHeight = with(LocalDensity.current) {
+        MaterialTheme.typography.labelSmall.lineHeight.toDp()
+    }
+
+    BoxWithConstraints(
+        modifier = modifier.padding(end = 4.dp)
     ) {
-        ticks.forEachIndexed { index, value ->
-            val text = if (index == 0) "${formatDecimal(value)} $unitLabel" else formatDecimal(value)
+        val plotHeight = maxHeight
+
+        ticks.forEach { value ->
+            val gridlineY = plotHeight * (1f - (value / yMax).toFloat())
+            // Centre the label text on the gridline by lifting it half its own height.
+            val labelTop = (gridlineY - labelHeight / 2).coerceIn(0.dp, plotHeight - labelHeight)
             Text(
-                text = text,
+                text = value.toInt().toString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
-                textAlign = TextAlign.End
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(y = labelTop)
             )
         }
     }

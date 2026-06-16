@@ -51,6 +51,18 @@ fun yAxisTicks(yMax: Double, tickIntervals: Int = 4): List<Double> {
     return (intervals downTo 0).map { it * step }
 }
 
+/**
+ * Converts a meteorological wind bearing (the direction the wind blows *from*) into the flow
+ * bearing (the direction it blows *toward*), normalised to [0, 360).
+ *
+ * Stored `winddir` follows the meteorological convention — a West wind reads 270°. Wind apps
+ * conventionally render the direction arrow pointing where the wind goes, so the chart rotates by
+ * this flow bearing instead of the raw value. Pure and top-level so the conversion is unit-testable
+ * outside the Composable.
+ */
+fun windFlowBearing(meteorologicalDegrees: Double): Float =
+    (((meteorologicalDegrees % 360.0) + 360.0 + 180.0) % 360.0).toFloat()
+
 /** Inclusive local-hour window shown in the day detail chart. */
 internal const val WINDOW_START_HOUR = 9
 internal const val WINDOW_END_HOUR = 21
