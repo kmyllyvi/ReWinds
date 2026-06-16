@@ -175,15 +175,15 @@ class MetricMapperTest {
 
     @Test
     fun testFormatValueWindConversion() {
-        // Wind: m/s to knots (multiply by 1.944)
+        // Wind: km/h to knots (divide by 1.852)
         val result = MetricMapper.formatValue("windspeed", 5.0)
-        assertEquals(9.7, result)  // 5.0 * 1.944 = 9.72 rounded to 1 decimal
+        assertEquals(2.7, result)  // 5.0 / 1.852 = 2.7 rounded to 1 decimal
     }
 
     @Test
     fun testFormatValueWindGustConversion() {
         val result = MetricMapper.formatValue("windgust", 10.0)
-        assertEquals(19.4, result)  // 10.0 * 1.944 = 19.44 rounded to 1 decimal
+        assertEquals(5.4, result)  // 10.0 / 1.852 = 5.4 rounded to 1 decimal
     }
 
     @Test

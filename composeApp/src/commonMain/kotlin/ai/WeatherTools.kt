@@ -302,15 +302,15 @@ object WeatherTools {
         val windSummary = weatherResponse.days.map { day ->
             buildJsonObject {
                 put("date", day.datetime)
-                // Convert m/s to knots (1 m/s ≈ 1.944 knots)
+                // Convert km/h to knots (1 knot = 1.852 km/h)
                 if (day.windspeed != null) {
-                    put("avg_wind_knots", (day.windspeed * 1.944).roundTo(1))
+                    put("avg_wind_knots", (day.windspeed / 1.852).roundTo(1))
                 }
                 if (day.windgust != null) {
-                    put("max_gust_knots", (day.windgust * 1.944).roundTo(1))
+                    put("max_gust_knots", (day.windgust / 1.852).roundTo(1))
                 }
                 // Simple heuristic: sustained wind is between 15-25 knots
-                val avgWindKnots = day.windspeed?.let { it * 1.944 } ?: 0.0
+                val avgWindKnots = day.windspeed?.let { it / 1.852 } ?: 0.0
                 put("sustained_15_25", avgWindKnots in 15.0..25.0)
                 // Include temperature and precipitation for context
                 if (day.temp != null) put("temp_c", day.temp)
@@ -532,8 +532,8 @@ object WeatherTools {
         }
 
         val days = weatherResponse.days!!
-        val windSpeeds = days.mapNotNull { it.windspeed?.times(1.944) }
-        val gusts = days.mapNotNull { it.windgust?.times(1.944) }
+        val windSpeeds = days.mapNotNull { it.windspeed?.div(1.852) }
+        val gusts = days.mapNotNull { it.windgust?.div(1.852) }
         val precipDays = days.count { it.precip != null && it.precip > 0 }
 
         val stats = buildJsonObject {
@@ -600,8 +600,8 @@ object WeatherTools {
 
         // Filter days by criteria
         val matchingDays = weatherResponse.days!!.filter { day ->
-            val windKnots = day.windspeed?.let { it * 1.944 } ?: 0.0
-            val gustKnots = day.windgust?.let { it * 1.944 } ?: 0.0
+            val windKnots = day.windspeed?.let { it / 1.852 } ?: 0.0
+            val gustKnots = day.windgust?.let { it / 1.852 } ?: 0.0
             val hasPrecip = day.precip != null && day.precip > 0
 
             val windOk = (minWindSpeed == null || windKnots >= minWindSpeed) &&
@@ -616,10 +616,10 @@ object WeatherTools {
             buildJsonObject {
                 put("date", day.datetime)
                 if (day.windspeed != null) {
-                    put("avg_wind_knots", (day.windspeed * 1.944).roundTo(1))
+                    put("avg_wind_knots", (day.windspeed / 1.852).roundTo(1))
                 }
                 if (day.windgust != null) {
-                    put("max_gust_knots", (day.windgust * 1.944).roundTo(1))
+                    put("max_gust_knots", (day.windgust / 1.852).roundTo(1))
                 }
                 if (day.conditions != null) put("conditions", day.conditions)
                 if (day.precip != null && day.precip > 0) put("precip_mm", day.precip)
