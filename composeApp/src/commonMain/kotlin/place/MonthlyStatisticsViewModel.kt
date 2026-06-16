@@ -14,8 +14,11 @@ import core.WeatherResponse
 import core.filterSummary
 import core.matches
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -88,11 +91,26 @@ class MonthlyStatisticsViewModel(
 
     /**
      * The preferred-day filter currently driving day-of-interest matching, exposed so the day
-     * detail sheet can shade hours against the same wind criteria (KIM-305). Null until the first
-     * load resolves; refreshed on every [loadStatistics] so it tracks settings changes.
+     * detail sheet can shade hours against the same wind criteria (KIM-305). Initialised from the
+     * stored filter at construction and refreshed on every [loadStatistics] so it tracks settings
+     * changes.
      */
     private val _activeFilter = MutableStateFlow<DaysOfInterestFilter?>(filter)
     val activeFilter: StateFlow<DaysOfInterestFilter?> = _activeFilter.asStateFlow()
+
+    /**
+     * Per-slot criteria shading for the open day's hourly chart, derived from [selectedDayHours]
+     * and [activeFilter] so the sheet is a pure render target (KIM-305 / MV*). Emits an empty list
+     * (no shading) when there is no filter or no `minWindSpeedKmh`; otherwise one [ShadingTier] per
+     * fixed 09:00–21:00 slot. A null `sustainedWindHours` falls back to the same window default the
+     * sustained-wind calculation uses, so the shading agrees with the bar-chart peak logic.
+     */
+    val selectedDayShading: StateFlow<List<ShadingTier>> =
+        combine(_selectedDayHours, _activeFilter) { hours, filter ->
+            val minSpeed = filter?.minWindSpeedKmh ?: return@combine emptyList()
+            val sustainedSlots = filter.sustainedWindHours ?: KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
+            criteriaShading(hourlyWindSlots(hours), minSpeed, sustainedSlots)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun loadFilter(): DaysOfInterestFilter {
         val jsonStr = settingsRepo.getString(SettingsViewModel.FILTER_KEY) ?: return DaysOfInterestFilter.DEFAULT

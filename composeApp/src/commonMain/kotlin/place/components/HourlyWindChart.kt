@@ -1,6 +1,7 @@
 package place.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +64,9 @@ private val LEGEND_RECT_CORNER = 2.dp
 private const val TIER_THRESHOLD_ALPHA = 0.07f
 private const val TIER_SUSTAINED_ALPHA = 0.18f
 private const val TIER_SUSTAINED_EDGE_ALPHA = 0.55f
-private const val TIER_SUSTAINED_EDGE_WIDTH = 1.5f
+
+/** Physical thickness of the sustained block's top-edge stroke, resolved to px inside the Canvas. */
+private val TIER_SUSTAINED_EDGE_WIDTH = 1.5.dp
 
 /** Left gutter reserved for y-axis labels; the plot area and the rows below are inset by this. */
 private val Y_AXIS_WIDTH = 40.dp
@@ -306,7 +310,11 @@ private fun LegendRow(
     thresholdLabel: String
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        // Scrolls horizontally as a safety net so the four-item shaded legend never clips on
+        // narrow (~320dp) screens; the layout is otherwise unchanged.
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         LegendItem(speedColor, speedLabel, labelColor)
@@ -395,7 +403,7 @@ private fun DrawScope.drawColumnShading(
             color = sustainedEdge,
             start = Offset(columnWidth * runStart, 0f),
             end = Offset(columnWidth * endExclusive, 0f),
-            strokeWidth = TIER_SUSTAINED_EDGE_WIDTH
+            strokeWidth = TIER_SUSTAINED_EDGE_WIDTH.toPx()
         )
         runStart = -1
     }

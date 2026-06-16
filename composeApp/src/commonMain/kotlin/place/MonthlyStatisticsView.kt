@@ -79,7 +79,7 @@ fun MonthlyStatisticsView(
     val selectedDay by vm.selectedDay.collectAsState()
     val selectedDayHours by vm.selectedDayHours.collectAsState()
     val isLoadingHours by vm.isLoadingHours.collectAsState()
-    val activeFilter by vm.activeFilter.collectAsState()
+    val selectedDayShading by vm.selectedDayShading.collectAsState()
     val strings = LocalAppStrings.current
 
     // No LaunchedEffect to (re)load here: the ViewModel's init already loads the initial
@@ -196,7 +196,7 @@ fun MonthlyStatisticsView(
                 hours = selectedDayHours,
                 isLoading = isLoadingHours,
                 onDismiss = { vm.dismissDaySheet() },
-                activeFilter = activeFilter
+                shadingTiers = selectedDayShading
             )
         }
     }

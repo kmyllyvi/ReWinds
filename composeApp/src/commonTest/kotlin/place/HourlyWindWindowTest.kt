@@ -126,6 +126,47 @@ class HourlyWindWindowTest {
         assertTrue(hourlyWindWindow(emptyList(), 0.0).isEmpty())
     }
 
+    // --- hourlyWindSlots: fixed 13-slot 09:00–21:00 framing ---
+
+    private fun point(hour: Int, speed: Double? = 10.0) =
+        HourlyWindPoint(hour = hour, label = hour.toString().padStart(2, '0'), windspeed = speed, windgust = null, winddir = null)
+
+    @Test
+    fun slots_emptyInput_returnsThirteenNulls() {
+        val slots = hourlyWindSlots(emptyList())
+
+        assertEquals(13, slots.size)
+        assertTrue(slots.all { it == null })
+    }
+
+    @Test
+    fun slots_placesPointsByLocalHourOffset() {
+        val slots = hourlyWindSlots(listOf(point(9), point(15), point(21)))
+
+        assertEquals(13, slots.size)
+        assertEquals(9, slots[0]?.hour)   // 09:00 → index 0
+        assertEquals(15, slots[6]?.hour)  // 15:00 → index 6
+        assertEquals(21, slots[12]?.hour) // 21:00 → index 12
+        assertEquals(null, slots[1])      // 10:00 has no point
+    }
+
+    @Test
+    fun slots_dropsHoursOutsideWindow() {
+        // 08:00 and 22:00 fall outside 09:00–21:00 and must not appear in any slot.
+        val slots = hourlyWindSlots(listOf(point(8), point(22)))
+
+        assertEquals(13, slots.size)
+        assertTrue(slots.all { it == null })
+    }
+
+    @Test
+    fun slots_duplicateHour_lastWriteWins() {
+        // Two points share hour 9; the framing overwrites by slot index, so the later one survives.
+        val slots = hourlyWindSlots(listOf(point(9, speed = 5.0), point(9, speed = 99.0)))
+
+        assertEquals(99.0, slots[0]?.windspeed)
+    }
+
     private fun buildHour(epoch: Long?, speed: Double?, gust: Double?, dir: Double?): Hour = Hour(
         datetime = "",
         datetimeEpoch = epoch,
