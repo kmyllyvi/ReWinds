@@ -2,7 +2,7 @@
 
 <!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
 
-**Last updated:** 2026-06-09 (bootstrap)
+**Last updated:** 2026-06-16 (PR d6b37f0 — "Merge branch 'agent-updates' into develop")
 **Status:** Active
 
 ---
@@ -70,8 +70,9 @@ Available tools: `get_weather_metrics`, `get_wind_summary`, `list_saved_places`,
 fun mapMetricName(metricName: String): String   // friendly name → DB field name
 fun getUnits(fieldName: String): String
 fun formatValue(fieldName: String, value: Any?): Any?
+fun getDisplayName(metricName: String): String  // title-cases a metric name for display
 ```
-Supports ~50 metric alias variants. Wind values are converted from m/s to knots (×1.944).
+Supports ~50 metric alias variants across all `Day` fields. Wind values (`windspeed`, `windgust`) are stored in the database in km/h and are converted to knots by dividing by 1.852 before being returned to Claude. All numeric fields are rounded to 1 decimal place. Categorical and timestamp fields (`conditions`, `description`, `icon`, `sunrise`, `sunset`, `moonphase`, `winddir`, `preciptype`) are returned as-is with no unit suffix.
 
 ### ChatRepository
 ```kotlin
