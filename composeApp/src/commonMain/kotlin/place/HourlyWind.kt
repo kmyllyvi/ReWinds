@@ -71,6 +71,72 @@ internal const val WINDOW_END_HOUR = 21
 internal const val HOURLY_WIND_SLOT_COUNT = WINDOW_END_HOUR - WINDOW_START_HOUR + 1
 
 /**
+ * Places [points] into the fixed 13-slot 09:00–21:00 frame used by the chart: index 0 == 09:00 …
+ * index 12 == 21:00. A point lands in the slot matching its local hour; unfilled slots stay null so
+ * the x-axis width never depends on how many hours exist, and a slot list is index-aligned with the
+ * hour labels, arrows, and criteria shading.
+ *
+ * Pure and top-level so the framing is shared verbatim between the chart and the shading input
+ * (single source of truth for slot indices) without a Compose dependency.
+ */
+fun hourlyWindSlots(points: List<HourlyWindPoint>): List<HourlyWindPoint?> {
+    val slots = arrayOfNulls<HourlyWindPoint>(HOURLY_WIND_SLOT_COUNT)
+    points.forEach { point ->
+        val slot = point.hour - WINDOW_START_HOUR
+        if (slot in slots.indices) slots[slot] = point
+    }
+    return slots.toList()
+}
+
+/**
+ * Per-slot annotation tier for the hourly wind chart's criteria shading.
+ *
+ * [NONE] — slot has no data or fails the speed threshold.
+ * [THRESHOLD] — slot meets the speed threshold but is not part of a sustained block.
+ * [SUSTAINED] — slot belongs to a contiguous run that all meets the threshold (the "go out" signal).
+ */
+enum class ShadingTier { NONE, THRESHOLD, SUSTAINED }
+
+/**
+ * Classifies each slot in [points] against the preferred-day wind criteria, returning one
+ * [ShadingTier] per input slot (parallel to [points] by index).
+ *
+ * A slot qualifies for the speed threshold when its [HourlyWindPoint.windspeed] is non-null and
+ * `>= minSpeedKmh`. A slot is [ShadingTier.SUSTAINED] when it falls within at least one contiguous
+ * run of [sustainedSlots] consecutive qualifying slots; null speeds break a run. Qualifying slots
+ * not covered by any such run are [ShadingTier.THRESHOLD]; everything else is [ShadingTier.NONE].
+ *
+ * With [sustainedSlots] `<= 1` every qualifying slot is [ShadingTier.SUSTAINED], since a run of one
+ * always satisfies the window.
+ *
+ * Pure and top-level so the tier logic is unit-testable outside any Composable (MV*): the chart
+ * only renders what this returns.
+ */
+fun criteriaShading(
+    points: List<HourlyWindPoint?>,
+    minSpeedKmh: Double,
+    sustainedSlots: Int
+): List<ShadingTier> {
+    val qualifies = points.map { point ->
+        val speed = point?.windspeed
+        speed != null && speed >= minSpeedKmh
+    }
+
+    val tiers = MutableList(points.size) { if (qualifies[it]) ShadingTier.THRESHOLD else ShadingTier.NONE }
+
+    val window = maxOf(1, sustainedSlots)
+    if (window <= points.size) {
+        for (start in 0..points.size - window) {
+            if ((start until start + window).all { qualifies[it] }) {
+                for (i in start until start + window) tiers[i] = ShadingTier.SUSTAINED
+            }
+        }
+    }
+
+    return tiers
+}
+
+/**
  * Filters [hours] down to the 09:00–21:00 window in the location's local time and maps the
  * survivors to [HourlyWindPoint]s ordered by local hour.
  *

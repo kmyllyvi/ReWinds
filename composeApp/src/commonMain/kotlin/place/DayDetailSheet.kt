@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import core.DaysOfInterestFilter
+import core.KiteSpotterConfig
 import core.LocalAppStrings
 import core.utils.shortDayLabel
 import place.components.HourlyWindChart
@@ -35,6 +37,8 @@ private val CHART_AREA_HEIGHT = 180.dp
  * @param day The selected day's summary; supplies the header date and chart [contentDescription].
  * @param hours The 09:00–21:00 local-time points resolved by the ViewModel; empty means no data.
  * @param isLoading True while [hours] is still being resolved.
+ * @param activeFilter The preferred-day filter, used to shade hours meeting the wind criteria. Null
+ *   (or a filter with no `minWindSpeedKmh`) renders the chart without shading.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +46,8 @@ fun DayDetailSheet(
     day: DayWeatherSummary,
     hours: List<HourlyWindPoint>,
     isLoading: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    activeFilter: DaysOfInterestFilter? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateLabel = shortDayLabel(day.date)
@@ -67,10 +72,31 @@ fun DayDetailSheet(
             when {
                 isLoading -> ChartLoading()
                 hours.isEmpty() -> EmptyHourlyData(dateLabel = dateLabel)
-                else -> HourlyWindChart(date = dateLabel, points = hours)
+                else -> HourlyWindChart(
+                    date = dateLabel,
+                    points = hours,
+                    shadingTiers = criteriaShadingFor(hours, activeFilter)
+                )
             }
         }
     }
+}
+
+/**
+ * Builds the per-slot [ShadingTier] list for [hours] against [filter]'s wind criteria, aligned to
+ * the chart's fixed 09:00–21:00 slot frame.
+ *
+ * Returns an empty list (no shading) when there is no filter or no `minWindSpeedKmh`. A null
+ * `sustainedWindHours` falls back to [KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS], matching the
+ * sustained-window default the ViewModel uses for [calculateMaxSustainedWindSpeed].
+ */
+private fun criteriaShadingFor(
+    hours: List<HourlyWindPoint>,
+    filter: DaysOfInterestFilter?
+): List<ShadingTier> {
+    val minSpeed = filter?.minWindSpeedKmh ?: return emptyList()
+    val sustainedSlots = filter.sustainedWindHours ?: KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
+    return criteriaShading(hourlyWindSlots(hours), minSpeed, sustainedSlots)
 }
 
 @Composable

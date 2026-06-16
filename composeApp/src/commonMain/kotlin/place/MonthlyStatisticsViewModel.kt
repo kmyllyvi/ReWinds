@@ -86,6 +86,14 @@ class MonthlyStatisticsViewModel(
 
     private var filter: DaysOfInterestFilter = loadFilter()
 
+    /**
+     * The preferred-day filter currently driving day-of-interest matching, exposed so the day
+     * detail sheet can shade hours against the same wind criteria (KIM-305). Null until the first
+     * load resolves; refreshed on every [loadStatistics] so it tracks settings changes.
+     */
+    private val _activeFilter = MutableStateFlow<DaysOfInterestFilter?>(filter)
+    val activeFilter: StateFlow<DaysOfInterestFilter?> = _activeFilter.asStateFlow()
+
     private fun loadFilter(): DaysOfInterestFilter {
         val jsonStr = settingsRepo.getString(SettingsViewModel.FILTER_KEY) ?: return DaysOfInterestFilter.DEFAULT
         return try {
@@ -131,6 +139,7 @@ class MonthlyStatisticsViewModel(
 
     private fun loadStatistics() {
         filter = loadFilter()
+        _activeFilter.value = filter
         _year.value = currentYear
         _month.value = currentMonth
         // Clear previous month's results so the View renders its loading state while the new
