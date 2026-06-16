@@ -7,7 +7,7 @@ Run the Maestro UI test suite locally against a connected Android emulator or iO
 
 ## What this does
 
-1. Check that `maestro` is installed (`maestro --version`). If missing, tell the user to install it: `curl -fsSL https://get.maestro.mobile.dev | bash`
+1. Check that `maestro` is installed and at version **1.39.0** or newer (`maestro --version`). If missing or outdated, tell the user to install/upgrade: `curl -fsSL https://get.maestro.mobile.dev | MAESTRO_VERSION="1.39.0" bash` then reopen the terminal.
 2. If an argument was given (`$ARGUMENTS`), find the matching flow file under `.maestro/flows/` and run only that file. Otherwise run the full suite with `maestro test .maestro/`.
 3. Report pass/fail per flow. If any flow fails, show the Maestro error output.
 
