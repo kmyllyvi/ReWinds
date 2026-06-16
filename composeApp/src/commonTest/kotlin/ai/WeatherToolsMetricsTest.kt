@@ -60,8 +60,8 @@ class WeatherToolsMetricsTest {
                     preciptype = null,
                     snow = null,
                     snowdepth = null,
-                    windgust = 8.1,   // m/s
-                    windspeed = 5.2,  // m/s
+                    windgust = 8.1,   // km/h
+                    windspeed = 5.2,  // km/h
                     winddir = 180.0,
                     pressure = 1013.0,
                     cloudcover = 45.0,
@@ -217,7 +217,7 @@ class WeatherToolsMetricsTest {
 
     @Test
     fun testGetWeatherMetricsWindConversion() = runTest {
-        // Verify that wind speed is converted from m/s to knots
+        // Verify that wind speed is converted from km/h to knots
         val args = buildJsonObject {
             put("location_name", "Oahu")
             put("start_date", "2026-02-26")
@@ -228,8 +228,8 @@ class WeatherToolsMetricsTest {
         }
 
         val result = WeatherTools.handleToolCall("get_weather_metrics", args, mockRepository)
-        // 5.2 m/s * 1.944 = 10.1 knots
-        assertContains(result, "10.1")
+        // 5.2 km/h / 1.852 = 2.8 knots
+        assertContains(result, "2.8")
     }
 
     @Test

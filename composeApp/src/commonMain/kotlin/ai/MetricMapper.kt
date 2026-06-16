@@ -72,7 +72,7 @@ object MetricMapper {
         // Precipitation
         "precip", "snow", "snowdepth" -> "mm"
 
-        // Wind: knots (will be converted from m/s)
+        // Wind: knots (will be converted from km/h)
         "windspeed", "windgust" -> "knots"
 
         // Pressure: hPa
@@ -102,10 +102,10 @@ object MetricMapper {
         if (value == null) return null
 
         return when (fieldName) {
-            // Convert wind from m/s to knots (1.944x)
+            // Convert wind from km/h to knots (÷1.852)
             "windspeed", "windgust" -> {
-                val ms = (value as? Number)?.toDouble() ?: return value
-                (ms * 1.944).roundTo(1)
+                val kmh = (value as? Number)?.toDouble() ?: return value
+                (kmh / 1.852).roundTo(1)
             }
             // Keep numbers at 1 decimal for readability
             "temp", "tempmax", "tempmin", "feelslike", "feelslikemax", "feelslikemin", "dew",

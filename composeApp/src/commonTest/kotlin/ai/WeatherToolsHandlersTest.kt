@@ -60,7 +60,7 @@ class WeatherToolsHandlersTest {
         override suspend fun getPersistedStations(place: String): List<Station> = emptyList()
     }
 
-    // windspeed 10 m/s -> 19.44 knots; gust 12 m/s -> 23.33 knots
+    // windspeed 10 km/h -> 5.4 knots; gust 12 km/h -> 6.5 knots
     private fun standardDays() = TestWeatherRepositoryFactory.generateTestDays(
         startDate = "2026-06-01",
         endDate = "2026-06-03",
@@ -82,16 +82,16 @@ class WeatherToolsHandlersTest {
         val json = Json.parseToJsonElement(result).jsonObject
         assertEquals("Tarifa", json["place"]?.jsonPrimitive?.content)
         assertEquals(3, json["days_count"]?.jsonPrimitive?.content?.toInt())
-        // 10 m/s * 1.944 = 19.44 -> rounded to 19.4 knots
-        assertContains(result, "19.4")
-        // gust 12 * 1.944 = 23.328 -> 23.3
-        assertContains(result, "23.3")
+        // 10 km/h / 1.852 = 5.4 knots
+        assertContains(result, "5.4")
+        // gust 12 km/h / 1.852 = 6.5 knots
+        assertContains(result, "6.5")
     }
 
     @Test
     fun windSummary_sustainedFlagTrueInRange() = runTest {
-        // 11 m/s -> 21.4 knots, within the 15..25 sustained band
-        val repo = FakeRepo(daysToReturn = TestWeatherRepositoryFactory.generateTestDays("2026-06-01", "2026-06-01", baseWindSpeed = 11.0))
+        // 30 km/h -> 16.2 knots, within the 15..25 sustained band
+        val repo = FakeRepo(daysToReturn = TestWeatherRepositoryFactory.generateTestDays("2026-06-01", "2026-06-01", baseWindSpeed = 30.0))
         val args = buildJsonObject {
             put("location_name", "Tarifa"); put("start_date", "2026-06-01"); put("end_date", "2026-06-01")
         }
@@ -154,7 +154,7 @@ class WeatherToolsHandlersTest {
 
     @Test
     fun monthlyStats_aggregatesWindAndRain() = runTest {
-        // Three days at 10 m/s windspeed (=19.44 kn) and 12 m/s gust (=23.33 kn), no precip.
+        // Three days at 10 km/h windspeed (=5.4 kn) and 12 km/h gust (=6.5 kn), no precip.
         val repo = FakeRepo(daysToReturn = standardDays())
         val args = buildJsonObject {
             put("location_name", "Tarifa"); put("year", "2026"); put("month", "6")
@@ -163,9 +163,9 @@ class WeatherToolsHandlersTest {
         val json = Json.parseToJsonElement(result).jsonObject
         assertEquals("2026-06", json["month"]?.jsonPrimitive?.content)
         assertEquals(3, json["days_with_data"]?.jsonPrimitive?.content?.toInt())
-        // avg/min/max wind all 19.4 since uniform
-        assertEquals(19.4, json["avg_wind_knots"]?.jsonPrimitive?.content?.toDouble())
-        assertEquals(19.4, json["min_wind_knots"]?.jsonPrimitive?.content?.toDouble())
+        // avg/min/max wind all 5.4 since uniform
+        assertEquals(5.4, json["avg_wind_knots"]?.jsonPrimitive?.content?.toDouble())
+        assertEquals(5.4, json["min_wind_knots"]?.jsonPrimitive?.content?.toDouble())
         assertEquals(0, json["rainy_days"]?.jsonPrimitive?.content?.toInt())
     }
 
@@ -205,7 +205,7 @@ class WeatherToolsHandlersTest {
 
     @Test
     fun bestDays_filtersByMinWind() = runTest {
-        // standardDays are 19.44 knots. min_wind_speed=25 -> none match.
+        // standardDays are 5.4 knots. min_wind_speed=25 -> none match.
         val repo = FakeRepo(daysToReturn = standardDays())
         val args = buildJsonObject {
             put("location_name", "Tarifa"); put("start_date", "2026-06-01"); put("end_date", "2026-06-03")
@@ -221,7 +221,7 @@ class WeatherToolsHandlersTest {
         val repo = FakeRepo(daysToReturn = standardDays())
         val args = buildJsonObject {
             put("location_name", "Tarifa"); put("start_date", "2026-06-01"); put("end_date", "2026-06-03")
-            put("min_wind_speed", "10")
+            put("min_wind_speed", "4")
         }
         val result = WeatherTools.handleToolCall("get_best_days", args, repo)
         val json = Json.parseToJsonElement(result).jsonObject
@@ -246,11 +246,11 @@ class WeatherToolsHandlersTest {
 
     @Test
     fun bestDays_maxGustFilter() = runTest {
-        // gust 12 m/s = 23.33 kn. max_gust=20 -> none pass.
+        // gust 12 km/h = 6.5 kn. max_gust=4 -> none pass.
         val repo = FakeRepo(daysToReturn = standardDays())
         val args = buildJsonObject {
             put("location_name", "Tarifa"); put("start_date", "2026-06-01"); put("end_date", "2026-06-03")
-            put("max_gust", "20")
+            put("max_gust", "4")
         }
         val result = WeatherTools.handleToolCall("get_best_days", args, repo)
         val json = Json.parseToJsonElement(result).jsonObject
