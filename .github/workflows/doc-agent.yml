@@ -12,8 +12,7 @@ name: Doc Agent — update docs on merge
 #   pull-requests: write — open the docs PR
 
 on:
-  push:
-    branches: [ develop ]
+  workflow_dispatch:  # manual trigger only — doc sweeps now run via Claude Code cron (Pro subscription)
 
 jobs:
   update-agent-docs:
