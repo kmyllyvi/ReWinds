@@ -42,12 +42,11 @@ manual loop is proven (see GitHub Action note at the end).
 | **GATE 1 — you**          | you                                      | the spec                                                     | approval                                                              | **Planned**                                         |
 | Todo                      | — (dev queue)                            | —                                                            | orchestrator picks it up                                              | In Progress                                         |
 | In Progress               | **developer** agent                      | spec + AC + DoD, repo, ARCHITECTURE-RULES                    | branch + commits + PR; handoff comment; adds `in-review`              | In Progress + `in-review`                           |
-| In Progress + `in-review` | **code-reviewer** (pilot: this one only) | the diff/PR vs AC + DoD + MV\* rules                         | pass, or fail with specifics                                          | Completed / (remove `in-review`, stays In Progress) |
+| In Progress + `in-review` | **code-reviewer** (auto on PR open)      | the diff/PR vs AC + DoD + MV\* rules                         | pass, or fail with specifics                                          | Completed / (remove `in-review`, stays In Progress) |
 | `needs-human`             | **GATE 2 — you**                         | the blocker the agent hit                                    | a decision                                                            | back into the lane                                  |
-| Completed                 | — (optional doc agent on merge)          | —                                                            | —                                                                     | —                                                   |
+| Completed                 | **doc-agent** (Phill — scheduled sweep)  | —                                                            | —                                                                     | —                                                   |
 
-For the **pilot**, "In Review" runs **only `code-reviewer`**. `qa-test-agent` and `ux-ui-reviewer`
-are invoked manually when relevant; they join the automatic review step once the loop is trusted.
+`code-reviewer` (Marcy) runs automatically on every PR open via GitHub Actions. `qa-test-agent` and `ux-ui-reviewer` are invoked manually when relevant.
 
 ## The two human gates
 
@@ -105,7 +104,7 @@ ticket-specific (including exemptions to the "new tests required" rule) belongs 
 
 ### Dev → Review handover convention
 
-- Branch: `kim-<issue-number>-<short-slug>`.
+- Branch: `kimmomyllyviita/kim-<issue-number>-<short-slug>`.
 - Build/test for the pilot is **Android only** (`buildAndroidOnly`, `testDebugUnitTest`). iOS is
   verified manually in Xcode — the developer agent does not attempt Gradle iOS builds.
 - Open a PR using `.github/pull_request_template.md`, with `Closes KIM-<n>` in the Linear section.
@@ -123,8 +122,7 @@ To advance the board, read the issues and act:
 - **Planned** → dispatch `developer` (it moves the issue to In Progress and works).
 - **In Progress** + `in-review` → dispatch `code-reviewer`.
 - **Any** + `needs-human` → it's yours (Gate 2).
-- **Completed** → optionally run the documentation agent on the merged PR (see
-  `agent instruction - doc.txt`).
+- **Completed** → Phill (doc-agent) picks it up automatically on the next morning sweep (Tue–Sat 09:07, Claude Code cron, Pro subscription).
 
 Two agents may run in parallel **only if they touch different issues and different files** (e.g. `po`
 drafting a new ticket while `developer` codes an approved one). New po tickets stay in Backlog and wait
@@ -140,7 +138,7 @@ at Gate 1 — parallelism never bypasses a gate.
 | `qa-test-agent`                  | Seppo    | In Review (manual)     | opus   |
 | `ux-ui-reviewer`                 | Mr.T     | In Review (manual, UI) | sonnet |
 | `codebase-architect`             | Armin    | advisory, off-lane     | sonnet |
-| `doc-agent`                      | —        | post-merge docs        | —      |
+| `doc-agent`                      | Phill    | post-merge docs        | sonnet |
 
 ## One-time setup (Kimmo, in the Linear UI)
 
@@ -150,18 +148,16 @@ labels under Team KIM: `spec-ready`, `in-review`, `needs-human`. Optionally `age
 
 ---
 
-## v2 (deferred): auto-trigger review on PR open
+## Automation in place
 
-Once the manual loop is trusted, the review step can be automated with a GitHub Action instead of
-manual dispatch:
+### Code review (Marcy) — GitHub Actions, auto on PR open
+Trigger: `on: pull_request: { types: [opened, synchronize] }` → `.github/workflows/code-review.yml`.
+Marcy posts review findings as a PR comment. A human still merges — the review is a first filter, not
+a guarantee. Uses `ANTHROPIC_API_KEY` (pay-per-token).
 
-- Trigger: `on: pull_request: { types: [opened, synchronize] }`.
-- Step: run Anthropic's Claude Code GitHub Action, pointed at the repo's `code-reviewer` agent and
-  `docs/agent/ARCHITECTURE-RULES.md`, to post review comments on the PR.
-- On a clean review it can comment "review passed"; a human still merges. It should **not** auto-merge
-  — the review agent shares the developer's blind spots, so a pass is a first filter, not a guarantee.
-- Linear stays in sync via the PR's `Closes KIM-<n>` link; the `in-review` label can be dropped when
-  the PR merges.
-
-Do **not** build this until one issue has gone through the manual loop end-to-end. Wiring CI before
-the workflow is proven means debugging the process and the infrastructure at the same time.
+### Doc sweep (Phill) — Claude Code cron, Tue–Sat 09:07
+Runs inside Claude Code (Pro subscription, no API token cost). Checks Linear for tickets that moved
+to Done in the last 24h, finds the corresponding merge commit on `develop`, and opens a docs PR
+targeting `develop`. If nothing completed, exits cleanly. The GitHub Actions doc-agent workflow
+(`.github/workflows/doc-agent.yml`) is retained for manual `workflow_dispatch` runs but no longer
+triggers automatically.
