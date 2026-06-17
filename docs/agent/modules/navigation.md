@@ -2,7 +2,7 @@
 
 <!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
 
-**Last updated:** 2026-06-09 (bootstrap)
+**Last updated:** 2026-06-17 (PR #35 — KIM-298)
 **Status:** Active
 
 ---
@@ -62,6 +62,10 @@ fun canNavigateBack(): Boolean
 Instantiates all three stacks and `NavigatorImpl` instances; renders `Scaffold` with `TabBar` or full-screen `PushDestination` depending on top of the Places stack.
 
 ---
+
+## Window insets handling (KIM-298)
+
+The `Scaffold` content `Box` in `Navigation()` applies `.consumeWindowInsets(innerPadding)` after `.padding(innerPadding)`. This ensures descendant `imePadding()` modifiers (e.g. in `ChatView`) correctly subtract the already-consumed bottom-tab-bar inset rather than double-adding it. Without this, opening the keyboard in the Chat tab caused a visible gap equal to the tab bar height between the text input and the keyboard.
 
 ## Known constraints
 

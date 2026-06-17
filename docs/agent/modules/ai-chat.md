@@ -2,7 +2,7 @@
 
 <!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
 
-**Last updated:** 2026-06-16 (PR d6b37f0 — "Merge branch 'agent-updates' into develop")
+**Last updated:** 2026-06-17 (PR #36 — KIM-297)
 **Status:** Active
 
 ---
@@ -93,9 +93,24 @@ fun selectContextChip(placeName: String?)
 fun onErrorDismissed()
 fun onApiKeyDialogDismissed()
 fun onApiKeyInvalidErrorDismissed()
+fun openPlaceChat(placeId: String)
+fun ensureGeneralChat()
 ```
 
+`ensureGeneralChat()` — resets the active session to the most-recent untagged (general) session, or creates one, when `currentPlaceTag != null`. No-op if the current session is already general. Called by `ChatView` on every plain (no `placeId`) entry to the Chat tab so that a prior "Ask AI about this place" visit does not persist as the active session across tab switches (KIM-297).
+
 ---
+
+## Chat tab session lifecycle (KIM-297)
+
+`ChatViewModel` is a singleton scoped to the app's `ViewModelStore`; `currentSessionId` and `currentPlaceTag` persist across tab switches.
+
+Session selection on `ChatView` entry is controlled by a `LaunchedEffect(placeId)`:
+- `placeId != null` — calls `vm.openPlaceChat(placeId)` then `onPlaceIdConsumed()`.
+- `placeId == null` and `hadPlaceId == false` — calls `vm.ensureGeneralChat()`.
+- `placeId == null` and `hadPlaceId == true` — no-op (this is the consume transition, not a cold entry).
+
+The `hadPlaceId` flag (`remember { mutableStateOf(false) }`, per composable instance) prevents `ensureGeneralChat()` from racing against the immediate placeId-consume re-trigger that follows `openPlaceChat()`.
 
 ## Known constraints
 

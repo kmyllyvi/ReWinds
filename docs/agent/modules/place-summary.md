@@ -2,7 +2,7 @@
 
 <!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
 
-**Last updated:** 2026-06-09 (bootstrap)
+**Last updated:** 2026-06-17 (PR #38 — KIM-302; PR #36 — KIM-297)
 **Status:** Active
 
 ---
@@ -32,6 +32,7 @@ The per-place detail screen showing a year/month grid, stored days with weather 
 ### Internal
 - `core.WeatherRepository` — `getSavedDataFor()`, `downloadFullMonth()`, `fetchAndPersistStations()`, `getPersistedStations()`.
 - `core.KiteSpotterConfig` — `SUSTAINED_WIND_WINDOW_HOURS` constant for rolling average calculation.
+- `core.utils` (`FormatUtils.kt`) — `shortDayLabel`, `formatTemperatureRange`, `formatGust` used in `DaySummaryRow`.
 
 ---
 
@@ -85,6 +86,19 @@ data class StationDisplayData(name: String?, latitude: Double, longitude: Double
 `20` — a month with at least this many stored days (but not the full count) renders as `FULL`. This is a placeholder value; the product threshold has not been formally specified.
 
 ---
+
+## DaySummaryRow header fields (KIM-302)
+
+The collapsed row header shows three fields derived from `DayWeatherSummary`:
+- **Date label**: `shortDayLabel(date)` — e.g. `"Tue 16."`. Previously showed the raw `YYYY-MM-DD` string.
+- **Temperature**: `formatTemperatureRange(minTemp, maxTemp)` — e.g. `"12–19 °C"`. Previously showed `avgTemp°C`.
+- **Wind**: `formatGust(maxWindSpeed)` — e.g. `"32 km/h"`. Previously showed `avgWindSpeed km/h`.
+
+`avgTemp` and `avgWindSpeed` remain visible in the expanded section; the expanded content is otherwise unchanged.
+
+## PlaceSummaryView chat entry point (KIM-297)
+
+The "Ask AI about this place" control in `PlaceSummaryView` is an `IconButton` (chat icon, `Icons.AutoMirrored.Filled.Chat`) rather than a `TextButton`. The tap behaviour is unchanged: calls `navigator.navigateToChat(placeId = currentPlaceName)`.
 
 ## Known constraints
 
