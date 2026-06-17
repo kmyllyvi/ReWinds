@@ -265,17 +265,18 @@ android {
 }
 
 tasks.register("buildAndroidOnly") {
-    doFirst {
-        project.extensions.extraProperties["includeAllTargets"] = false
-    }
-    finalizedBy("build")
+    description = "Build Android targets only (default; iOS targets excluded unless -PincludeAllTargets=true is set)."
+    dependsOn("build")
 }
 
 tasks.register("buildWithIos") {
+    description = "Build all targets including iOS. Requires -PincludeAllTargets=true on the command line."
     doFirst {
-        project.extensions.extraProperties["includeAllTargets"] = true
+        check(includeAllTargets) {
+            "buildWithIos requires iOS targets to be declared. Re-run with: ./gradlew buildWithIos -PincludeAllTargets=true"
+        }
     }
-    finalizedBy("build")
+    dependsOn("build")
 }
 
 sqldelight {
