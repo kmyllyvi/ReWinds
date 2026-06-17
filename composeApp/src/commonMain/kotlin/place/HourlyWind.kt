@@ -89,6 +89,20 @@ fun hourlyWindSlots(points: List<HourlyWindPoint>): List<HourlyWindPoint?> {
 }
 
 /**
+ * Normalises a chart [value] to its vertical fraction of the plot height, matching the series and
+ * gridline mapping `1 - value / yMax`: 0 maps to 1.0 (bottom edge) and [yMax] maps to 0.0 (top
+ * edge). Values above [yMax] clamp to 0.0 so a threshold above the ceiling pins to the top rather
+ * than drawing off-canvas; negatives clamp to 1.0. A non-positive [yMax] yields 1.0 (bottom).
+ *
+ * The chart multiplies this fraction by the pixel plot height to place the threshold line. Pure and
+ * top-level so the placement is unit-testable outside the Composable (MV*).
+ */
+fun thresholdYFraction(value: Double, yMax: Double): Float {
+    if (yMax <= 0.0) return 1f
+    return (1f - (value / yMax).toFloat()).coerceIn(0f, 1f)
+}
+
+/**
  * Per-slot annotation tier for the hourly wind chart's criteria shading.
  *
  * [NONE] — slot has no data or fails the speed threshold.

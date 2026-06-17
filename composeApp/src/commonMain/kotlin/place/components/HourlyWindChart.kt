@@ -29,6 +29,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
@@ -43,6 +44,7 @@ import core.utils.formatDecimal
 import place.HourlyWindPoint
 import place.ShadingTier
 import place.hourlyWindSlots
+import place.thresholdYFraction
 import place.WINDOW_START_HOUR
 import place.windFlowBearing
 import place.yAxisTicks
@@ -65,6 +67,13 @@ private const val TIER_SUSTAINED_EDGE_ALPHA = 0.55f
 
 /** Physical thickness of the sustained block's top-edge stroke, resolved to px inside the Canvas. */
 private val TIER_SUSTAINED_EDGE_WIDTH = 1.5.dp
+
+// Threshold guide line (KIM-306): a faint dashed horizontal line at the user's wind criteria,
+// drawn in accentBlue so it reads as the same "criteria" colour family as the shading.
+private const val THRESHOLD_LINE_ALPHA = 0.40f
+private val THRESHOLD_LINE_WIDTH = 1.dp
+private val THRESHOLD_DASH_ON = 8f
+private val THRESHOLD_DASH_OFF = 6f
 
 /** Left gutter reserved for y-axis labels; the plot area and the rows below are inset by this. */
 private val Y_AXIS_WIDTH = 40.dp
@@ -98,7 +107,9 @@ fun HourlyWindChart(
     points: List<HourlyWindPoint>,
     modifier: Modifier = Modifier,
     unitLabel: String = "km/h",
-    shadingTiers: List<ShadingTier> = emptyList()
+    shadingTiers: List<ShadingTier> = emptyList(),
+    minThresholdKmh: Double? = null,
+    maxThresholdKmh: Double? = null
 ) {
     val strings = LocalAppStrings.current
     val speedColor = MaterialTheme.rewinds.accentBlue
@@ -114,6 +125,8 @@ fun HourlyWindChart(
     val thresholdFill = speedColor.copy(alpha = TIER_THRESHOLD_ALPHA)
     val sustainedFill = speedColor.copy(alpha = TIER_SUSTAINED_ALPHA)
     val sustainedEdge = speedColor.copy(alpha = TIER_SUSTAINED_EDGE_ALPHA)
+    val thresholdLineColor = speedColor.copy(alpha = THRESHOLD_LINE_ALPHA)
+    val thresholdLineWidth = with(LocalDensity.current) { THRESHOLD_LINE_WIDTH.toPx() }
 
     val speeds = points.mapNotNull { it.windspeed }
     val gusts = points.mapNotNull { it.windgust }
@@ -172,6 +185,8 @@ fun HourlyWindChart(
                 if (showShading) {
                     drawColumnShading(shadingTiers, thresholdFill, sustainedFill, sustainedEdge)
                 }
+                // Threshold guides sit above shading but below the series, so data reads on top.
+                drawThresholdLines(minThresholdKmh, maxThresholdKmh, yMax, thresholdLineColor, thresholdLineWidth)
                 drawGrid(gridColor)
                 drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
                 drawSeries(slots.map { it?.windgust }, yMax, gustColor)
@@ -421,6 +436,35 @@ private fun DrawScope.drawColumnShading(
         }
     }
     flush(tiers.size)
+}
+
+/**
+ * Draws a full-width dashed horizontal line for each non-null threshold (KIM-306), so the user can
+ * read which hours sit above or below their wind criteria without comparing the line to a number.
+ *
+ * Each value is normalised by [thresholdYFraction] against the same [yMax] the series use, so the
+ * line aligns with the scale; a value above [yMax] clamps to the top edge rather than drawing off
+ * the canvas. Drawn after shading but before the grid and series, so data always reads on top.
+ */
+private fun DrawScope.drawThresholdLines(
+    minKmh: Double?,
+    maxKmh: Double?,
+    yMax: Double,
+    color: Color,
+    strokeWidth: Float
+) {
+    if (yMax <= 0.0) return
+    val dash = PathEffect.dashPathEffect(floatArrayOf(THRESHOLD_DASH_ON, THRESHOLD_DASH_OFF), 0f)
+    listOfNotNull(minKmh, maxKmh).forEach { value ->
+        val y = size.height * thresholdYFraction(value, yMax)
+        drawLine(
+            color = color,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = strokeWidth,
+            pathEffect = dash
+        )
+    }
 }
 
 /** Evenly-spaced horizontal grid lines spanning the full chart width. */
