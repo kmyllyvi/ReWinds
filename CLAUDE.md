@@ -2,7 +2,7 @@
 
 Compose Multiplatform app (iOS + Android).
 
-@docs/ARCHITECTURE-RULES.md
+@docs/agent/ARCHITECTURE-RULES.md
 
 ## Build
 
