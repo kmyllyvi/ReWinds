@@ -11,6 +11,11 @@ name: CI Failure — Auto-fix
 #
 # Required secrets:
 #   ANTHROPIC_API_KEY — runs the Claude Code action
+#
+# Uses the GA action anthropics/claude-code-action@v1, which (unlike @beta)
+# supports running on arbitrary events such as workflow_run via `prompt:` mode.
+# The @beta action's Prepare step only accepts PR/issue/comment events and
+# rejects workflow_run, which is why this workflow previously failed on every run.
 
 on:
   workflow_run:
@@ -116,11 +121,11 @@ jobs:
       # ── Case 2: First failure → Randy fixes it ──
       - name: Randy — fix the CI failure
         if: steps.ctx.outputs.already_attempted == 'false'
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          direct_prompt: |
+          prompt: |
             You are Randy, the developer agent for the ReWinds Compose Multiplatform project.
             CI just failed on branch `${{ steps.ctx.outputs.head_branch }}`.
             Your job: diagnose the failure, fix it, verify tests pass, and push the fix.
