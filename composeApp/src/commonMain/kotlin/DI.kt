@@ -8,6 +8,7 @@ import ai.WeatherTools
 import com.km.rewinds.db.AppDatabase
 import core.*
 import home.HomeViewModel
+import onboarding.VcKeyOnboardingViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 import org.koin.core.module.dsl.viewModel
@@ -59,6 +60,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     // from the graph — no ApiKeyChecker is registered, so reflection would fail to construct it.
     viewModel { SettingsViewModel(get(), get()) } // AppSettingsStore, AnthropicClient
     viewModelOf(::TabNavigationViewModel)
+    viewModelOf(::VcKeyOnboardingViewModel)
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {

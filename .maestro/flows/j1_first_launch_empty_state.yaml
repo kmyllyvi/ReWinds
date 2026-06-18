@@ -1,19 +1,17 @@
-# J1 — First launch / empty state with no API keys configured (KIM-291 P0)
+# J1 — First launch with no Visual Crossing key configured (KIM-291 P0, updated for KIM-309)
 #
 # Preconditions: fresh install, no places saved, no Anthropic/Visual Crossing keys.
 #   `clearState` gives us the fresh-install precondition deterministically.
-# Expected: Home renders with search field, empty place list, and the VC key nudge
-#   banner (since isWeatherKeyConfigured == false). No crash, no error dialog.
+# Expected: the hard onboarding gate (KIM-309) is shown full-screen with its single
+#   "Configure now" CTA. The functional Home surface is NOT reachable — its search field
+#   must not be present. No crash, no error dialog.
 appId: ${APP_ID}
 ---
 - clearState
 - launchApp
-# Home tab is the default landing tab.
+# Hard gate: the blocking onboarding CTA is shown while no valid VC key exists.
 - assertVisible:
-    id: "home_search_field"              # TestTags.HOME_SEARCH_FIELD
-# VC key nudge is non-dismissible while the Visual Crossing key is unset.
-- assertVisible:
-    id: "home_vc_key_nudge_action"       # TestTags.HOME_VC_KEY_NUDGE_ACTION
-# Empty state: no saved places means no PlaceRow is present.
+    id: "onboarding_vc_key_configure"    # TestTags.ONBOARDING_VC_KEY_CONFIGURE
+# The functional Home surface must not be in the composition while the gate is active.
 - assertNotVisible:
-    id: "home_place_row"                 # TestTags.HOME_PLACE_ROW
+    id: "home_search_field"              # TestTags.HOME_SEARCH_FIELD

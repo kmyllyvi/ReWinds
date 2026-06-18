@@ -16,7 +16,10 @@ object TestTags {
     const val HOME_SEARCH_FIELD = "home_search_field"
     const val HOME_PLACE_ROW = "home_place_row"
     const val HOME_SEARCH_SUGGESTION = "home_search_suggestion"
-    const val HOME_VC_KEY_NUDGE_ACTION = "home_vc_key_nudge_action"
+
+    // ── First-run onboarding (KIM-309) ───────────────────────────────────────────
+    /** "Configure now" CTA on the blocking VC-key onboarding gate. */
+    const val ONBOARDING_VC_KEY_CONFIGURE = "onboarding_vc_key_configure"
 
     // ── Tab bar ─────────────────────────────────────────────────────────────────
     const val TAB_PLACES = "tab_places"
