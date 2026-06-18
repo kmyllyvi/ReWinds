@@ -64,6 +64,35 @@ class VcKeyOnboardingViewModelTest {
     }
 
     @Test
+    fun gateReturnsWhenKeyRemovedAfterSetup() = runTest(dispatcher) {
+        // Configure a valid key first so the gate clears, then remove it (Settings "delete").
+        // The gate must reactively return in the same session — true → false transition.
+        WeatherApiKeyManager.setApiKey("valid-vc-key-abc123")
+        val vm = VcKeyOnboardingViewModel()
+        advanceUntilIdle()
+        assertTrue(vm.isWeatherKeyConfigured.value, "Precondition: gate cleared by valid key")
+
+        WeatherApiKeyManager.setApiKey("")
+        advanceUntilIdle()
+
+        assertFalse(
+            vm.isWeatherKeyConfigured.value,
+            "Removing the key after setup must re-activate the gate in the same session"
+        )
+    }
+
+    @Test
+    fun whitespaceOnlyKeyDoesNotClearGate() = runTest(dispatcher) {
+        val vm = VcKeyOnboardingViewModel()
+        WeatherApiKeyManager.setApiKey("   ")
+        advanceUntilIdle()
+        assertFalse(
+            vm.isWeatherKeyConfigured.value,
+            "A whitespace-only key is blank and must keep the gate active"
+        )
+    }
+
+    @Test
     fun placeholderKeyDoesNotClearGate() = runTest(dispatcher) {
         val vm = VcKeyOnboardingViewModel()
         WeatherApiKeyManager.setApiKey("your-placeholder-key")

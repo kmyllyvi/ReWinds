@@ -55,7 +55,7 @@ fun VcKeyOnboardingScreen(onConfigureNow: () -> Unit) {
         ) {
             Icon(
                 imageVector = Icons.Filled.CloudOff,
-                contentDescription = null,
+                contentDescription = strings.vcKeyNudgeTitle,
                 tint = MaterialTheme.rewinds.accentBlue,
                 modifier = Modifier.size(64.dp)
             )
@@ -76,15 +76,6 @@ fun VcKeyOnboardingScreen(onConfigureNow: () -> Unit) {
                 text = strings.vcKeyNudgeBody,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.rewinds.textSecondary,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = strings.visualCrossingApiUrl,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.rewinds.textTertiary,
                 textAlign = TextAlign.Center
             )
 
