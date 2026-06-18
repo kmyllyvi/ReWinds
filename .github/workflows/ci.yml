@@ -41,28 +41,26 @@ jobs:
         run: ./gradlew :composeApp:coverageReport -PincludeAllTargets=false -PenableCoverage=true --no-daemon
 
       - name: Upload coverage report
-        if: success()
+        if: success() && github.ref == 'refs/heads/develop'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: composeApp/build/reports/jacoco/
-          retention-days: 14
+          retention-days: 5
 
       - name: Upload test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: android-test-results
-          path: |
-            composeApp/build/reports/tests/
-            composeApp/build/test-results/
-          retention-days: 14
+          path: composeApp/build/test-results/
+          retention-days: 5
 
       - name: Upload APK
-        if: success()
+        if: success() && github.ref == 'refs/heads/develop'
         uses: actions/upload-artifact@v4
         with:
           name: android-debug-apk
           path: composeApp/build/outputs/apk/debug/*.apk
-          retention-days: 14
+          retention-days: 5
 

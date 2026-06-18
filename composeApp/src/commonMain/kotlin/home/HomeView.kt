@@ -1,13 +1,10 @@
 package home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -79,11 +76,6 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
         }
     }
 
-    // Refresh key state whenever this screen becomes active (e.g. returning from Settings).
-    LaunchedEffect(Unit) {
-        vm.refreshWeatherKeyState()
-    }
-
     // Show error dialog if there is an error
     uiState.error?.let {
         ErrorDialog(
@@ -116,15 +108,6 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 titleSizeSp = 22,
                 titleFontWeight = FontWeight.Light
             )
-
-            // Non-dismissible VC key nudge banner
-            AnimatedVisibility(
-                visible = !uiState.isWeatherKeyConfigured,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                VcKeyNudgeBanner(onSetUpNow = { navigator.navigateToSettings() })
-            }
 
             // Scrollable content — tap anywhere on the list area to dismiss keyboard
             LazyColumn(
@@ -460,54 +443,7 @@ private fun SuggestionCell(name: String, region: String, country: String, onClic
     }
 }
 
-// ── Banners & dialogs ────────────────────────────────────────────────────────
-
-/**
- * Persistent nudge banner shown every launch until a Visual Crossing API key is configured.
- * Non-dismissible — it disappears only once the user saves a valid key in Settings.
- * Has its own background because it is a self-contained, boxed component (not a page element).
- */
-@Composable
-private fun VcKeyNudgeBanner(onSetUpNow: () -> Unit) {
-    val strings = LocalAppStrings.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .background(
-                color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(10.dp)
-            )
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = strings.vcKeyNudgeTitle,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = strings.vcKeyNudgeBody,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-        TextButton(
-            onClick = onSetUpNow,
-            modifier = Modifier.testTag(TestTags.HOME_VC_KEY_NUDGE_ACTION)
-        ) {
-            Text(
-                text = strings.vcKeyNudgeAction,
-                color = MaterialTheme.colorScheme.error,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
+// ── Dialogs ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun VcKeyErrorDialog(

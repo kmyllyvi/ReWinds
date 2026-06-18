@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import ai.ChatView
 import home.HomeView
+import onboarding.VcKeyOnboardingScreen
+import onboarding.VcKeyOnboardingViewModel
 import place.MonthlyStatisticsView
 import place.PlaceSummaryView
 import settings.SettingsView
@@ -57,6 +59,43 @@ private val tabItems = listOf(
 
 @Composable
 fun Navigation() {
+    // Hard gate (KIM-309): until a valid Visual Crossing key is configured the app must not
+    // expose the functional tab surface. All gate logic lives in the ViewModel; this composable
+    // only collects state and routes the single "Configure now" CTA into the Settings VC entry.
+    val onboardingVm: VcKeyOnboardingViewModel = koinViewModel()
+    val keyConfigured by onboardingVm.isWeatherKeyConfigured.collectAsState()
+
+    if (!keyConfigured) {
+        OnboardingGate(vm = onboardingVm)
+        return
+    }
+
+    AppTabs()
+}
+
+/**
+ * The blocking onboarding flow. Either the gate screen itself, or the Settings VC key entry
+ * reached from its CTA. Neither path exposes the functional Home/tab surface, and returning
+ * from Settings re-checks the key — so the gate cannot be bypassed.
+ */
+@Composable
+private fun OnboardingGate(vm: VcKeyOnboardingViewModel) {
+    val showKeyEntry by vm.showKeyEntry.collectAsState()
+    if (showKeyEntry) {
+        // Reuse the existing Settings VC key entry. The gate observes the key manager
+        // reactively, so saving a valid key here clears the gate automatically — there is no
+        // back/skip affordance that returns to a functional app state. A self-contained
+        // settings back stack satisfies SettingsView's Navigator contract.
+        val gateSettingsStack = remember { mutableStateListOf<NavRoute>(SettingsRoute) }
+        val gateSettingsNav = remember(gateSettingsStack) { NavigatorImpl(gateSettingsStack) }
+        SettingsView(navigator = gateSettingsNav)
+    } else {
+        VcKeyOnboardingScreen(onConfigureNow = vm::onConfigureNowClicked)
+    }
+}
+
+@Composable
+private fun AppTabs() {
     // Each tab maintains its own back stack so state is preserved on tab switches.
     val placesStack   = remember { mutableStateListOf<NavRoute>(HomeRoute) }
     val chatStack     = remember { mutableStateListOf<NavRoute>(ChatRoute()) }
