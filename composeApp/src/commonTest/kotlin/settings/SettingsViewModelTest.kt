@@ -57,6 +57,11 @@ class SettingsViewModelTest {
     // UncaughtExceptionsBeforeTest / IllegalStateException.
     private val createdViewModels = mutableListOf<SettingsViewModel>()
 
+    // Inject the ApiKeyChecker seam (defaults to "no key") so the Anthropic-configured flag is
+    // deterministic and does NOT depend on the build environment's ANTHROPIC_API_KEY. The default
+    // PlatformApiKeyChecker reads BuildConfig.ANTHROPIC_API_KEY, which is baked from
+    // System.getenv("ANTHROPIC_API_KEY") at build time — so on a runner where that key is present
+    // the flag would be true and assertions expecting "absent" would fail.
     private fun viewModel(
         store: AppSettingsStore,
         apiKeyChecker: ApiKeyChecker = ApiKeyChecker { false }
@@ -188,9 +193,10 @@ class SettingsViewModelTest {
 
     @Test
     fun keyConfiguredFlags_reflectEmptyManagersByDefault() {
-        // Anthropic gate is injected as "not configured" so the assertion is deterministic and
-        // independent of any ANTHROPIC_API_KEY baked into BuildConfig (env / gradle.properties).
-        // The Visual Crossing manager is a process singleton left empty by the other tests' cleanup.
+        // Pin both key sources to "absent" so the assertion is deterministic and independent of
+        // the build environment / test order: the Anthropic flag via the injected ApiKeyChecker
+        // (default false), the Visual Crossing flag via the shared WeatherApiKeyManager singleton.
+        core.WeatherApiKeyManager.setApiKey("")
         val vm = viewModel(FakeSettingsStore())
         assertFalse(vm.anthropicKeyConfigured.value)
         assertFalse(vm.visualCrossingKeyConfigured.value)
