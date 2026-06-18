@@ -73,7 +73,7 @@ jobs:
           path: |
             maestro-report.xml
             ~/.maestro/tests/**
-          retention-days: 14
+          retention-days: 5
 
   # iOS runs on a macOS runner. Kept separate (and allowed to be added later) so a
   # missing simulator/codesign setup never blocks the Android job. KIM-295 uses
@@ -115,4 +115,4 @@ jobs:
           path: |
             maestro-report.xml
             ~/.maestro/tests/**
-          retention-days: 14
+          retention-days: 5
