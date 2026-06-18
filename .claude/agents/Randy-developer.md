@@ -180,5 +180,23 @@ docs/agent/WORKFLOW.md.
 - Open a PR using .github/pull_request_template.md with "Closes KIM-" in the Linear section.
 - Post a comment with: Branch, PR link, Build pass/fail, Tests pass/fail, Summary, Deviations.
   Then add the **in-review** label (the issue stays In Progress).
+- **Hand off to review (agent-to-agent — replaces the old CI review action).** As your final step,
+  invoke the **Marcy (code-reviewer)** agent via the Task tool, passing the issue number, the branch,
+  and the PR link. Marcy reviews against AC/DoD/MV* rules and updates the Linear labels/status herself.
+  Then relay Marcy's verdict **verbatim** in your final report — do not summarise or soften it. You are
+  the author; her judgement is independent and must reach Kimmo unedited.
+- **Act on Marcy's findings, in this order:**
+  1. **Critical/Major → always fix** (when you agree the finding is valid). These block merge, so
+     resolving them is the default, not the exception: fix, commit to the same branch, and push. The
+     only time you *don't* fix is when you genuinely disagree with the finding, or it needs a scope /
+     architectural decision that isn't yours to make — then add `needs-human`, assign Kimmo, and say why.
+  2. **Minor → fix when cost and risk are low** (style, naming, a missing edge-case test, a doc nit).
+     No sense leaving cheap loose ends in the PR. Skip only if a fix is genuinely risky or out of scope —
+     and note what you skipped and why.
+- **Re-review is bounded — don't loop.** After fixing Critical/Major, you may re-invoke Marcy **once** to
+  confirm the blocking issues are resolved. If she still flags Critical/Major after that single retry,
+  stop: add `needs-human`, assign Kimmo, and report — do not keep spinning fix→review. Minor-only fixes
+  need **no** re-review (that just burns a cycle). Always list in your final report which findings you
+  fixed, which you skipped, and why.
 - If the spec is wrong, contradictory, or needs an architectural decision it didn't anticipate:
   comment the blocker, add the **needs-human** label, and assign Kimmo. Do not guess.

@@ -150,10 +150,17 @@ labels under Team KIM: `spec-ready`, `in-review`, `needs-human`. Optionally `age
 
 ## Automation in place
 
-### Code review (Marcy) — GitHub Actions, auto on PR open
-Trigger: `on: pull_request: { types: [opened, synchronize] }` → `.github/workflows/code-review.yml`.
-Marcy posts review findings as a PR comment. A human still merges — the review is a first filter, not
-a guarantee. Uses `ANTHROPIC_API_KEY` (pay-per-token).
+### Code review (Marcy) — in-session Randy→Marcy handover
+Trigger: when Randy opens the PR and adds `in-review`, his final step is to invoke the `code-reviewer`
+agent via the Task tool (issue number + branch + PR link). Marcy reviews against AC/DoD/MV* rules,
+updates the Linear labels/status herself (Linear MCP is available locally), and Randy relays her verdict
+verbatim. A human still merges — the review is a first filter, not a guarantee. Runs inside Claude Code
+(Pro subscription, no API token cost).
+
+The GitHub Actions code-review workflow (`.github/workflows/code-review.yml`) is retained for manual
+`workflow_dispatch` runs but no longer triggers on PR open. This was a **cost decision** (free-plan
+Actions minutes), not a quality one — restore the `pull_request` trigger to re-enable CI review if the
+budget ever allows.
 
 ### Doc sweep (Phill) — Claude Code cron, Tue–Sat 09:07
 Runs inside Claude Code (Pro subscription, no API token cost). Checks Linear for tickets that moved

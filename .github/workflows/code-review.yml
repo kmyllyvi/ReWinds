@@ -10,9 +10,7 @@ name: Code Review — Marcy
 #   pull-requests: write — post the review comment
 
 on:
-  pull_request:
-    branches: [ develop ]
-    types: [ opened, synchronize ]
+  workflow_dispatch:  # manual trigger only — review now runs in-session as a Randy→Marcy agent handover (saves CI minutes)
 
 jobs:
   code-review:

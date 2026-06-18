@@ -1,157 +1,50 @@
 # ReWinds Development Guide
 
-**Project**: Compose Multiplatform app (iOS + Android)
-**Current Goals**: Fix runtime error on iOS
+Compose Multiplatform app (iOS + Android).
 
-## ⚠️ Session Init Instructions
-On each new session, Claude should read:
-1. **`docs/README.md`** — Main documentation hub with all doc navigation
-2. **`docs/ARCHITECTURE-RULES.md`** — Architectural patterns and conventions
+@docs/ARCHITECTURE-RULES.md
 
-These establish context before working on any tasks.
+## Build
 
-## Quick Start
+**Android:** `./gradlew buildAndroidOnly`
 
-### Build Commands
+**iOS:** Use Xcode, not Gradle — `open iosApp/iosApp.xcworkspace` then Cmd+R.
+Always the `.xcworkspace`, never `.xcodeproj` (CocoaPods needs it). Gradle iOS tasks
+(`linkPodReleaseFrameworkIosSimulatorArm64`, etc.) are unreliable — they only compile the
+Kotlin framework, not the app.
 
-#### Android
-```bash
-# Android only (recommended for Android work)
-./gradlew buildAndroidOnly
-```
+**Both (CI only):** `./gradlew build -PincludeAllTargets=true --no-daemon`.
+Plain `./gradlew build` is Android-only; iOS targets need `-PincludeAllTargets=true`.
 
-#### iOS
-```bash
-# ⚠️ IMPORTANT: Use Xcode for iOS builds, NOT Gradle
-# The Gradle iOS tasks (linkPodReleaseFrameworkIosSimulatorArm64, etc.) are unreliable
-# They only compile Kotlin → Framework, without full Xcode integration
+**Coverage (opt-in):** `./gradlew coverageReport -PenableCoverage=true`
 
-# Option 1: Use Xcode GUI (EASIEST)
-open iosApp/iosApp.xcworkspace
-# Then cmd+R to build and run on simulator
+## Config that bites
+- Gradle heap is 8GB (`gradle.properties`).
+- iOS targets are `iosArm64` + `iosSimulatorArm64` only — do not add Intel/`iosX64`.
+- Database is SQLDelight + sqlite3; on iOS, CocoaPods manages the sqlite3 dependency.
+- Do **not** add manual `-framework` linker flags for Pod-managed frameworks. The podspec's
+  `vendored_frameworks` handles linkage; a manual `-framework ComposeApp` in `OTHER_LDFLAGS`
+  causes duplicate-symbol errors. Pod-managed frameworks should have only `$(inherited)`.
 
-# Option 2: Use xcodebuild CLI
-xcodebuild -workspace iosApp/iosApp.xcworkspace \
-  -scheme iosApp \
-  -configuration Debug \
-  -sdk iphonesimulator \
-  -derivedDataPath build
+## Workflow — code changes go to Randy, always
+**Claude must never edit source files directly.** Any task touching the codebase
+(`composeApp/src/`, build files, CI workflows) is handed to the **Randy (developer)** agent.
+Exceptions Claude may edit directly: this CLAUDE.md, docs, and agent files (`.claude/agents/`).
 
-# Option 3: If you only need the Kotlin framework compiled (rare):
-./gradlew :composeApp:iosSimulatorArm64MainKlibrary
-# But you'll still need Xcode to build the actual app
-```
-
-#### Both Platforms
-```bash
-# Android + iOS Gradle build (CI only — iOS is normally built via Xcode)
-./gradlew build -PincludeAllTargets=true --no-daemon
-
-# Or use the convenience task:
-./gradlew buildWithIos
-```
-
-> **Note**: Plain `./gradlew build` (no flag) now builds **Android only** by default.
-> Kotlin/Native iOS targets are skipped unless `-PincludeAllTargets=true` is passed.
-> This is intentional — Xcode is the iOS build tool; Gradle iOS compilation was just overhead.
-
-#### Code Coverage
-```bash
-# Coverage is opt-in to avoid instrumentation overhead on every test run
-./gradlew coverageReport -PenableCoverage=true
-```
-
-### Key Configuration
-- **Gradle Heap**: 8GB (set in `gradle.properties`)
-- **iOS targets**: `iosArm64` + `iosSimulatorArm64` (iosX64/Intel removed — Apple Silicon only)
-- **Kotlin/Native daemon**: enabled (warm between tasks; `disableCompilerDaemon` removed)
-- **Kotlin/Native**: Devirtualization disabled (`-Xno-devirtualization` flag)
-- **iOS**: Cocoapods manages sqlite3 dependency
-- **Database**: SQLDelight with sqlite3 driver
-
-## Development Workflow
-
-This project uses a named agent team. See `docs/agent/WORKFLOW.md` for the full lane and handover protocol.
-
-### ⚠️ Code changes go to Randy — always
-
-**Claude must never edit source files directly.** Whenever a task requires touching the codebase (any file under `composeApp/src/`, build files, CI workflows, etc.), hand it off to the **Randy (developer)** agent instead. This keeps authorship, testing, and the Linear handover protocol consistent.
-
-> Exceptions: CLAUDE.md itself, docs, and agent files (`.claude/agents/`) may be edited directly when updating project-level instructions.
+Full lane + handover protocol: `docs/agent/WORKFLOW.md`.
 
 ### Agent roster
+| Agent | Role |
+|-------|------|
+| `Randy (developer)` | Implementation, bug fixes, commits, PR + Linear handover |
+| `Marcy (code-reviewer)` | Review against AC/DoD/MV* rules (Randy hands off in-session after opening the PR) |
+| `Shirley (po)` | Spec + acceptance criteria for Backlog items |
+| `Armin (codebase-architect)` | Architecture exploration, technical planning |
+| `Seppo (qa-test-agent)` | Testing (manual dispatch) |
+| `Mr.T (ux-ui-reviewer)` | UI/UX review (manual dispatch) |
+| `Phill (doc-agent)` | Docs update after merge (auto-triggered) |
 
-| Agent | Persona | Role |
-|-------|---------|------|
-| `Randy (developer)` | Randy | Implementation, bug fixes, commits, PR + Linear handover |
-| `Marcy (code-reviewer)` | Marcy | Code review against AC/DoD/MV* rules (auto-triggered on PR open) |
-| `Shirley (po)` | Shirley | Spec + acceptance criteria for Backlog items |
-| `Armin (codebase-architect)` | Armin | Architecture exploration, technical planning |
-| `Seppo (qa-test-agent)` | Seppo | Testing (manual dispatch) |
-| `Mr.T (ux-ui-reviewer)` | Mr.T | UI/UX review (manual dispatch) |
-| `Phill (doc-agent)` | Phill | Docs update after merge (auto-triggered) |
-
-## Project Structure
-```
-composeApp/
-  ├── build.gradle.kts          # Build config + iOS targets + cocoapods setup
-  ├── composeApp.podspec        # iOS framework definition for Xcode
-  └── src/
-      ├── commonMain/           # Shared code
-      ├── androidMain/          # Android-specific
-      └── iosMain/              # iOS-specific
-
-iosApp/
-  ├── Podfile                   # CocoaPods dependencies
-  ├── Pods/                     # CocoaPods managed dependencies (sqlite3, etc)
-  ├── iosApp.xcworkspace/       # ⚠️ USE THIS (not .xcodeproj)
-  └── iosApp.xcodeproj/         # Old project file (ignore with cocoapods)
-```
-
-### ⚠️ Important: Using Xcode
-**Always open `iosApp.xcworkspace`** - CocoaPods requires this!
-- `.xcworkspace` includes CocoaPods managed dependencies
-- `.xcodeproj` alone won't have access to sqlite3 and other pods
-
-### ⚠️ Important: Xcode Build Settings with CocoaPods
-**DO NOT manually add `-framework` linker flags for Pod-managed frameworks!**
-- The Pod's `podspec` (via `vendored_frameworks`) handles all framework linkage
-- Manual `-framework ComposeApp` in `OTHER_LDFLAGS` causes duplicate symbol errors
-- Xcode build settings should only have `$(inherited)` for Pod-managed frameworks
-- See `docs/DEVELOPMENT-120226.md` for detailed explanation
-
-## Current Status
-
-### ✅ Working
-- iOS simulator builds with Xcode (use workspace, not Gradle) ✅
-- Android builds and runs via Gradle ✅
-- CocoaPods integration for native dependencies (sqlite3) ✅
-- C interop for sqlite3 headers ✅
-- Database export/import feature fully working on BOTH iOS and Android ✅
-- AI Chat with flexible metrics querying (visibility, humidity, temperature, etc.) ✅
-- Three-layer permission flow for AI data fetching ✅
-- **NEW**: iOS Keychain-based API key storage with Settings UI ✅
-- All 32+ tests passing ✅
-
-### ⚠️ Known Issues
-- Gradle iOS build tasks unreliable (use Xcode instead) — mitigated: iOS targets now excluded from default Gradle builds
-- Device ARM64 builds OOM (needs 8GB+ or architectural changes)
-- XCFramework builds have KLIB resolver conflicts
-
-## Development Notes
-See `docs/DEVELOPMENT.md` for detailed session logs and technical decisions.
-See `docs/IMPLEMENTATION_NOTES_*.md` for feature-specific implementation details.
-
-## Session Tracking
-- **Latest Session**: March 4, 2026 - iOS Keychain integration + Flexible AI metrics + Permission flow
-- **Latest Commits**:
-  - `7c301e7` - docs: Add comprehensive implementation notes for iOS Keychain feature
-  - `8e7ea87` - Feature: Implement iOS Keychain-based API key storage with Settings screen
-- **Status**:
-  - ✅ Flexible metrics querying working (50+ metric aliases)
-  - ✅ Three-layer permission system for AI API calls implemented
-  - ✅ iOS Keychain secure storage with Settings UI complete
-  - ✅ Users can enter API key once, persists across restarts
-  - ✅ Build workflow clarified: Use Xcode for iOS (not Gradle)
-  - ✅ All tests passing
-  - ✅ Ready for app store distribution
+## Known issues
+- Gradle iOS build tasks are unreliable — use Xcode.
+- Device ARM64 builds OOM (need 8GB+ or architectural changes).
+- XCFramework builds have KLIB resolver conflicts.
