@@ -196,3 +196,25 @@ All tests follow MV* pattern:
 - Recent fixes fully covered by comprehensive boundary and integration tests
 - Ready for production deployment
 - Consider adding iOS tests for the fixes when iOS simulator is available
+
+## KIM-309 Hard-Gate Onboarding (Jun 18, 2026)
+
+### Coverage added
+- `core/WeatherApiKeyManagerTest.kt` (9 tests) — validity boundary + hasValidKeyFlow emissions
+- Extended `onboarding/VcKeyOnboardingViewModelTest.kt` (+2): gate RETURNS on key removal (true→false), whitespace-only key keeps gate active
+- Suite: 497 → 508 tests, 100% pass
+
+### Gate architecture (single source of truth)
+- `WeatherApiKeyManager` (object): `_hasValidKey` MutableStateFlow, emitted on every `setApiKey`.
+  Validity = `isNotBlank() && !contains("placeholder")`. NOTE: not trimmed — "  realkey  " is valid.
+- `VcKeyOnboardingViewModel.isWeatherKeyConfigured` = forwards `hasValidKeyFlow` via stateIn(Eagerly, hasValidKey()).
+- `Router.kt Navigation()`: `if (!keyConfigured) { OnboardingGate; return }` — Home/tabs NOT composed behind gate. Good.
+- Reactive clear chain: SettingsView onSave → `WeatherApiKeyManager.setApiKey(key)` → flow emit → gate clears. Same for delete (return).
+
+### Test pattern for global-object gate
+- `WeatherApiKeyManager` is a global singleton — MUST reset to "" in @BeforeTest AND @AfterTest for order-independence.
+- ViewModel test uses StandardTestDispatcher + setMain/resetMain + advanceUntilIdle (Eagerly stateIn needs the pump).
+- Manager flow test can use `hasValidKeyFlow.first()` directly under runTest (no dispatcher juggling needed).
+
+### Known limitation
+- iOS Keychain PERSISTENCE path (key survives app restart) is NOT unit-testable in commonTest — only WeatherApiKeyManager in-memory state is. Keychain save/read lives in iosMain Swift bridge. Requires Xcode simulator manual verification. Cannot run iOS sim in this env.
