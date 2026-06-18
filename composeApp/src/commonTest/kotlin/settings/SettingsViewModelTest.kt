@@ -2,6 +2,7 @@ package settings
 
 import ai.AnthropicClient
 import androidx.lifecycle.viewModelScope
+import core.ApiKeyChecker
 import core.AppSettingsStore
 import core.DaysOfInterestFilter
 import core.Language
@@ -56,8 +57,11 @@ class SettingsViewModelTest {
     // UncaughtExceptionsBeforeTest / IllegalStateException.
     private val createdViewModels = mutableListOf<SettingsViewModel>()
 
-    private fun viewModel(store: AppSettingsStore): SettingsViewModel =
-        SettingsViewModel(store, dummyClient).also { createdViewModels.add(it) }
+    private fun viewModel(
+        store: AppSettingsStore,
+        apiKeyChecker: ApiKeyChecker = ApiKeyChecker { false }
+    ): SettingsViewModel =
+        SettingsViewModel(store, dummyClient, apiKeyChecker).also { createdViewModels.add(it) }
 
     @BeforeTest
     fun setUp() {
@@ -184,7 +188,9 @@ class SettingsViewModelTest {
 
     @Test
     fun keyConfiguredFlags_reflectEmptyManagersByDefault() {
-        // No key has been set on either manager in the test process, so both are absent.
+        // Anthropic gate is injected as "not configured" so the assertion is deterministic and
+        // independent of any ANTHROPIC_API_KEY baked into BuildConfig (env / gradle.properties).
+        // The Visual Crossing manager is a process singleton left empty by the other tests' cleanup.
         val vm = viewModel(FakeSettingsStore())
         assertFalse(vm.anthropicKeyConfigured.value)
         assertFalse(vm.visualCrossingKeyConfigured.value)
