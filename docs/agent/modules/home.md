@@ -1,8 +1,6 @@
 # Home Module
 
-<!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
-
-**Last updated:** 2026-06-09 (bootstrap)
+**Last updated:** 2026-06-19 (PR #45 — KIM-309)
 **Status:** Active
 
 ---
@@ -23,7 +21,8 @@ The entry screen of the Places tab. Displays the list of saved places with day-c
 - Displaying `AlertBanner` items and a Visual Crossing key error state (`VcKeyErrorType.MISSING | INVALID`) with a Settings CTA.
 - Skeleton loading rows while data loads.
 - Debug menu with database export/import controls (hidden behind a toggle).
-- Refreshing the Visual Crossing key status when the screen becomes active (so the onboarding nudge hides immediately after the user saves a key in Settings).
+
+Note: VC key onboarding is no longer a Home responsibility. As of KIM-309 the hard gate lives in `core.Router` / `onboarding.VcKeyOnboardingViewModel` and blocks the Home surface entirely until a key is configured. The previous soft `VcKeyNudgeBanner` and `HomeViewModel.refreshWeatherKeyState()` / `HomeUiState.isWeatherKeyConfigured` have been removed.
 
 ---
 
@@ -33,7 +32,6 @@ The entry screen of the Places tab. Displays the list of saved places with day-c
 - `core.WeatherRepository` — `getSavedPlaceNames()`, `getPlaceDayCounts()`, `searchForLocations()`, `addPlaceFromSearch()`, `deletePlace()`.
 - `core.Database` — used directly only for `cleanupForecastDays()` (currently disabled).
 - `core.DatabaseExportImport` — export/import operations triggered from the debug menu.
-- `core.WeatherApiKeyManager` — `hasValidKey()` checked on init and on return from Settings.
 - `core.NetworkException` — distinguishes 401/403 errors for the `VcKeyErrorType` banner.
 
 ---
@@ -46,7 +44,6 @@ val uiState: StateFlow<HomeUiState>
 val searchText: StateFlow<String>
 val navigationEvent: Flow<NavigationEvent>    // NavigationEvent.ToPlaceSummary
 
-fun refreshWeatherKeyState()
 fun onSearchTextChange(text: String)
 fun onSearchResultSelected(place: GeoSearchResult)
 fun onSavedPlaceSelected(placeName: String)
@@ -62,6 +59,8 @@ fun onImportFilePathChange(path: String)
 fun importDatabase()
 ```
 
+`refreshWeatherKeyState()` was removed in KIM-309. VC key state is now owned exclusively by `onboarding.VcKeyOnboardingViewModel`.
+
 ### HomeUiState (data class)
 | Field | Type | Notes |
 |---|---|---|
@@ -75,9 +74,10 @@ fun importDatabase()
 | `showDebugMenu` | `Boolean` | Debug panel visibility |
 | `debugMessage` | `String` | Debug panel output text |
 | `importFilePath` | `String` | User-typed import path |
-| `isWeatherKeyConfigured` | `Boolean` | Drives onboarding nudge visibility |
 | `alertBanners` | `List<AlertBanner>` | Dismissible banners above place list |
 | `isLoading` | `Boolean` | Skeleton row visibility |
+
+`isWeatherKeyConfigured` was removed in KIM-309; it is no longer part of `HomeUiState`.
 
 ### PlaceDisplayData
 ```kotlin
@@ -90,11 +90,11 @@ data class PlaceDisplayData(name: String, subtitle: String, status: PlaceStatus)
 ## Known constraints
 
 - Place rows with zero stored days receive `PlaceStatus.WARNING`; there is no `ERROR` status assigned currently.
-- `refreshWeatherKeyState()` must be called by the View when returning from the Settings tab to ensure the nudge banner disappears promptly. This is not automatic.
 - The debug menu is always compiled in; it is hidden by a toggle, not by a build flag.
+- `HomeView` is never in the composition while the VC key gate is active. The gate in `Navigation()` returns early and only renders `AppTabs` (which includes `HomeView`) once `VcKeyOnboardingViewModel.isWeatherKeyConfigured` is true.
 
 ---
 
 ## Decisions log
 
-- See `/docs/agent/decisions/` for records created after the bootstrap phase.
+- `/docs/agent/decisions/2026-06-19-hard-gate-vc-key-onboarding.md` — why the soft banner was removed and replaced with a hard gate at the router level.
