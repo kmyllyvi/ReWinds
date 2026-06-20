@@ -141,7 +141,8 @@ kotlin {
         // JVM-only unit-test dependencies. testDebugUnitTest runs on the JVM, so these go on the
         // Android unit-test source set rather than commonTest — that keeps them off the iOS
         // (Kotlin/Native) test compilation, which has no JVM/JDBC artifacts for them. The tests
-        // that use them live in commonTest and are picked up by the Android unit-test build.
+        // that use them (SqlDelightDatabaseTest, NetworkServiceTest) likewise live in
+        // src/androidUnitTest/kotlin and run under testDebugUnitTest.
         androidUnitTest.dependencies {
             // In-memory SQLite (JDBC) driver — exercises SqlDelightDatabase merge/transaction logic.
             implementation(libs.sqldelight.sqlite.driver)
