@@ -2,7 +2,7 @@ package core
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import org.koin.core.annotation.Single
@@ -31,9 +31,11 @@ class NetworkService internal constructor(
         Log.d("NetworkService::fetchWeatherData: $url")
         return try {
             client.get(url).body()
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
+            // ResponseException covers both 4xx (ClientRequestException) and 5xx
+            // (ServerResponseException); catching the supertype preserves httpStatus for both.
             val errorBody = e.response.bodyAsText()
-            Log.e("API Client Error for $url: $errorBody", e)
+            Log.e("API Error for $url: $errorBody", e)
             throw NetworkException(errorBody, e, httpStatus = e.response.status.value)
         } catch (e: Exception) {
             Log.e("Generic Network Error for $url", e)
@@ -45,9 +47,11 @@ class NetworkService internal constructor(
         Log.d("NetworkService::fetchGeoSearchData: $url")
         return try {
             client.get(url).body()
-        } catch (e: ClientRequestException) {
+        } catch (e: ResponseException) {
+            // ResponseException covers both 4xx (ClientRequestException) and 5xx
+            // (ServerResponseException); catching the supertype preserves httpStatus for both.
             val errorBody = e.response.bodyAsText()
-            Log.e("API Client Error for $url: $errorBody", e)
+            Log.e("API Error for $url: $errorBody", e)
             throw NetworkException(errorBody, e, httpStatus = e.response.status.value)
         } catch (e: Exception) {
             Log.e("Generic Network Error for $url", e)
