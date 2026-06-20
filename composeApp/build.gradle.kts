@@ -138,6 +138,17 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
         }
 
+        // JVM-only unit-test dependencies. testDebugUnitTest runs on the JVM, so these go on the
+        // Android unit-test source set rather than commonTest — that keeps them off the iOS
+        // (Kotlin/Native) test compilation, which has no JVM/JDBC artifacts for them. The tests
+        // that use them live in commonTest and are picked up by the Android unit-test build.
+        androidUnitTest.dependencies {
+            // In-memory SQLite (JDBC) driver — exercises SqlDelightDatabase merge/transaction logic.
+            implementation(libs.sqldelight.sqlite.driver)
+            // Ktor MockEngine — exercises NetworkService HTTP error mapping without real I/O.
+            implementation(libs.ktor.client.mock)
+        }
+
         // iOS source sets — gated together with the target declaration above. The `by getting`
         // accessors require the targets to exist, so these must only run when includeAllTargets
         // is true; otherwise plain Android-only builds would fail to resolve iosArm64Main etc.
@@ -306,21 +317,56 @@ android {
     }
 }
 
+// Real JaCoCo XML report over the debug unit-test execution data. The Python script parses this
+// XML — no hardcoded numbers. Requires -PenableCoverage=true so the .exec file is produced.
+val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
+    group = "verification"
+    description = "Generate the JaCoCo XML coverage report from debug unit tests."
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    // Exclude generated code (SQLDelight db classes, Compose/Android scaffolding) so the
+    // percentage reflects hand-written code rather than codegen.
+    val excludes = listOf(
+        "**/com/km/rewinds/db/**",   // SQLDelight-generated
+        "**/*\$Companion*",
+        "**/R.class", "**/R$*.class", "**/BuildConfig.*",
+        "**/*ComposableSingletons*", "**/*\$\$serializer*"
+    )
+
+    val classDirs = files(
+        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(excludes) },
+        fileTree(layout.buildDirectory.dir("intermediates/javac/debug")) { exclude(excludes) }
+    )
+    classDirectories.setFrom(classDirs)
+    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/androidMain/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("**/testDebugUnitTest.exec", "**/*UnitTest*.exec")
+        }
+    )
+}
+
 tasks.register("coverageReport") {
     group = "verification"
     description = "Generate detailed code coverage report with percentages"
-    dependsOn("testDebugUnitTest")
+    dependsOn(jacocoTestReport)
 
     // Capture inputs at configuration time so the task is configuration-cache compatible.
     // Accessing Task.project or calling Project.exec at execution time is unsupported.
     val rootDir = project.rootProject.projectDir
     val scriptFile = File(rootDir, "generate_coverage_metrics.py")
+    val xmlReport = layout.buildDirectory.file("reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
     val execOps = project.serviceOf<org.gradle.process.ExecOperations>()
 
     doLast {
         if (scriptFile.exists()) {
             execOps.exec {
-                commandLine("python3", scriptFile.absolutePath)
+                commandLine("python3", scriptFile.absolutePath, xmlReport.get().asFile.absolutePath)
                 workingDir(rootDir)
             }
             println("\n✅ Coverage report generated!")

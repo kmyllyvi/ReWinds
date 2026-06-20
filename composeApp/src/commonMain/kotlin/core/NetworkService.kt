@@ -13,14 +13,19 @@ interface Networking {
 }
 
 @Single
-class NetworkService(enableNetworkLogs: Boolean): Networking {
+class NetworkService internal constructor(
+    // HttpClient is provided to Ktor based on the platform (engine differs per platform).
+    // Kept as a constructor parameter so unit tests can inject a MockEngine-backed client to
+    // exercise the error-mapping paths (4xx/5xx and connection failures) without real network I/O.
+    private val client: HttpClient
+): Networking {
 
     init {
         println("NetworkService initialized")
     }
 
-    // HttpClient is provided to ktor based on the platform
-    private val client = httpClient(enableNetworkLogs)
+    // Production constructor bound by Koin DI: builds the platform HttpClient.
+    constructor(enableNetworkLogs: Boolean) : this(httpClient(enableNetworkLogs))
 
     override suspend fun fetchWeatherData(url: String): WeatherResponse {
         Log.d("NetworkService::fetchWeatherData: $url")
