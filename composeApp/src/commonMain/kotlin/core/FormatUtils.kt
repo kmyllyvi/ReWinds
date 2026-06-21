@@ -75,6 +75,22 @@ fun formatGust(speed: Double?): String {
 
 private fun formatWhole(value: Double): String = value.roundToLong().toString()
 
+/**
+ * Formats a "YYYY-MM" string into a full month-name label, e.g. "2025-10" → "October 2025".
+ *
+ * KMP-safe: parses by splitting and maps the month via [monthName] — no String.format,
+ * no java.time. Used for all user-facing copy in the chat (KIM-321); internal grouping
+ * stays "YYYY-MM". Falls back to the raw [yyyyMM] string when it is unparseable.
+ */
+fun formatMonthName(yyyyMM: String): String {
+    val parts = yyyyMM.split("-")
+    if (parts.size != 2) return yyyyMM
+    val year = parts[0].toIntOrNull()
+    val month = parts[1].toIntOrNull()
+    if (year == null || month == null || month !in 1..12) return yyyyMM
+    return "${monthName(month)} $year"
+}
+
 // Helper for month name (consider a KMM-friendly date library for more robust formatting)
 fun monthName(month: Int): String {
     return when (month) {

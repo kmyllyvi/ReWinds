@@ -42,15 +42,49 @@ object AppConstants {
     const val ANTHROPIC_MAX_TURNS = 20
 
     /**
-     * System prompt for Claude in the chat assistant role.
-     * Guides the AI's behavior and focus area.
+     * Base system prompt for Claude in the chat assistant role.
+     * Guides the AI's behaviour and focus area. The per-place downloaded-data summary is
+     * appended at send time by [buildAnthropicSystemPrompt] (KIM-321).
      */
-    val ANTHROPIC_SYSTEM_PROMPT = """
+    private val ANTHROPIC_SYSTEM_PROMPT_BASE = """
         You are a wind sports assistant for the ReWinds app. You help kitesurfers and windsurfers
         analyse historical weather data for their saved locations. Be concise and focus on
         wind-relevant insights. When asked about conditions, always consider wind speed,
         gusts, and sustained wind together.
+
+        Fetching weather data that is not already downloaded makes a paid API call, so it always
+        requires explicit user confirmation. Before promising data you do not have, check the
+        downloaded-data summary below.
     """.trimIndent()
+
+    /**
+     * Assembles the full system prompt at send time from the live downloaded-months state
+     * (KIM-321). [downloadedMonthsByPlace] maps each saved place to the set of `YYYY-MM`
+     * months already in the database; [monthFormatter] renders those as full month names
+     * (e.g. "October 2025") for the user-facing summary.
+     *
+     * Pure string construction — no I/O — so the caller passes a current snapshot.
+     */
+    fun buildAnthropicSystemPrompt(
+        downloadedMonthsByPlace: Map<String, Set<String>>,
+        monthFormatter: (String) -> String
+    ): String {
+        if (downloadedMonthsByPlace.isEmpty()) {
+            return ANTHROPIC_SYSTEM_PROMPT_BASE +
+                "\n\nDownloaded data: none yet. Any weather query will require fetching new data."
+        }
+
+        val lines = downloadedMonthsByPlace.entries.joinToString("\n") { (place, months) ->
+            if (months.isEmpty()) {
+                "$place: no months downloaded"
+            } else {
+                val names = months.sorted().joinToString(", ") { monthFormatter(it) }
+                "$place: $names"
+            }
+        }
+        return ANTHROPIC_SYSTEM_PROMPT_BASE +
+            "\n\nDownloaded data already available (no fetch needed for these months):\n$lines"
+    }
 
     // ============================================
     // Visual Crossing API Configuration

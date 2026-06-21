@@ -1,9 +1,13 @@
 package core
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.db.SqlDriver
 import com.km.rewinds.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
@@ -41,6 +45,15 @@ interface Database {
 
     // get stored-day counts per place in a single GROUP BY query (no day/hour loading)
     suspend fun getPlaceDayCounts(): Map<String, Long>
+
+    // distinct YYYY-MM months that have at least one stored Day for a place (no day loading).
+    // Default empty so unrelated test doubles need not override it (KIM-321).
+    suspend fun getDownloadedMonths(place: String): Set<String> = emptySet()
+
+    // reactive variant: re-emits whenever the Day table changes for any reason
+    // (SQLDelight query invalidation). Used to keep the chat's month-set current.
+    fun observeDownloadedMonths(place: String): Flow<Set<String>> =
+        kotlinx.coroutines.flow.flowOf(emptySet())
 
     // get full data for a specific place
     suspend fun getSavedPlaceFull(place: String): WeatherResponse?
@@ -82,6 +95,19 @@ class SqlDelightDatabase(
             dbQuery.getAllPlaceDayCounts().executeAsList()
                 .associate { it.weatherResponseResolvedAddress to it.dayCount }
         }
+    }
+
+    override suspend fun getDownloadedMonths(place: String): Set<String> {
+        return withContext(Dispatchers.IO) {
+            dbQuery.getDownloadedMonthsForPlace(place).executeAsList().toSet()
+        }
+    }
+
+    override fun observeDownloadedMonths(place: String): Flow<Set<String>> {
+        return dbQuery.getDownloadedMonthsForPlace(place)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { it.toSet() }
     }
 
     override suspend fun getSavedPlaceFull(place: String): WeatherResponse? {
