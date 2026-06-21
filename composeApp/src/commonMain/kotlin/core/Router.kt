@@ -94,6 +94,20 @@ private fun OnboardingGate(vm: VcKeyOnboardingViewModel) {
     }
 }
 
+/**
+ * A push destination (PlaceSummary / MonthlyStatistics) only takes over the full screen while
+ * the Places tab is active. This matters for the Place → Chat flow: navigateToChat switches to
+ * the Chat tab but leaves the PlaceSummaryRoute on the Places stack, so the tab bar (and Chat
+ * content) must still show — without the activeTab guard the place screen would override the
+ * Chat tab.
+ *
+ * Extracted from the composable so the routing decision is unit-testable (MV* rule: logic out
+ * of Views).
+ */
+internal fun isShowingPlacesPush(activeTab: AppTab, currentPlacesRoute: NavRoute): Boolean =
+    activeTab == AppTab.PLACES &&
+        (currentPlacesRoute is PlaceSummaryRoute || currentPlacesRoute is MonthlyStatisticsRoute)
+
 @Composable
 private fun AppTabs() {
     // Each tab maintains its own back stack so state is preserved on tab switches.
@@ -142,12 +156,7 @@ private fun AppTabs() {
     // destination (no tab bar) or a tab root (tab bar visible).
     val currentPlacesRoute = placesStack.lastOrNull() ?: HomeRoute
 
-    // A push destination only takes over the screen while the Places tab is active. This
-    // matters for the Place → Chat flow: navigateToChat switches to the Chat tab but leaves
-    // the PlaceSummaryRoute on the Places stack, so the tab bar (and Chat content) must still
-    // show — without this activeTab guard the place screen would override the Chat tab.
-    val showingPlacesPush = activeTab == AppTab.PLACES &&
-        (currentPlacesRoute is PlaceSummaryRoute || currentPlacesRoute is MonthlyStatisticsRoute)
+    val showingPlacesPush = isShowingPlacesPush(activeTab, currentPlacesRoute)
 
     if (showingPlacesPush) {
         // Push destinations fill the screen without a tab bar. They use the routing
