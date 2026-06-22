@@ -3,6 +3,8 @@ package core
 import com.km.rewinds.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -51,6 +53,22 @@ interface WeatherRepository {
      * The Home screen uses this instead of loading full per-place data (KIM-278).
      */
     suspend fun getPlaceDayCounts(): Map<String, Long>
+
+    /**
+     * Distinct `YYYY-MM` months with at least one stored `Day` for [place].
+     * Backs the chat's "what data is already downloaded" awareness (KIM-321).
+     * Default returns empty so test fakes need not override it.
+     */
+    suspend fun getDownloadedMonths(place: String): Set<String> = emptySet()
+
+    /**
+     * Reactive variant of [getDownloadedMonths]: re-emits whenever the `Day` table
+     * changes for any reason (chat fetch, manual download, import). The ViewModel
+     * collects this so the system prompt's month summary stays current without any
+     * explicit refresh. Default emits a single empty set (KIM-321).
+     */
+    fun observeDownloadedMonths(place: String): Flow<Set<String>> = flowOf(emptySet())
+
     suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse
     suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse
     suspend fun deletePlace(placeName: String)
@@ -114,6 +132,14 @@ class WeatherRepositoryImpl(
         return withContext(Dispatchers.IO) {
             database.getPlaceDayCounts()
         }
+    }
+
+    override suspend fun getDownloadedMonths(place: String): Set<String> {
+        return database.getDownloadedMonths(place)
+    }
+
+    override fun observeDownloadedMonths(place: String): Flow<Set<String>> {
+        return database.observeDownloadedMonths(place)
     }
 
     override suspend fun getSavedDataFor(resolvedPlace: String): WeatherResponse? {

@@ -4,6 +4,7 @@ import core.WeatherRepository
 import core.Log
 import core.Day
 import core.DataAvailabilityStatus
+import core.utils.formatMonthName
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -288,6 +289,13 @@ object WeatherTools {
             return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_wind_summary")
         }
 
+        // Gate any paid fetch behind explicit user confirmation (KIM-321).
+        val dataStatus = repo.checkDataAvailability(locationName, startDate, endDate)
+        if (dataStatus != DataAvailabilityStatus.Available) {
+            Log.d("WeatherTools: get_wind_summary data not available for $locationName ($dataStatus). Requesting permission.")
+            return buildPermissionRequired(repo, "get_wind_summary", locationName, startDate, endDate, dataStatus)
+        }
+
         val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
 
         if (weatherResponse.days.isNullOrEmpty()) {
@@ -389,24 +397,13 @@ object WeatherTools {
         // Check if data is available before fetching
         val dataStatus = repo.checkDataAvailability(locationName, startDate, endDate)
 
-        // If data is not fully available, ask user for permission before fetching
+        // If data is not fully available, ask user for permission before fetching.
+        // Names downloaded vs missing months separately (KIM-321).
         if (dataStatus != DataAvailabilityStatus.Available) {
             Log.d("WeatherTools: Data not fully available for $locationName ($dataStatus). Asking user permission.")
-            return buildJsonObject {
-                put("status", "permission_required")
-                put("type", "fetch_permission")
-                put("message",
-                    "I need to fetch weather data for $locationName from $startDate to $endDate. " +
-                    "This will make an API call. Please type 'yes' or 'ok' to proceed."
-                )
-                put("location", locationName)
-                put("start_date", startDate)
-                put("end_date", endDate)
-                putJsonArray("metrics") {
-                    metricsList.forEach { add(JsonPrimitive(it)) }
-                }
-                put("data_status", dataStatus.toString())
-            }.toString()
+            return buildPermissionRequired(
+                repo, "get_weather_metrics", locationName, startDate, endDate, dataStatus, metricsList
+            )
         }
 
         val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
@@ -521,6 +518,13 @@ object WeatherTools {
         val startDate = "$year-$monthStr-01"
         val endDate = "$year-$monthStr-${getDaysInMonth(year, month)}"
 
+        // Gate any paid fetch behind explicit user confirmation (KIM-321).
+        val dataStatus = repo.checkDataAvailability(locationName, startDate, endDate)
+        if (dataStatus != DataAvailabilityStatus.Available) {
+            Log.d("WeatherTools: get_monthly_stats data not available for $locationName ($dataStatus). Requesting permission.")
+            return buildPermissionRequired(repo, "get_monthly_stats", locationName, startDate, endDate, dataStatus)
+        }
+
         val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
 
         if (weatherResponse.days.isNullOrEmpty()) {
@@ -587,6 +591,13 @@ object WeatherTools {
             return buildErrorJson("Invalid date format. Expected ISO 8601 (YYYY-MM-DD)", "get_best_days")
         }
 
+        // Gate any paid fetch behind explicit user confirmation (KIM-321).
+        val dataStatus = repo.checkDataAvailability(locationName, startDate, endDate)
+        if (dataStatus != DataAvailabilityStatus.Available) {
+            Log.d("WeatherTools: get_best_days data not available for $locationName ($dataStatus). Requesting permission.")
+            return buildPermissionRequired(repo, "get_best_days", locationName, startDate, endDate, dataStatus)
+        }
+
         val weatherResponse = repo.getDaysRange(locationName, startDate, endDate)
 
         if (weatherResponse.days.isNullOrEmpty()) {
@@ -639,6 +650,88 @@ object WeatherTools {
     } catch (e: Exception) {
         Log.e("handleGetBestDays failed", e)
         buildErrorJson("Failed to filter best days: ${e.message}", "get_best_days")
+    }
+
+    /**
+     * Enumerates the distinct `YYYY-MM` months spanned by an inclusive `[startDate, endDate]`
+     * range. Returns empty if either date is unparseable or the range is inverted.
+     */
+    internal fun monthsInRange(startDate: String, endDate: String): List<String> {
+        // Validate as real dates, then drive iteration from the YYYY-MM prefixes so we
+        // avoid any kotlinx-datetime month-property API churn across versions.
+        val start = try { LocalDate.parse(startDate) } catch (e: Exception) { return emptyList() }
+        val end = try { LocalDate.parse(endDate) } catch (e: Exception) { return emptyList() }
+        if (start > end) return emptyList()
+
+        var year = startDate.substring(0, 4).toInt()
+        var month = startDate.substring(5, 7).toInt()
+        val endKey = endDate.substring(0, 4).toInt() * 12 + (endDate.substring(5, 7).toInt() - 1)
+
+        val months = LinkedHashSet<String>()
+        while (year * 12 + (month - 1) <= endKey) {
+            months.add("$year-${month.toString().padStart(2, '0')}")
+            month++
+            if (month > 12) { month = 1; year++ }
+        }
+        return months.toList()
+    }
+
+    /**
+     * Builds the shared `permission_required` response used by every tool before any paid
+     * Visual Crossing fetch (KIM-321). Names already-downloaded months separately from the
+     * months that would require a new fetch, both in full month-name format.
+     *
+     * For [DataAvailabilityStatus.Partial] both lists are populated; for
+     * [DataAvailabilityStatus.Missing] no data is downloaded for the range.
+     */
+    private suspend fun buildPermissionRequired(
+        repo: WeatherRepository,
+        toolName: String,
+        locationName: String,
+        startDate: String,
+        endDate: String,
+        status: DataAvailabilityStatus,
+        metrics: List<String>? = null
+    ): String {
+        val rangeMonths = monthsInRange(startDate, endDate)
+        val downloaded = repo.getDownloadedMonths(locationName)
+        val downloadedInRange = rangeMonths.filter { it in downloaded }
+        val missingInRange = rangeMonths.filter { it !in downloaded }
+
+        val downloadedNames = downloadedInRange.map { formatMonthName(it) }
+        val missingNames = missingInRange.map { formatMonthName(it) }
+
+        val message = if (status == DataAvailabilityStatus.Missing || downloadedNames.isEmpty()) {
+            "No weather data is downloaded for $locationName in the requested range " +
+                "(${missingNames.joinToString(", ")}). Fetching it makes a paid Visual Crossing " +
+                "API call. Reply 'yes' or 'ok' to download it."
+        } else {
+            "Some data for $locationName is already downloaded " +
+                "(${downloadedNames.joinToString(", ")}), but these months are missing: " +
+                "${missingNames.joinToString(", ")}. Fetching the missing months makes a paid " +
+                "Visual Crossing API call. Reply 'yes' or 'ok' to download them."
+        }
+
+        return buildJsonObject {
+            put("status", "permission_required")
+            put("type", "fetch_permission")
+            put("message", message)
+            put("location", locationName)
+            put("start_date", startDate)
+            put("end_date", endDate)
+            put("data_status", status.toString())
+            putJsonArray("downloaded_months") {
+                downloadedNames.forEach { add(JsonPrimitive(it)) }
+            }
+            putJsonArray("missing_months") {
+                missingNames.forEach { add(JsonPrimitive(it)) }
+            }
+            if (metrics != null) {
+                putJsonArray("metrics") {
+                    metrics.forEach { add(JsonPrimitive(it)) }
+                }
+            }
+        }.toString()
     }
 
     /**
