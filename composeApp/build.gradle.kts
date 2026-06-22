@@ -346,7 +346,12 @@ val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
         "**/com/km/rewinds/db/**",   // SQLDelight-generated
         "**/*\$Companion*",
         "**/R.class", "**/R$*.class", "**/BuildConfig.*",
-        "**/*ComposableSingletons*", "**/*\$\$serializer*"
+        "**/*ComposableSingletons*", "**/*\$\$serializer*",
+        // MV* rule: Views and reusable UI components are purely presentational (no logic) and
+        // untestable by design, so they must not dilute coverage. ViewModels stay counted —
+        // "*ViewKt*" matches *View.kt (-> *ViewKt.class) but NOT *ViewModel.kt (-> *ViewModelKt.class).
+        "**/*ViewKt*",          // page-level Composable files
+        "**/components/**"      // reusable UI component packages
     )
 
     val classDirs = files(

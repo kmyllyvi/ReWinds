@@ -7,13 +7,13 @@
     <title>ReWinds - Code Coverage Report</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
             background: #f5f7fa;
             padding: 20px;
         }
         .container { max-width: 1200px; margin: 0 auto; }
-        .header { 
+        .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
@@ -22,14 +22,12 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .header h1 { font-size: 2.2em; margin-bottom: 10px; }
-        
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-        
         .metric-card {
             background: white;
             padding: 25px;
@@ -38,21 +36,14 @@
             text-align: center;
             border-top: 4px solid #667eea;
         }
-        
-        .metric-label { 
-            color: #666; 
+        .metric-label {
+            color: #666;
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 10px;
         }
-        
-        .metric-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
+        .metric-value { font-size: 2.5em; font-weight: bold; color: #667eea; }
         .metric-bar {
             background: #f0f0f0;
             height: 8px;
@@ -60,13 +51,11 @@
             margin-top: 12px;
             overflow: hidden;
         }
-        
         .metric-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, #667eea, #764ba2);
             border-radius: 4px;
         }
-        
         .modules {
             background: white;
             border-radius: 10px;
@@ -74,9 +63,7 @@
             padding: 30px;
             margin-bottom: 30px;
         }
-        
         .modules h2 { color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #667eea; }
-        
         .module-row {
             display: grid;
             grid-template-columns: 1fr 100px 100px 100px;
@@ -85,28 +72,14 @@
             border-bottom: 1px solid #f0f0f0;
             align-items: center;
         }
-        
         .module-row:last-child { border-bottom: none; }
         .module-row:hover { background: #f9f9f9; }
-        
         .module-name { font-weight: 600; color: #333; }
-        .coverage-pct { 
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        
+        .coverage-pct { text-align: center; font-weight: bold; font-size: 1.1em; }
         .coverage-good { color: #10b981; }
         .coverage-ok { color: #f59e0b; }
         .coverage-low { color: #ef4444; }
-        
-        .footer {
-            text-align: center;
-            color: #999;
-            font-size: 0.85em;
-            margin-top: 40px;
-        }
-        
+        .footer { text-align: center; color: #999; font-size: 0.85em; margin-top: 40px; }
         .summary-box {
             background: white;
             padding: 20px;
@@ -120,50 +93,48 @@
     <div class="container">
         <div class="header">
             <h1>📊 ReWinds Code Coverage Report</h1>
-            <p>Detailed Line and Branch Coverage Analysis</p>
+            <p>Line and Branch Coverage (parsed from JaCoCo XML)</p>
         </div>
-        
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Line Coverage</div>
-                <div class="metric-value">92.2%</div>
+                <div class="metric-value">50.7%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 92.23809523809524%"></div>
+                    <div class="metric-bar-fill" style="width: 50.688919076266245%"></div>
                 </div>
-                <small>1937/2100 lines</small>
+                <small>2612/5153 lines</small>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-label">Branch Coverage</div>
-                <div class="metric-value">91.3%</div>
+                <div class="metric-value">33.4%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 91.32530120481928%"></div>
+                    <div class="metric-bar-fill" style="width: 33.38136407300672%"></div>
                 </div>
-                <small>379/415 branches</small>
+                <small>695/2082 branches</small>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-label">Overall Grade</div>
-                <div class="metric-value" style="color: #10b981;">A+</div>
+                <div class="metric-value" style="color: #10b981;">C</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 100%"></div>
+                    <div class="metric-bar-fill" style="width: 50.688919076266245%"></div>
                 </div>
-                <small>Excellent coverage</small>
+                <small>Line-coverage grade</small>
             </div>
         </div>
-        
+
         <div class="summary-box">
             <h3>📈 Coverage Summary</h3>
             <ul style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Total Lines:</strong> 2,100</li>
-                <li><strong>Lines Covered:</strong> 1,937</li>
-                <li><strong>Total Branches:</strong> 415</li>
-                <li><strong>Branches Covered:</strong> 379</li>
-                <li><strong>Test Count:</strong> 361 tests</li>
-                <li><strong>Pass Rate:</strong> 100%</li>
+                <li><strong>Total Lines:</strong> 5,153</li>
+                <li><strong>Lines Covered:</strong> 2,612</li>
+                <li><strong>Total Branches:</strong> 2,082</li>
+                <li><strong>Branches Covered:</strong> 695</li>
             </ul>
         </div>
-        
+
         <div class="modules">
             <h2>📁 File-by-File Coverage</h2>
             <div class="module-row" style="font-weight: 600; background: #f9f9f9;">
@@ -172,67 +143,448 @@
                 <div>Coverage</div>
                 <div>Grade</div>
             </div>
-
+            <div class="module-row">
+                <div class="module-name">App.kt</div>
+                <div class="coverage-pct">33</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">AppViewModel.kt</div>
+                <div class="coverage-pct">5</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">DI.kt</div>
+                <div class="coverage-pct">27</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ViewModelOf.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/AiRepository.kt</div>
+                <div class="coverage-pct">153</div>
+                <div class="coverage-pct coverage-low">14%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/AnthropicClient.kt</div>
+                <div class="coverage-pct">58</div>
+                <div class="coverage-pct coverage-low">14%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/AnthropicModels.kt</div>
+                <div class="coverage-pct">154</div>
+                <div class="coverage-pct coverage-low">74%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/ChatRepository.kt</div>
+                <div class="coverage-pct">69</div>
+                <div class="coverage-pct coverage-low">1%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/ChatSessionLogic.kt</div>
+                <div class="coverage-pct">34</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/ChatSessionSwitcher.kt</div>
+                <div class="coverage-pct">103</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
             <div class="module-row">
                 <div class="module-name">ai/ChatViewModel.kt</div>
-                <div class="coverage-pct">180</div>
-                <div class="coverage-pct coverage-good">94%</div>
-                <div class="coverage-pct coverage-good">A</div>
+                <div class="coverage-pct">331</div>
+                <div class="coverage-pct coverage-low">57%</div>
+                <div class="coverage-pct coverage-low">C</div>
             </div>
-
+            <div class="module-row">
+                <div class="module-name">ai/DaysOfInterestParser.kt</div>
+                <div class="coverage-pct">63</div>
+                <div class="coverage-pct coverage-low">48%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/LazyDsl.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
             <div class="module-row">
                 <div class="module-name">ai/MetricMapper.kt</div>
-                <div class="coverage-pct">120</div>
-                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct">58</div>
+                <div class="coverage-pct coverage-good">95%</div>
                 <div class="coverage-pct coverage-good">A</div>
             </div>
-
             <div class="module-row">
                 <div class="module-name">ai/WeatherTools.kt</div>
-                <div class="coverage-pct">650</div>
-                <div class="coverage-pct coverage-good">94%</div>
-                <div class="coverage-pct coverage-good">A</div>
-            </div>
-
-            <div class="module-row">
-                <div class="module-name">core/Navigator.kt</div>
-                <div class="coverage-pct">80</div>
-                <div class="coverage-pct coverage-good">100%</div>
-                <div class="coverage-pct coverage-good">A</div>
-            </div>
-
-            <div class="module-row">
-                <div class="module-name">core/WeatherRepository.kt</div>
-                <div class="coverage-pct">430</div>
-                <div class="coverage-pct coverage-good">92%</div>
-                <div class="coverage-pct coverage-good">A</div>
-            </div>
-
-            <div class="module-row">
-                <div class="module-name">home/HomeViewModel.kt</div>
-                <div class="coverage-pct">140</div>
-                <div class="coverage-pct coverage-good">94%</div>
-                <div class="coverage-pct coverage-good">A</div>
-            </div>
-
-            <div class="module-row">
-                <div class="module-name">place/PlaceSummaryViewModel.kt</div>
-                <div class="coverage-pct">280</div>
+                <div class="coverage-pct">484</div>
                 <div class="coverage-pct coverage-ok">89%</div>
                 <div class="coverage-pct coverage-ok">B</div>
             </div>
-
             <div class="module-row">
-                <div class="module-name">settings/SettingsView.kt</div>
-                <div class="coverage-pct">220</div>
-                <div class="coverage-pct coverage-ok">82%</div>
+                <div class="module-name">com/km/rewinds/MainActivity.kt</div>
+                <div class="coverage-pct">11</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">com/km/rewinds/MainApplication.kt</div>
+                <div class="coverage-pct">8</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/ApiKeyChecker.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/ApiKeyManager.kt</div>
+                <div class="coverage-pct">8</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/AppConstants.kt</div>
+                <div class="coverage-pct">11</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/AppSettingsRepository.kt</div>
+                <div class="coverage-pct">4</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/AppStrings.kt</div>
+                <div class="coverage-pct">561</div>
+                <div class="coverage-pct coverage-ok">87%</div>
                 <div class="coverage-pct coverage-ok">B</div>
             </div>
-
+            <div class="module-row">
+                <div class="module-name">core/ChatStackOps.kt</div>
+                <div class="coverage-pct">13</div>
+                <div class="coverage-pct coverage-good">92%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Comparisons.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DataAvailability.kt</div>
+                <div class="coverage-pct">13</div>
+                <div class="coverage-pct coverage-low">23%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DataMapping.kt</div>
+                <div class="coverage-pct">161</div>
+                <div class="coverage-pct coverage-good">99%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Database.kt</div>
+                <div class="coverage-pct">188</div>
+                <div class="coverage-pct coverage-ok">84%</div>
+                <div class="coverage-pct coverage-ok">B</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DatabaseExportImport.android.kt</div>
+                <div class="coverage-pct">37</div>
+                <div class="coverage-pct coverage-low">3%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DatabaseExportImport.kt</div>
+                <div class="coverage-pct">2</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DaysOfInterestFilter.kt</div>
+                <div class="coverage-pct">50</div>
+                <div class="coverage-pct coverage-good">98%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/DbAdapters.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">33%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Emitters.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/LanguageManager.kt</div>
+                <div class="coverage-pct">10</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/LocalAppStrings.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Logger.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/NavigationRoutes.kt</div>
+                <div class="coverage-pct">16</div>
+                <div class="coverage-pct coverage-ok">88%</div>
+                <div class="coverage-pct coverage-ok">B</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Navigator.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/NavigatorImpl.kt</div>
+                <div class="coverage-pct">17</div>
+                <div class="coverage-pct coverage-low">76%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/NetworkException.kt</div>
+                <div class="coverage-pct">4</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/NetworkService.kt</div>
+                <div class="coverage-pct">29</div>
+                <div class="coverage-pct coverage-good">97%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Platform.android.kt</div>
+                <div class="coverage-pct">84</div>
+                <div class="coverage-pct coverage-low">15%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Platform.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/Router.kt</div>
+                <div class="coverage-pct">130</div>
+                <div class="coverage-pct coverage-low">9%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/SafeCollector.common.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">67%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/TabNavigationViewModel.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/TabRoutingNavigator.kt</div>
+                <div class="coverage-pct">15</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/WeatherApiKeyManager.kt</div>
+                <div class="coverage-pct">11</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/WeatherData.kt</div>
+                <div class="coverage-pct">101</div>
+                <div class="coverage-pct coverage-ok">87%</div>
+                <div class="coverage-pct coverage-ok">B</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/WeatherRepository.kt</div>
+                <div class="coverage-pct">267</div>
+                <div class="coverage-pct coverage-low">5%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">core/utils/FormatUtils.kt</div>
+                <div class="coverage-pct">47</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">home/Emitters.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">home/HomeViewModel.kt</div>
+                <div class="coverage-pct">148</div>
+                <div class="coverage-pct coverage-low">57%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">home/SafeCollector.common.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">67%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">onboarding/VcKeyOnboardingScreen.kt</div>
+                <div class="coverage-pct">47</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">onboarding/VcKeyOnboardingViewModel.kt</div>
+                <div class="coverage-pct">10</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/Comparisons.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/DayDetailSheet.kt</div>
+                <div class="coverage-pct">64</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/DayWeatherSummary.kt</div>
+                <div class="coverage-pct">18</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/Emitters.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/HourlyWind.kt</div>
+                <div class="coverage-pct">56</div>
+                <div class="coverage-pct coverage-good">100%</div>
+                <div class="coverage-pct coverage-good">A</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/MonthlyStatisticsViewModel.kt</div>
+                <div class="coverage-pct">217</div>
+                <div class="coverage-pct coverage-low">78%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/PlaceSummaryViewModel.kt</div>
+                <div class="coverage-pct">200</div>
+                <div class="coverage-pct coverage-low">64%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/SafeCollector.common.kt</div>
+                <div class="coverage-pct">3</div>
+                <div class="coverage-pct coverage-low">67%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/StationDisplayData.kt</div>
+                <div class="coverage-pct">8</div>
+                <div class="coverage-pct coverage-ok">88%</div>
+                <div class="coverage-pct coverage-ok">B</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/StationMapModal.kt</div>
+                <div class="coverage-pct">208</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">rewinds/composeapp/generated/resources/ActualResourceCollectors.kt</div>
+                <div class="coverage-pct">18</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">rewinds/composeapp/generated/resources/Drawable0.commonMain.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">rewinds/composeapp/generated/resources/Plurals0.commonMain.kt</div>
+                <div class="coverage-pct">13</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">rewinds/composeapp/generated/resources/Res.kt</div>
+                <div class="coverage-pct">2</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">rewinds/composeapp/generated/resources/String0.commonMain.kt</div>
+                <div class="coverage-pct">601</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">settings/SettingsView.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">settings/SettingsViewModel.kt</div>
+                <div class="coverage-pct">76</div>
+                <div class="coverage-pct coverage-low">79%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ui/theme/ReWindsTheme.kt</div>
+                <div class="coverage-pct">46</div>
+                <div class="coverage-pct coverage-low">30%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
         </div>
-        
+
         <div class="footer">
-            <p>Generated 2026-06-09 | 361 tests passing | formatDecimal rounding bug fixed</p>
+            <p>Generated 2026-06-22 15:17:58 from JaCoCo XML</p>
         </div>
     </div>
 </body>
