@@ -85,7 +85,6 @@ sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", versi
 # JDBC/in-memory SQLite driver — unit tests only (SqlDelightDatabase merge/transaction coverage)
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqlDelight" }
 sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqlDelight" }
-sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqlDelight" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
