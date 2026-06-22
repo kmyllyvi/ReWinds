@@ -1,95 +1,79 @@
 #!/usr/bin/env python3
 """
-Parse JaCoCo coverage data and generate coverage percentages.
-This simulates what Codacy shows.
+Generate a code-coverage HTML report from real JaCoCo XML output.
+
+This parses the JaCoCo XML report (produced by the `jacocoTestReport` Gradle task) and computes
+line/branch coverage from its <counter> elements — the root <report> counters give the totals,
+and per-<package>/<sourcefile> counters give the file-by-file breakdown. No numbers are hardcoded.
+
+Usage:
+    python3 generate_coverage_metrics.py [path/to/jacocoTestReport.xml]
+
+If no path is given it falls back to the default Gradle output location. Run the report first:
+    ./gradlew :composeApp:coverageReport -PenableCoverage=true
 """
 
-import json
-import subprocess
+import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
 
-def run_jacoco_report():
-    """Generate JaCoCo report using the execution data."""
-    
-    project_dir = Path("composeApp")
-    exec_file = project_dir / "build/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"
-    
-    if not exec_file.exists():
-        print("⚠ No coverage data found. Run tests first:")
-        print("  ./gradlew :composeApp:testDebugUnitTest")
-        return
-    
-    print("\n📊 Analyzing coverage data...")
-    print(f"   Execution file: {exec_file}")
-    
-    # Estimate coverage based on test distribution
-    # This is based on our test analysis
-    modules_coverage = {
-        "ai/ChatViewModel.kt": {
-            "lines": 180,
-            "covered": 170,  # 94%
-            "branches": 45,
-            "covered_branches": 42,
-        },
-        "ai/WeatherTools.kt": {
-            "lines": 650,
-            "covered": 610,  # 94%
-            "branches": 120,
-            "covered_branches": 110,
-        },
-        "ai/MetricMapper.kt": {
-            "lines": 120,
-            "covered": 120,  # 100%
-            "branches": 40,
-            "covered_branches": 40,
-        },
-        "core/WeatherRepository.kt": {
-            "lines": 430,
-            "covered": 395,  # 92%
-            "branches": 80,
-            "covered_branches": 72,
-        },
-        "home/HomeViewModel.kt": {
-            "lines": 140,
-            "covered": 132,  # 94%
-            "branches": 30,
-            "covered_branches": 28,
-        },
-        "place/PlaceSummaryViewModel.kt": {
-            "lines": 280,
-            "covered": 250,  # 89%
-            "branches": 50,
-            "covered_branches": 44,
-        },
-        "settings/SettingsView.kt": {
-            "lines": 220,
-            "covered": 180,  # 82%
-            "branches": 35,
-            "covered_branches": 28,
-        },
-        "core/Navigator.kt": {
-            "lines": 80,
-            "covered": 80,  # 100%
-            "branches": 15,
-            "covered_branches": 15,
-        },
-    }
-    
-    # Calculate totals
-    total_lines = sum(m["lines"] for m in modules_coverage.values())
-    total_covered = sum(m["covered"] for m in modules_coverage.values())
-    total_branches = sum(m["branches"] for m in modules_coverage.values())
-    total_covered_branches = sum(m["covered_branches"] for m in modules_coverage.values())
-    
-    line_coverage_pct = (total_covered / total_lines * 100) if total_lines > 0 else 0
-    branch_coverage_pct = (total_covered_branches / total_branches * 100) if total_branches > 0 else 0
-    
-    # Generate detailed report
-    report_dir = Path("docs/coverage")
-    report_dir.mkdir(parents=True, exist_ok=True)
-    
-    html = f"""
+DEFAULT_XML = Path("composeApp/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+REPORT_DIR = Path("docs/coverage")
+
+
+def counter(element, counter_type):
+    """Return (covered, total) for a JaCoCo counter type on the given element, or (0, 0)."""
+    for c in element.findall("counter"):
+        if c.get("type") == counter_type:
+            missed = int(c.get("missed", "0"))
+            covered = int(c.get("covered", "0"))
+            return covered, missed + covered
+    return 0, 0
+
+
+def grade_for(pct):
+    if pct >= 90:
+        return "A", "coverage-good"
+    if pct >= 80:
+        return "B", "coverage-ok"
+    return "C", "coverage-low"
+
+
+def collect_files(root):
+    """Yield (display_name, line_total, line_covered, line_pct) per source file."""
+    files = []
+    for package in root.findall("package"):
+        pkg_name = package.get("name", "")
+        for sourcefile in package.findall("sourcefile"):
+            covered, total = counter(sourcefile, "LINE")
+            if total == 0:
+                continue
+            name = sourcefile.get("name", "")
+            display = f"{pkg_name}/{name}" if pkg_name else name
+            pct = covered / total * 100
+            files.append((display, total, covered, pct))
+    files.sort(key=lambda f: f[0])
+    return files
+
+
+def build_html(line_covered, line_total, branch_covered, branch_total, files):
+    line_pct = (line_covered / line_total * 100) if line_total else 0
+    branch_pct = (branch_covered / branch_total * 100) if branch_total else 0
+    overall_grade, _ = grade_for(line_pct)
+
+    rows = ""
+    for display, total, covered, pct in files:
+        grade, color_class = grade_for(pct)
+        rows += f"""
+            <div class="module-row">
+                <div class="module-name">{display}</div>
+                <div class="coverage-pct">{total}</div>
+                <div class="coverage-pct {color_class}">{pct:.0f}%</div>
+                <div class="coverage-pct {color_class}">{grade}</div>
+            </div>"""
+
+    return f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,13 +82,13 @@ def run_jacoco_report():
     <title>ReWinds - Code Coverage Report</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ 
+        body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
             background: #f5f7fa;
             padding: 20px;
         }}
         .container {{ max-width: 1200px; margin: 0 auto; }}
-        .header {{ 
+        .header {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 40px;
@@ -113,14 +97,12 @@ def run_jacoco_report():
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }}
         .header h1 {{ font-size: 2.2em; margin-bottom: 10px; }}
-        
         .metrics-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }}
-        
         .metric-card {{
             background: white;
             padding: 25px;
@@ -129,21 +111,14 @@ def run_jacoco_report():
             text-align: center;
             border-top: 4px solid #667eea;
         }}
-        
-        .metric-label {{ 
-            color: #666; 
+        .metric-label {{
+            color: #666;
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 10px;
         }}
-        
-        .metric-value {{
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #667eea;
-        }}
-        
+        .metric-value {{ font-size: 2.5em; font-weight: bold; color: #667eea; }}
         .metric-bar {{
             background: #f0f0f0;
             height: 8px;
@@ -151,13 +126,11 @@ def run_jacoco_report():
             margin-top: 12px;
             overflow: hidden;
         }}
-        
         .metric-bar-fill {{
             height: 100%;
             background: linear-gradient(90deg, #667eea, #764ba2);
             border-radius: 4px;
         }}
-        
         .modules {{
             background: white;
             border-radius: 10px;
@@ -165,9 +138,7 @@ def run_jacoco_report():
             padding: 30px;
             margin-bottom: 30px;
         }}
-        
         .modules h2 {{ color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #667eea; }}
-        
         .module-row {{
             display: grid;
             grid-template-columns: 1fr 100px 100px 100px;
@@ -176,28 +147,14 @@ def run_jacoco_report():
             border-bottom: 1px solid #f0f0f0;
             align-items: center;
         }}
-        
         .module-row:last-child {{ border-bottom: none; }}
         .module-row:hover {{ background: #f9f9f9; }}
-        
         .module-name {{ font-weight: 600; color: #333; }}
-        .coverage-pct {{ 
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.1em;
-        }}
-        
+        .coverage-pct {{ text-align: center; font-weight: bold; font-size: 1.1em; }}
         .coverage-good {{ color: #10b981; }}
         .coverage-ok {{ color: #f59e0b; }}
         .coverage-low {{ color: #ef4444; }}
-        
-        .footer {{
-            text-align: center;
-            color: #999;
-            font-size: 0.85em;
-            margin-top: 40px;
-        }}
-        
+        .footer {{ text-align: center; color: #999; font-size: 0.85em; margin-top: 40px; }}
         .summary-box {{
             background: white;
             padding: 20px;
@@ -211,50 +168,48 @@ def run_jacoco_report():
     <div class="container">
         <div class="header">
             <h1>📊 ReWinds Code Coverage Report</h1>
-            <p>Detailed Line and Branch Coverage Analysis</p>
+            <p>Line and Branch Coverage (parsed from JaCoCo XML)</p>
         </div>
-        
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Line Coverage</div>
-                <div class="metric-value">{line_coverage_pct:.1f}%</div>
+                <div class="metric-value">{line_pct:.1f}%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: {line_coverage_pct}%"></div>
+                    <div class="metric-bar-fill" style="width: {line_pct}%"></div>
                 </div>
-                <small>{total_covered}/{total_lines} lines</small>
+                <small>{line_covered}/{line_total} lines</small>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-label">Branch Coverage</div>
-                <div class="metric-value">{branch_coverage_pct:.1f}%</div>
+                <div class="metric-value">{branch_pct:.1f}%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: {branch_coverage_pct}%"></div>
+                    <div class="metric-bar-fill" style="width: {branch_pct}%"></div>
                 </div>
-                <small>{total_covered_branches}/{total_branches} branches</small>
+                <small>{branch_covered}/{branch_total} branches</small>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-label">Overall Grade</div>
-                <div class="metric-value" style="color: #10b981;">A+</div>
+                <div class="metric-value" style="color: #10b981;">{overall_grade}</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 100%"></div>
+                    <div class="metric-bar-fill" style="width: {line_pct}%"></div>
                 </div>
-                <small>Excellent coverage</small>
+                <small>Line-coverage grade</small>
             </div>
         </div>
-        
+
         <div class="summary-box">
             <h3>📈 Coverage Summary</h3>
             <ul style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Total Lines:</strong> {total_lines:,}</li>
-                <li><strong>Lines Covered:</strong> {total_covered:,}</li>
-                <li><strong>Total Branches:</strong> {total_branches:,}</li>
-                <li><strong>Branches Covered:</strong> {total_covered_branches:,}</li>
-                <li><strong>Test Count:</strong> 137 tests</li>
-                <li><strong>Pass Rate:</strong> 100%</li>
+                <li><strong>Total Lines:</strong> {line_total:,}</li>
+                <li><strong>Lines Covered:</strong> {line_covered:,}</li>
+                <li><strong>Total Branches:</strong> {branch_total:,}</li>
+                <li><strong>Branches Covered:</strong> {branch_covered:,}</li>
             </ul>
         </div>
-        
+
         <div class="modules">
             <h2>📁 File-by-File Coverage</h2>
             <div class="module-row" style="font-weight: 600; background: #f9f9f9;">
@@ -262,51 +217,51 @@ def run_jacoco_report():
                 <div>Lines</div>
                 <div>Coverage</div>
                 <div>Grade</div>
-            </div>
-"""
-    
-    for module, data in sorted(modules_coverage.items()):
-        coverage_pct = (data["covered"] / data["lines"] * 100) if data["lines"] > 0 else 0
-        
-        if coverage_pct >= 90:
-            grade = "A"
-            color_class = "coverage-good"
-        elif coverage_pct >= 80:
-            grade = "B"
-            color_class = "coverage-ok"
-        else:
-            grade = "C"
-            color_class = "coverage-low"
-        
-        html += f"""
-            <div class="module-row">
-                <div class="module-name">{module}</div>
-                <div class="coverage-pct">{data['lines']}</div>
-                <div class="coverage-pct {color_class}">{coverage_pct:.0f}%</div>
-                <div class="coverage-pct {color_class}">{grade}</div>
-            </div>
-"""
-    
-    html += """
+            </div>{rows}
         </div>
-        
+
         <div class="footer">
-            <p>Generated """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """ | Ready for public release</p>
+            <p>Generated {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} from JaCoCo XML</p>
         </div>
     </div>
 </body>
 </html>
 """
-    
-    report_file = report_dir / "detailed.html"
-    with open(report_file, 'w') as f:
-        f.write(html)
-    
-    print(f"\n✅ Coverage Report Generated!")
-    print(f"   Line Coverage: {line_coverage_pct:.1f}%")
-    print(f"   Branch Coverage: {branch_coverage_pct:.1f}%")
-    print(f"   Grade: A+ (Excellent)\n")
-    print(f"📊 Open report: open {report_file}")
+
+
+def main():
+    xml_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_XML
+
+    if not xml_path.exists():
+        print(f"⚠ JaCoCo XML report not found at: {xml_path}")
+        print("   Generate it first:")
+        print("     ./gradlew :composeApp:coverageReport -PenableCoverage=true")
+        sys.exit(1)
+
+    print(f"\n📊 Parsing JaCoCo report: {xml_path}")
+    # JaCoCo XML references a DTD; disable external entity resolution for safety + offline use.
+    parser = ET.XMLParser()
+    tree = ET.parse(xml_path, parser=parser)
+    root = tree.getroot()
+
+    line_covered, line_total = counter(root, "LINE")
+    branch_covered, branch_total = counter(root, "BRANCH")
+    files = collect_files(root)
+
+    line_pct = (line_covered / line_total * 100) if line_total else 0
+    branch_pct = (branch_covered / branch_total * 100) if branch_total else 0
+
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    html = build_html(line_covered, line_total, branch_covered, branch_total, files)
+    report_file = REPORT_DIR / "detailed.html"
+    report_file.write_text(html)
+
+    print("\n✅ Coverage report generated from real JaCoCo data!")
+    print(f"   Line Coverage:   {line_pct:.1f}% ({line_covered}/{line_total})")
+    print(f"   Branch Coverage: {branch_pct:.1f}% ({branch_covered}/{branch_total})")
+    print(f"   Files reported:  {len(files)}")
+    print(f"\n📊 Open report: open {report_file}")
+
 
 if __name__ == "__main__":
-    run_jacoco_report()
+    main()

@@ -60,6 +60,9 @@ ktor-client-android = { module = "io.ktor:ktor-client-okhttp", version.ref = "kt
 #ktor for iOS (ios only dependency)
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktorClientCoreBeta" }
 
+# ktor mock engine — unit tests only (NetworkService error-mapping coverage)
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktorClientCoreBeta" }
+
 # Koin for dependency injection (multiplatform)
 # https://insert-koin.io/docs/reference/koin-compose/multiplatform/#
 # automatic koin lib version handling
@@ -79,6 +82,8 @@ lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-vie
 # SQLDelight
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqlDelight" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqlDelight" }
+# JDBC/in-memory SQLite driver — unit tests only (SqlDelightDatabase merge/transaction coverage)
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqlDelight" }
 sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqlDelight" }
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqlDelight" }
 

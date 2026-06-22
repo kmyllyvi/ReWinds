@@ -28,3 +28,4 @@ iosApp/Config.local.xcconfig
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 secrets-gitignore.md
+__pycache__/
