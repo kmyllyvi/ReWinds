@@ -18,9 +18,11 @@ name: CI Failure — Auto-fix
 # rejects workflow_run, which is why this workflow previously failed on every run.
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  workflow_dispatch:  # parked — auto-fix now runs via Claude Code cron (Pro subscription, no API tokens).
+  # To re-enable CI-side auto-fix (pay-per-token), restore the trigger below:
+  # workflow_run:
+  #   workflows: ["CI"]
+  #   types: [completed]
 
 jobs:
   auto-fix:
