@@ -8,6 +8,8 @@ import core.PlatformApiKeyChecker
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import core.AppConstants
+import core.utils.formatMonthName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -121,10 +123,50 @@ class ChatViewModel(
      */
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
+    /**
+     * Per-place downloaded `YYYY-MM` months, the single session-cached source the system
+     * prompt is assembled from (KIM-321). Populated at init by collecting each saved place's
+     * reactive Flow, so it stays current as new data is downloaded — no explicit re-fetch.
+     */
+    private val _downloadedMonthsByPlace = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+    val downloadedMonthsByPlace: StateFlow<Map<String, Set<String>>> = _downloadedMonthsByPlace.asStateFlow()
+
     init {
         viewModelScope.launch(ioDispatcher) {
             loadActiveSession(requestedId = null)
         }
+        observeDownloadedMonths()
+    }
+
+    /**
+     * Collects the downloaded-months Flow for every saved place into [_downloadedMonthsByPlace].
+     * Each place gets its own collector launched in [viewModelScope]; SQLDelight query
+     * invalidation pushes a fresh set on any Day-table write, keeping the state live.
+     */
+    private fun observeDownloadedMonths() {
+        viewModelScope.launch(ioDispatcher) {
+            val places = runCatching { weatherRepository.getSavedPlaceNames() }.getOrDefault(emptyList())
+            places.forEach { place ->
+                viewModelScope.launch(ioDispatcher) {
+                    weatherRepository.observeDownloadedMonths(place).collect { months ->
+                        _downloadedMonthsByPlace.update { it + (place to months) }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Pushes a freshly-assembled system prompt to the AI repository from the current
+     * downloaded-months snapshot. Called before each send so the prompt reflects the
+     * latest cached state (KIM-321).
+     */
+    private fun refreshSystemPrompt() {
+        val prompt = AppConstants.buildAnthropicSystemPrompt(
+            downloadedMonthsByPlace = _downloadedMonthsByPlace.value,
+            monthFormatter = ::formatMonthName
+        )
+        aiRepository.setSystemPrompt(prompt)
     }
 
     /**
@@ -355,6 +397,9 @@ class ChatViewModel(
                 // Persist user message
                 persistMessage(userMessage)
 
+                // Assemble the system prompt from the live downloaded-months state before sending.
+                refreshSystemPrompt()
+
                 // Send to AI repository
                 val result = aiRepository.sendMessage(trimmedInput)
 
@@ -534,7 +579,9 @@ class ChatViewModel(
                     return@launch
                 }
 
-                // STEP 2: Now that data is fetched, ask Claude to retry the original query
+                // STEP 2: Now that data is fetched, ask Claude to retry the original query.
+                // Re-assemble the prompt so it reflects the just-downloaded months.
+                refreshSystemPrompt()
                 val message = "I've fetched the weather data. Now please answer my original question about ${pending.location} from ${pending.startDate} to ${pending.endDate}."
                 val result = aiRepository.sendMessage(message)
 
