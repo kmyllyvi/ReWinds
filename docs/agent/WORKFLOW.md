@@ -8,6 +8,10 @@ Reusable machinery (this workflow, the gates) is mirrored in
 `Dropbox/Agentic Development/Agentic Team Setup/`. Project-specific facts live in the codebase and
 `docs/agent/ARCHITECTURE-RULES.md`.
 
+> **Keep in sync:** `docs/human/sections/workflow.html` is the human-readable rendering of this file
+> (pipeline diagram, roster cards, automation table). Whenever this file changes in a way that affects
+> the lane, gates, roster, or automation state, update that HTML page in the same change.
+
 ---
 
 ## State model: native status + labels

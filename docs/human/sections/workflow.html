@@ -374,7 +374,7 @@
           <div class="stage-label-tag">Linear: Completed</div>
         </div>
         <div class="stage-agent">
-          <div class="agent-badge badge-doc"><span class="badge-dot dot-doc"></span>doc-agent (opt.)</div>
+          <div class="agent-badge badge-doc"><span class="badge-dot dot-doc"></span>Phill (cron sweep)</div>
         </div>
       </div>
 
@@ -409,9 +409,9 @@
         <tr><td>Backlog, no label</td><td>Triage — dispatch <strong>Shirley</strong> at chosen items</td></tr>
         <tr><td>Backlog + <code>spec-ready</code></td><td><strong>Gate 1</strong> — you review; if approved → move to Todo</td></tr>
         <tr><td>Todo</td><td>Dispatch <strong>Randy</strong> (he moves it to In Progress and codes)</td></tr>
-        <tr><td>In Progress + <code>in-review</code></td><td>Dispatch <strong>Marcy</strong> (+ Seppo and/or Mr.T if relevant)</td></tr>
+        <tr><td>In Progress + <code>in-review</code></td><td><strong>Marcy</strong> already ran — Randy invokes her in-session right after opening the PR. Dispatch <strong>Seppo</strong> and/or <strong>Mr.T</strong> manually if relevant.</td></tr>
         <tr><td>Any + <code>needs-human</code></td><td><strong>Gate 2</strong> — yours to resolve</td></tr>
-        <tr><td>Completed</td><td>Optionally run <strong>doc-agent</strong> on the merged PR</td></tr>
+        <tr><td>Completed</td><td><strong>Phill</strong> picks it up automatically on the next cron sweep (Tue–Sat 09:07)</td></tr>
       </tbody>
     </table>
     <p style="font-size:12px; color:var(--text-secondary); margin-top:12px;">Two agents may run in parallel <strong>only</strong> if they touch different issues and different files. Parallelism never bypasses a gate.</p>
@@ -530,15 +530,15 @@
         </tr>
         <tr>
           <td>Diagnose CI failures</td>
-          <td>Failures sit silent; developer digs logs manually</td>
+          <td>Randy blocks on the PR's CI run in-session (<code>gh run watch --exit-status</code>) right after opening it</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td><code>.github/workflows/ci-failure.yml</code> — fires on <code>workflow_run</code> failure. Randy checks out the branch, reads JUnit XML, fixes the code, verifies locally, and pushes with <code>[auto-fix]</code> in the message. If the auto-fix itself fails CI, Randy posts a "needs human" comment instead of looping.</td>
+          <td>In-session, not a GitHub Action: on a red build Randy pulls the logs, fixes, commits with an <code>[auto-fix]</code> marker, pushes, and re-watches — bounded to <strong>2 attempts</strong>, then <code>needs-human</code> + Kimmo. Only covers the run Randy just triggered, not overnight/third-party failures. The <code>.github/workflows/ci-failure.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>workflow_run</code> trigger for unattended coverage.</td>
         </tr>
         <tr>
           <td>Dispatch Marcy on PR open</td>
-          <td>Kimmo dispatches Marcy manually</td>
-          <td><span class="pill pill-deferred">v2 planned</span></td>
-          <td>GitHub Action: <code>on: pull_request opened/synchronize</code> → run Marcy against the diff. She comments on the PR; human still merges. Needs one full manual loop first.</td>
+          <td>Randy invokes Marcy directly (Task tool) as his last step, right after adding <code>in-review</code></td>
+          <td><span class="pill pill-auto">Automated ✓</span></td>
+          <td>In-session Randy→Marcy handover, not a GitHub Action. Marcy reviews against AC/DoD/MV* rules, updates Linear labels/status herself, and Randy relays her verdict. A human still merges. The <code>.github/workflows/code-review.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>pull_request</code> trigger to re-enable CI-side review.</td>
         </tr>
         <tr>
           <td>Dispatch Seppo / Mr.T</td>
@@ -560,22 +560,23 @@
         </tr>
         <tr>
           <td>Dispatch doc-agent post-merge</td>
-          <td>GitHub Action runs automatically on every merge to develop</td>
+          <td>Claude Code cron job runs Phill Tue–Sat at 09:07</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td><code>.github/workflows/doc-agent.yml</code> — fires on push to develop, finds the merged PR via GitHub API, runs doc-agent, opens a docs PR. Linear MCP unavailable in CI; agent uses PR body for ticket context and applies ⚠ ticket-missing rule when absent.</td>
+          <td>Runs inside Claude Code (Pro subscription, no API token cost) — not a GitHub Action. Checks Linear for tickets moved to Done in the last 24h, finds the merge commit on <code>develop</code>, and opens a docs PR. Exits cleanly if nothing completed. The <code>.github/workflows/doc-agent.yml</code> Action is parked at <code>workflow_dispatch</code> only (no longer triggers on push).</td>
         </tr>
       </tbody>
     </table>
 
     <h3 style="font-size:13px; margin: 20px 0 10px;">Recommended automation sequence</h3>
     <ol style="font-size:13px; color:var(--text-secondary); line-height:2; padding-left:20px;">
-      <li>Run one issue through the <strong>full manual loop</strong> end-to-end — confirm every handover works.</li>
-      <li>Automate <strong>doc-agent on merge</strong> (GitHub Action, low risk, high value).</li>
-      <li>Automate <strong>Marcy on PR open</strong> (GitHub Action — v2 plan in WORKFLOW.md).</li>
-      <li>Once Marcy + CI are trusted, automate <strong>Randy dispatch from Todo</strong> (scheduled sweep).</li>
+      <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>Doc sweep — Phill now runs on a Claude Code cron (Tue–Sat 09:07), no GitHub Action needed.</li>
+      <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>Marcy on PR open — in-session Randy→Marcy handover, no GitHub Action needed.</li>
+      <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>CI auto-fix — in-session blocking watch by Randy, bounded to 2 attempts.</li>
+      <li>Once Randy is trusted end-to-end, automate <strong>Randy dispatch from Todo</strong> (scheduled sweep or GitHub Action).</li>
       <li>Add <strong>Seppo/Mr.T auto-trigger</strong> based on Marcy's review tags.</li>
       <li>Keep Gate 1, Gate 2, and human merge <strong>permanently manual</strong>.</li>
     </ol>
+    <p style="font-size:12px; color:var(--text-tertiary); margin-top:10px;">The corresponding GitHub Actions workflows (<code>code-review.yml</code>, <code>doc-agent.yml</code>, <code>ci-failure.yml</code>) are retained for manual <code>workflow_dispatch</code> runs but parked from auto-triggering — a cost decision (free-plan Actions minutes), not a quality one.</p>
   </section>
 
 </main>
