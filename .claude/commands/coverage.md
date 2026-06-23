@@ -8,7 +8,7 @@ Generate the JaCoCo code coverage report (opt-in, not part of normal builds).
 
 1. Run `./gradlew coverageReport -PenableCoverage=true`
 2. This runs `testDebugUnitTest`, produces the JaCoCo XML report, then runs `generate_coverage_metrics.py` to render `docs/coverage/detailed.html`
-3. Report the overall line/branch coverage percentage and grade from the script output, and point to `docs/coverage/detailed.html` for the detailed breakdown
+3. Report the overall line/branch coverage percentage and grade from the script output, and point to `docs/coverage/detailed.html` for the detailed breakdown. The script also appends this run's metrics to `docs/coverage/history.json` (last 50 runs) and renders inline SVG trend charts in `detailed.html` showing line-coverage-% and total-lines over time — no network/JS needed, the charts render fully offline
 
 ## Notes
 
