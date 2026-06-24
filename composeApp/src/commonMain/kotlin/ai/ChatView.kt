@@ -46,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.imePadding
 import core.LocalAppStrings
 import core.Navigator
 import core.TestTags
@@ -111,10 +110,12 @@ fun ChatView(
         // Decorative isobar background — rendered first so it sits below all content.
         IsobarBackground()
 
+        // Note: keyboard (IME) inset is applied by the Scaffold content host in Router, which
+        // collapses it with the tab-bar inset to avoid double-counting (KIM-298). Adding
+        // imePadding() here would re-introduce that gap on iOS.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
         ) {
         // Header at top of column - messages start below it.
         // Right action: opens the session switcher (chat screen only).
