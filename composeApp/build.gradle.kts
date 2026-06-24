@@ -340,18 +340,38 @@ val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
         html.required.set(true)
     }
 
-    // Exclude generated code (SQLDelight db classes, Compose/Android scaffolding) so the
-    // percentage reflects hand-written code rather than codegen.
+    // Two categories are excluded from the coverage denominator:
+    //
+    // 1. Generated / compiler scaffolding — code we never wrote, so counting it is noise:
+    //    SQLDelight db classes, R/BuildConfig, serializers, and the synthetic
+    //    ComposableSingletons$ lambda-holder classes the Compose compiler emits per file.
+    //
+    // 2. Presentational Compose code — Views and reusable UI components. Per
+    //    docs/agent/ARCHITECTURE-RULES.md the project deliberately keeps these untested:
+    //    all logic lives in ViewModels (MV*), and "Views are hard to test - keep them
+    //    simple so they don't need testing". Leaving their bytecode in the denominator
+    //    inflates it with code that is untested *by design*, hiding the real coverage of
+    //    the business logic. So we drop the *View.kt files (compiled to <Name>ViewKt.class)
+    //    and the components/ packages.
+    //
+    // Globs match compiled .class paths under tmp/kotlin-classes/debug and
+    // intermediates/javac/debug — i.e. package-qualified paths, not source paths.
+    //
+    // NOT excluded: core/ (Router.kt carries the unit-tested isShowingPlacesPush; the
+    // TabRoutingNavigator is real, tested navigation logic) and every *ViewModel — those
+    // are exactly what coverage is meant to measure.
     val excludes = listOf(
+        // ── Generated / scaffolding ──
         "**/com/km/rewinds/db/**",   // SQLDelight-generated
         "**/*\$Companion*",
         "**/R.class", "**/R$*.class", "**/BuildConfig.*",
         "**/*ComposableSingletons*", "**/*\$\$serializer*",
-        // MV* rule: Views and reusable UI components are purely presentational (no logic) and
-        // untestable by design, so they must not dilute coverage. ViewModels stay counted —
-        // "*ViewKt*" matches *View.kt (-> *ViewKt.class) but NOT *ViewModel.kt (-> *ViewModelKt.class).
-        "**/*ViewKt*",          // page-level Composable files
-        "**/components/**"      // reusable UI component packages
+        // ── Presentational: *View.kt screens (MV* — deliberately untested) ──
+        "**/*ViewKt.class",          // ChatView, HomeView, SettingsView, PlaceSummaryView, MonthlyStatisticsView
+        "**/AppKt.class",            // App.kt — root Compose wiring, logic lives in AppViewModel
+        // ── Presentational: reusable UI component packages ──
+        "**/components/**",          // components/, place/components/, settings/components/
+        "**/ui/**"                   // ui/components/, ui/theme/
     )
 
     val classDirs = files(

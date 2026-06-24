@@ -6,7 +6,30 @@
 
 ## Summary
 
-Implemented JaCoCo code coverage plugin with automated HTML report generation. Coverage metrics show **92.2% line coverage** and **91.3% branch coverage** with an **A+ grade**.
+Implemented JaCoCo code coverage plugin with automated HTML report generation.
+
+> **Note (June 2026):** The 92.2% / A+ figures below are the original March 2026
+> snapshot and are stale — that report was generated before the metrics script parsed
+> real JaCoCo XML and before presentational code was excluded from the denominator (see
+> **Exclusions** below). Treat the percentages in this doc as historical; run
+> `./coverage.command` (or `./gradlew :composeApp:coverageReport -PenableCoverage=true`)
+> for the current numbers.
+
+## Exclusions
+
+The coverage denominator excludes two kinds of code (configured in the
+`jacocoTestReport` task's `excludes` list in `composeApp/build.gradle.kts`):
+
+1. **Generated / compiler scaffolding** — SQLDelight `db` classes, `R`/`BuildConfig`,
+   serializers, and the synthetic `ComposableSingletons$` classes Compose emits.
+2. **Presentational Compose code** — `*View.kt` screens (`*ViewKt.class`), `App.kt`, and
+   the `components/` and `ui/` packages. Per
+   [ARCHITECTURE-RULES.md](../ARCHITECTURE-RULES.md) the project keeps Views untested by
+   design (all logic lives in ViewModels, MV*), so counting them would deflate the real
+   coverage of the business logic.
+
+ViewModels and `core/` (e.g. `Router.kt`'s tested `isShowingPlacesPush`,
+`TabRoutingNavigator`) are **not** excluded — that logic is exactly what coverage measures.
 
 ## Quick Start
 
