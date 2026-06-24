@@ -64,3 +64,101 @@ jobs:
           path: composeApp/build/outputs/apk/debug/*.apk
           retention-days: 5
 
+  # Layer 1 of the UI testing strategy (KIM-293): Compose semantic UI tests that
+  # drive real Views with in-memory fakes (FakeNavigator, fake repositories) on an
+  # emulator. No network, no real DB, no secrets — distinct from the Maestro E2E
+  # suite (e2e-smoke.yml). Wires the androidInstrumentedTest source set into per-PR
+  # CI so it can no longer silently rot (COVERAGE-GAP-ANALYSIS.md §2.5).
+  android-instrumented:
+    name: Android Instrumented Tests (Compose semantic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Enable KVM (emulator acceleration)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Compose semantic tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          script: ./gradlew :composeApp:connectedDebugAndroidTest -PincludeAllTargets=false --no-daemon --stacktrace
+
+      - name: Upload instrumented test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-instrumented-test-results
+          path: |
+            composeApp/build/reports/androidTests/
+            composeApp/build/outputs/androidTest-results/
+          retention-days: 5
+
+  # iOS Kotlin/Native platform + integration unit tests (src/iosTest/kotlin) — NOT the
+  # Maestro UI suite (that lives in e2e-smoke.yml and is release-gated). These are the
+  # KIM-293 follow-up to stop the iOS suite silently rotting (COVERAGE-GAP-ANALYSIS.md
+  # §2.5). iosSimulatorArm64Test is gated behind -PincludeAllTargets=true, which is why
+  # that flag is required (without it the iOS targets aren't even declared).
+  #
+  # COST: macOS runners bill ~10x Linux minutes on GitHub Actions, and this is a private
+  # repo on a limited minutes budget. Kotlin/Native compile is slow (40+ min historically)
+  # for only 7 test methods. If this proves too expensive on every PR, narrow the trigger
+  # later (e.g. push-to-develop only) — left honest here so a human can decide with real
+  # cost data. Don't narrow without that data.
+  ios-unit-tests:
+    name: iOS Unit Tests (Kotlin/Native)
+    runs-on: macos-14
+    timeout-minutes: 75
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+
+      - name: Run iOS Kotlin/Native unit tests
+        run: ./gradlew :composeApp:iosSimulatorArm64Test -PincludeAllTargets=true --no-daemon --stacktrace
+
+      - name: Upload iOS test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unit-test-results
+          path: composeApp/build/test-results/
+          retention-days: 5
+
