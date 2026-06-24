@@ -11,6 +11,17 @@ implementing them touches `composeApp/src/`).
 > Views untested by design. See **Exclusions** in `COVERAGE-SETUP.md`. `core/Router.kt`
 > (section 2.2) is deliberately **not** excluded — its branching logic
 > (`isShowingPlacesPush`) is real and now unit-tested, so it stays in the count.
+>
+> **Further update (June 24, 2026):** §2.1 (`SqlDelightDatabase` merge/transaction
+> tests), §2.2 (`Router.kt` routing-decision test), and §2.3 (`NetworkService`
+> error-mapping tests) are all **done** — `SqlDelightDatabaseTest.kt` (in
+> `androidUnitTest/`, using the JDBC sqlite driver this doc recommended adding),
+> `RouterTest.kt`, and `NetworkServiceTest.kt`. §2.5 (CI gating) is also **done**:
+> `.github/workflows/ci.yml` now runs `androidInstrumentedTest` and `iosTest` per
+> PR/push (`android-instrumented` and `ios-unit-tests` jobs). The
+> `TESTING-STRATEGY.md` refresh (priority item 5) is done too — it's now a
+> ground-truth snapshot instead of the stale Feb-2026 roadmap. Only §2.4
+> (platform-specific `DatabaseExportImport`/Keychain tests) remains open — see §3.
 
 ## 0. Headline finding: the coverage report is fabricated
 
@@ -160,17 +171,14 @@ least direct unit-test coverage is also the code whose existing tests aren't CI-
 
 ## 3. Suggested priority order
 
-1. Fix `generate_coverage_metrics.py` to report real numbers (or remove the
-   fabricated report entirely until it does) — otherwise every future coverage
-   conversation, human or agent, starts from a false baseline.
-2. Add a JVM SQLite test driver and write `SqlDelightDatabase` merge/transaction
-   tests (§2.1) — highest blast radius if wrong (silent data loss/duplication).
-3. Extract and test `Router.kt`'s routing decision logic (§2.2) — closes a gap
-   and an architecture-rule borderline case together.
-4. Add `NetworkService` error-mapping tests (§2.3) — cheap, currently zero.
-5. Refresh or archive `TESTING-STRATEGY.md` so it stops describing a six-month-old
-   snapshot as current.
-6. Backlog: platform-specific (`DatabaseExportImport`, Keychain bridges) tests and
-   wiring the iOS/instrumented suites into per-PR CI (§2.4, §2.5) — larger
-   infra lift, track as existing KIM-293-style follow-ups rather than blocking on
-   them here.
+1. ~~Fix `generate_coverage_metrics.py` to report real numbers~~ — **done**.
+2. ~~Add a JVM SQLite test driver and write `SqlDelightDatabase` merge/transaction
+   tests (§2.1)~~ — **done**.
+3. ~~Extract and test `Router.kt`'s routing decision logic (§2.2)~~ — **done**.
+4. ~~Add `NetworkService` error-mapping tests (§2.3)~~ — **done**.
+5. ~~Refresh or archive `TESTING-STRATEGY.md`~~ — **done**.
+6. ~~Wire the iOS/instrumented suites into per-PR CI (§2.5)~~ — **done**.
+7. **Remaining**: platform-specific tests for `DatabaseExportImport` and the
+   Keychain bridges (§2.4) — backlog, larger infra lift (needs real Android/iOS
+   test infra to verify, can't be done blind), track as a Linear ticket rather
+   than ad-hoc follow-up.
