@@ -4,6 +4,14 @@
 for whoever picks up the follow-up work (routed to Randy per `CLAUDE.md`, since
 implementing them touches `composeApp/src/`).
 
+> **Update (June 2026):** the section-0 recommendation has since landed —
+> `generate_coverage_metrics.py` now parses real JaCoCo XML, and the
+> `jacocoTestReport` task excludes presentational Compose code (`*View.kt`, `App.kt`,
+> the `components/` and `ui/` packages) from the denominator, since the MV* rules make
+> Views untested by design. See **Exclusions** in `COVERAGE-SETUP.md`. `core/Router.kt`
+> (section 2.2) is deliberately **not** excluded — its branching logic
+> (`isShowingPlacesPush`) is real and now unit-tested, so it stays in the count.
+
 ## 0. Headline finding: the coverage report is fabricated
 
 `docs/coverage/detailed.html` and `docs/human/coverage/coverage-report.html` claim
