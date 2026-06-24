@@ -98,6 +98,10 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   anonymous object (WeatherToolsMetricsTest), `FakeWeatherRepository` (ChatPersistenceTest).
 - `Database`: `MockDatabase` (HomeViewTest), `MockDatabaseForSearch` (HomeViewModelSearchTest).
   Production impl is `SqlDelightDatabase` in `core/Database.kt`.
+- BETTER (KIM-321): when adding a NEW method to these interfaces, give it a DEFAULT body in the
+  interface (`= emptySet()`, `= flowOf(emptySet())`, no-op `{}`). Then only the production impl
+  (and the fakes that actually exercise it) need overrides — you avoid touching ~10 unrelated
+  fakes. Same trick works for `ai.AiConversationRepository` (e.g. `fun setSystemPrompt(p) {}`).
 
 ## Chat multi-session data layer (KIM-285)
 
@@ -220,6 +224,33 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   See `PlaceRowSkeleton` (HomeView) and `DaySummaryRowSkeleton` (MonthlyStatisticsView).
 - SQLDelight `SELECT col, COUNT(*) AS dayCount` → generated row has `.col` and `.dayCount`
   (the AS alias). Map with `.executeAsList().associate { it.col to it.dayCount }`.
+
+## DB-backed tests need androidUnitTest, not commonTest (KIM-321)
+- `commonTest` compiles for JVM + Native, so it CANNOT use `JdbcSqliteDriver` (JVM-only). A test
+  that needs a REAL SQLDelight DB (e.g. proving a reactive Flow re-emits after an insert) must live
+  in the JVM-only `androidUnitTest` source set — it runs under `:composeApp:testDebugUnitTest`.
+- Wire-up in `composeApp/build.gradle.kts`: `val androidUnitTest by getting { dependencies {
+  implementation(libs.sqldelight.sqlite.driver); implementation(libs.sqldelight.coroutines.extensions) } }`.
+  Catalog entry: `sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqlDelight" }`.
+- In-memory DB: `JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)` then `AppDatabase.Schema.create(driver)`,
+  then `SqlDelightDatabase(AppDatabase(driver, DayAdapter=..., HourAdapter=...))`. Adapters use
+  `listOfStringAdapter` (in `core`). Insert via `db.saveWeatherResponse(WeatherResponse(...))`.
+
+## Reactive downloaded-months + chat data-awareness (KIM-321)
+- `coroutines-extensions` is a commonMain dep. Reactive query pattern:
+  `dbQuery.someSelect(arg).asFlow().mapToList(Dispatchers.IO).map { ... }` (imports
+  `app.cash.sqldelight.coroutines.asFlow` / `.mapToList`). Re-emits on any write to the queried table.
+- Distinct months in DB without schema change: `SELECT DISTINCT SUBSTR(datetime,1,7) AS month FROM Day WHERE ...`.
+- KMP-safe month label: `core.utils.formatMonthName("YYYY-MM") -> "October 2025"` in FormatUtils.kt
+  (reuses `monthName(Int)`; NO String.format / java.time). Internal grouping stays YYYY-MM.
+- System prompt is no longer a static constant: `AppConstants.buildAnthropicSystemPrompt(map, formatter)`.
+  `ChatViewModel.refreshSystemPrompt()` pushes it via `AiConversationRepository.setSystemPrompt(...)`
+  before every send AND before the post-confirmation retry. VM caches per-place months in a
+  `StateFlow<Map<String,Set<String>>>` collected from `observeDownloadedMonths(place)` at init.
+- ALL paid Visual Crossing fetches in `WeatherTools` are gated: call `checkDataAvailability` BEFORE
+  `getDaysRange`; on Partial/Missing return the shared `buildPermissionRequired(...)` JSON
+  (`downloaded_months` + `missing_months`, full month names). No auto-fetch path remains.
+  `list_saved_places` takes no date range → no gate.
 
 ## Theme / Design system (Midnight Blue — KIM-265+)
 

@@ -2,12 +2,16 @@ package core
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
@@ -26,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -170,11 +175,27 @@ private fun AppTabs() {
                 TabBar(activeTab = activeTab, onTabSelected = tabVm::selectTab)
             }
         ) { innerPadding ->
+            // The Scaffold reserves the tab-bar height as innerPadding.bottom. ChatView used
+            // to add imePadding() on top of that, which on iOS double-counted the tab-bar
+            // height and left a gap equal to it between the input and the keyboard.
+            //
+            // Collapse the two bottom contributions into a single value: when the keyboard is
+            // closed we keep the tab-bar inset; when it opens (taller than the tab bar) the
+            // content rises to sit directly on the keyboard. consumeWindowInsets did not
+            // reliably propagate this subtraction through the Scaffold on iOS CMP, so we
+            // compute it explicitly here where both insets are known.
+            val layoutDirection = LocalLayoutDirection.current
+            val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            val contentPadding = PaddingValues(
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                top = innerPadding.calculateTopPadding(),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = maxOf(innerPadding.calculateBottomPadding(), imeBottom)
+            )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding)
+                    .padding(contentPadding)
             ) {
                 when (activeTab) {
                     AppTab.PLACES   -> HomeView(navigator = placesNavigatorDelegate)

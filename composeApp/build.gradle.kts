@@ -86,6 +86,16 @@ kotlin {
             kotlin.srcDir("src/commonTestFixtures/kotlin")
         }
 
+        // JVM-only unit tests (run by :composeApp:testDebugUnitTest). Hosts DB-backed tests
+        // that need a real SQLDelight driver — the JDBC in-memory driver is JVM-only, so it
+        // cannot live in commonTest (KIM-321).
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.sqlite.driver)
+                implementation(libs.sqldelight.coroutines.extensions)
+            }
+        }
+
         commonMain.dependencies {
             // compose
             implementation(compose.runtime)

@@ -178,6 +178,17 @@ docs/agent/WORKFLOW.md.
   ./gradlew :composeApp:testDebugUnitTest. Do not attempt Gradle iOS builds; iOS is verified
   manually in Xcode.
 - Open a PR using .github/pull_request_template.md with "Closes KIM-" in the Linear section.
+- **Wait for CI, then fix red builds yourself (in-session — replaces the old CI-failure auto-fix action).**
+  Opening the PR triggers the `CI` workflow. Find the run for your head commit
+  (`gh run list --branch <branch> --workflow CI --limit 1`) and block on it:
+  `gh run watch <run-id> --exit-status` (use a sane timeout, ~20 min — if it times out, report and stop;
+  don't hang). If CI **passes**, continue. If CI **fails**: pull the failing logs
+  (`gh run view <run-id> --log-failed`), reproduce locally where you can, fix, commit with an `[auto-fix]`
+  marker in the message, push, and watch the new run. **Bound this to 2 fix attempts.** If CI is still red
+  after the second attempt — or the failure isn't yours to resolve (flaky infra, a secret/config issue,
+  an architectural call) — stop, add `needs-human`, assign Kimmo, and report the failure. This runs in your
+  session on the Pro subscription: no API tokens, but you *are* holding the session while CI runs, so don't
+  start the Marcy handoff until CI is green.
 - Post a comment with: Branch, PR link, Build pass/fail, Tests pass/fail, Summary, Deviations.
   Then add the **in-review** label (the issue stays In Progress).
 - **Hand off to review (agent-to-agent — replaces the old CI review action).** As your final step,

@@ -39,6 +39,13 @@ interface AiConversationRepository {
 
     /** Seeds the conversation history from persisted messages (e.g. on session switch/restart). */
     fun loadHistory(messages: List<ConversationMessage>)
+
+    /**
+     * Sets the system prompt used for subsequent turns. The ViewModel re-assembles this from
+     * the live downloaded-months state and calls it before each send, so the prompt always
+     * reflects the data currently in the DB (KIM-321). Default is a no-op for test fakes.
+     */
+    fun setSystemPrompt(prompt: String) {}
 }
 
 /**
@@ -53,7 +60,13 @@ class AiRepository(
     // Maintain conversation history for the session
     private val conversationHistory = mutableListOf<ConversationMessage>()
 
-    private val systemPrompt = AppConstants.ANTHROPIC_SYSTEM_PROMPT
+    // Re-assembled by the ViewModel before each send from the live downloaded-months state
+    // (KIM-321). Falls back to a places-unaware base prompt until the first update.
+    private var systemPrompt = AppConstants.buildAnthropicSystemPrompt(emptyMap()) { it }
+
+    override fun setSystemPrompt(prompt: String) {
+        systemPrompt = prompt
+    }
 
     /**
      * Sends a user message and orchestrates the agentic loop until a final response is obtained.

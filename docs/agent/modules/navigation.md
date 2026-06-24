@@ -2,7 +2,7 @@
 
 <!-- ⚠ bootstrap: Generated without ticket history on 2026-06-09. -->
 
-**Last updated:** 2026-06-17 (PR #35 — KIM-298)
+**Last updated:** 2026-06-19 (PR #45 — KIM-309)
 **Status:** Active
 
 ---
@@ -28,8 +28,10 @@ Manages all in-app routing using a custom per-tab back-stack model built on top 
 
 ### Internal
 - `core.TabNavigationViewModel` — holds `activeTab: StateFlow<AppTab>`, mutated by `selectTab()`.
+- `onboarding.VcKeyOnboardingViewModel` — gate state; `Navigation()` collects `isWeatherKeyConfigured` and short-circuits before `AppTabs` while false.
 - All screen composables: `HomeView`, `ChatView`, `SettingsView`, `PlaceSummaryView`, `MonthlyStatisticsView`.
-- Koin `koinViewModel()` for `TabNavigationViewModel`.
+- `onboarding.VcKeyOnboardingScreen` — full-screen blocking gate composable shown before the tab surface.
+- Koin `koinViewModel()` for both `TabNavigationViewModel` and `VcKeyOnboardingViewModel`.
 
 ---
 
@@ -59,7 +61,7 @@ fun canNavigateBack(): Boolean
 `PLACES` | `CHAT` | `SETTINGS`
 
 ### Navigation() — root composable entry point
-Instantiates all three stacks and `NavigatorImpl` instances; renders `Scaffold` with `TabBar` or full-screen `PushDestination` depending on top of the Places stack.
+Entry point that first evaluates the hard onboarding gate (KIM-309). While `VcKeyOnboardingViewModel.isWeatherKeyConfigured` is false, `OnboardingGate` is rendered and the function returns early — `AppTabs` is never composed. Once the key is configured, `AppTabs` instantiates all three stacks and `NavigatorImpl` instances and renders the `Scaffold` with `TabBar` or full-screen `PushDestination` depending on top of the Places stack.
 
 ---
 

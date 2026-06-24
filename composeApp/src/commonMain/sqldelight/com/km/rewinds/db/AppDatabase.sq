@@ -135,6 +135,13 @@ getAllPlaceDayCounts:
 SELECT weatherResponseResolvedAddress, COUNT(*) AS dayCount
 FROM Day GROUP BY weatherResponseResolvedAddress;
 
+-- Distinct YYYY-MM months that have at least one stored Day for a place.
+-- SUBSTR(datetime, 1, 7) slices "YYYY-MM-DD" down to "YYYY-MM"; no schema change needed.
+-- Exposed reactively (.asFlow) so any Day-table write re-emits the current month set.
+getDownloadedMonthsForPlace:
+SELECT DISTINCT SUBSTR(datetime, 1, 7) AS month
+FROM Day WHERE weatherResponseResolvedAddress = ?;
+
 deleteDaysAfterDate:
 DELETE FROM Day WHERE weatherResponseResolvedAddress = ? AND datetime > ?;
 

@@ -2,6 +2,7 @@ package core
 
 import core.utils.formatDecimal
 import core.utils.formatGust
+import core.utils.formatMonthName
 import core.utils.formatTemperatureRange
 import core.utils.monthName
 import core.utils.shortDayLabel
@@ -9,6 +10,33 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FormatUtilsTest {
+
+    @Test
+    fun formatMonthName_allTwelveMonths() {
+        assertEquals("January 2025", formatMonthName("2025-01"))
+        assertEquals("February 2025", formatMonthName("2025-02"))
+        assertEquals("March 2025", formatMonthName("2025-03"))
+        assertEquals("April 2025", formatMonthName("2025-04"))
+        assertEquals("May 2025", formatMonthName("2025-05"))
+        assertEquals("June 2025", formatMonthName("2025-06"))
+        assertEquals("July 2025", formatMonthName("2025-07"))
+        assertEquals("August 2025", formatMonthName("2025-08"))
+        assertEquals("September 2025", formatMonthName("2025-09"))
+        assertEquals("October 2025", formatMonthName("2025-10"))
+        assertEquals("November 2025", formatMonthName("2025-11"))
+        assertEquals("December 2025", formatMonthName("2025-12"))
+    }
+
+    @Test
+    fun formatMonthName_invalidInputFallsBackToRaw() {
+        // Malformed shapes and out-of-range months return the raw string unchanged.
+        assertEquals("garbage", formatMonthName("garbage"))
+        assertEquals("2025", formatMonthName("2025"))
+        assertEquals("2025-13", formatMonthName("2025-13"))
+        assertEquals("2025-00", formatMonthName("2025-00"))
+        assertEquals("2025-AB", formatMonthName("2025-AB"))
+        assertEquals("", formatMonthName(""))
+    }
 
     @Test
     fun formatDecimal_roundsToOneDecimalPlace() {
