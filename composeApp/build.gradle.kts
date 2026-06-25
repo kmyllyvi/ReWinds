@@ -283,6 +283,7 @@ android {
         androidTestImplementation("org.jetbrains.compose.ui:ui-test-junit4:$composeVersion")
         androidTestImplementation(libs.androidx.test.junit)
         androidTestImplementation("androidx.test:runner:1.6.2")
+        androidTestImplementation("androidx.test:core:1.6.1")
     }
 }
 

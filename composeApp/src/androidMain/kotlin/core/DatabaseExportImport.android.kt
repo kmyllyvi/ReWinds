@@ -58,10 +58,25 @@ actual class DatabaseExportImport {
     }
 
     /**
-     * Import database from file (placeholder for Android - actual import on iOS)
+     * Import a database from [filePath], overwriting the app's "app.db".
+     * Mirrors the iOS implementation: verify the source exists, then copy it over the live db.
      */
     actual suspend fun importDatabase(filePath: String): Result<String> = withContext(Dispatchers.IO) {
-        Result.failure(Exception("Import not implemented on Android - use iOS"))
+        try {
+            val sourceFile = File(filePath)
+            if (!sourceFile.exists()) {
+                return@withContext Result.failure(Exception("Source file not found: $filePath"))
+            }
+
+            val dbFile = context.getDatabasePath("app.db")
+            dbFile.parentFile?.let { if (!it.exists()) it.mkdirs() }
+
+            sourceFile.copyTo(dbFile, overwrite = true)
+
+            Result.success("Database imported successfully from $filePath")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /**
