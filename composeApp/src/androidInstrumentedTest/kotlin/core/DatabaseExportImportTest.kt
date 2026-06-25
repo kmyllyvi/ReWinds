@@ -65,7 +65,7 @@ class DatabaseExportImportTest {
     }
 
     @Test
-    fun importDatabase_copiesSourceOverAppDb() = runBlocking {
+    fun importDatabase_copiesSourceOverAppDb(): Unit = runBlocking {
         val source = File(context.cacheDir, "import_source.db")
         source.writeText("imported payload")
         appDbFile().delete()
