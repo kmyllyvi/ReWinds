@@ -53,8 +53,28 @@ class DatabaseExportImportTest {
         }
     }
 
+    /**
+     * A bare Kotlin/Native test binary on the simulator has no OS-materialized app sandbox, so the
+     * NSDocumentDirectory path exists only as a string. Create it once up front, otherwise every
+     * writeToFile() into it silently fails (returns false) and seeded fixtures never hit disk.
+     */
+    private fun ensureDocumentsDirExists() {
+        val dir = documentsDir()
+        if (dir.isNotEmpty() && !fileManager.fileExistsAtPath(dir)) {
+            fileManager.createDirectoryAtPath(
+                dir,
+                withIntermediateDirectories = true,
+                attributes = null,
+                error = null
+            )
+        }
+    }
+
     @BeforeTest
-    fun setUp() = cleanup()
+    fun setUp() {
+        ensureDocumentsDirExists()
+        cleanup()
+    }
 
     @AfterTest
     fun tearDown() = cleanup()

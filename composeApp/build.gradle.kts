@@ -282,8 +282,11 @@ android {
         val composeVersion = libs.versions.compose.plugin.get()
         androidTestImplementation("org.jetbrains.compose.ui:ui-test-junit4:$composeVersion")
         androidTestImplementation(libs.androidx.test.junit)
-        androidTestImplementation("androidx.test:runner:1.6.2")
-        androidTestImplementation("androidx.test:core:1.6.1")
+        // Keep runner/core in the same release train as androidx.test.ext:junit (1.3.0 -> 1.7.x).
+        // Mixing trains (e.g. runner 1.6.2 with ext:junit 1.3.0) makes AndroidJUnit4 fail to
+        // instantiate the moment a test touches an androidx.test:core class (ApplicationProvider).
+        androidTestImplementation("androidx.test:runner:1.7.0")
+        androidTestImplementation("androidx.test:core:1.7.0")
     }
 }
 
