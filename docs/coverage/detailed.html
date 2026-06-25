@@ -79,6 +79,18 @@
         .coverage-good { color: #10b981; }
         .coverage-ok { color: #f59e0b; }
         .coverage-low { color: #ef4444; }
+        .charts {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .charts h2 { color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #667eea; }
+        .chart-block { margin-bottom: 30px; }
+        .chart-block:last-child { margin-bottom: 0; }
+        .chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+        .chart-head h3 { color: #333; font-size: 1.05em; }
         .footer { text-align: center; color: #999; font-size: 0.85em; margin-top: 40px; }
         .summary-box {
             background: white;
@@ -99,27 +111,27 @@
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Line Coverage</div>
-                <div class="metric-value">50.7%</div>
+                <div class="metric-value">50.6%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 50.688919076266245%"></div>
+                    <div class="metric-bar-fill" style="width: 50.62353858144972%"></div>
                 </div>
-                <small>2612/5153 lines</small>
+                <small>2598/5132 lines</small>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">Branch Coverage</div>
-                <div class="metric-value">33.4%</div>
+                <div class="metric-value">32.6%</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 33.38136407300672%"></div>
+                    <div class="metric-bar-fill" style="width: 32.59849906191369%"></div>
                 </div>
-                <small>695/2082 branches</small>
+                <small>695/2132 branches</small>
             </div>
 
             <div class="metric-card">
                 <div class="metric-label">Overall Grade</div>
                 <div class="metric-value" style="color: #10b981;">C</div>
                 <div class="metric-bar">
-                    <div class="metric-bar-fill" style="width: 50.688919076266245%"></div>
+                    <div class="metric-bar-fill" style="width: 50.62353858144972%"></div>
                 </div>
                 <small>Line-coverage grade</small>
             </div>
@@ -128,11 +140,44 @@
         <div class="summary-box">
             <h3>📈 Coverage Summary</h3>
             <ul style="margin-left: 20px; line-height: 1.8;">
-                <li><strong>Total Lines:</strong> 5,153</li>
-                <li><strong>Lines Covered:</strong> 2,612</li>
-                <li><strong>Total Branches:</strong> 2,082</li>
+                <li><strong>Total Lines:</strong> 5,132</li>
+                <li><strong>Lines Covered:</strong> 2,598</li>
+                <li><strong>Total Branches:</strong> 2,132</li>
                 <li><strong>Branches Covered:</strong> 695</li>
             </ul>
+        </div>
+
+        
+        <div class="charts">
+            <h2>📉 Coverage Over Time (1 run)</h2>
+            
+    <div class="chart-block">
+        <div class="chart-head">
+            <h3>Line Coverage Trend</h3>
+            <span style="color:#999; font-weight:600;">single run</span>
+        </div>
+        <svg viewBox="0 0 720 220" width="100%" role="img" aria-label="Line Coverage Trend trend">
+            <line x1="40" y1="40.0" x2="680" y2="40.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="44.0" text-anchor="end" font-size="10" fill="#999">51.6%</text><line x1="40" y1="110.0" x2="680" y2="110.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="114.0" text-anchor="end" font-size="10" fill="#999">50.6%</text><line x1="40" y1="180.0" x2="680" y2="180.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="184.0" text-anchor="end" font-size="10" fill="#999">49.6%</text>
+            <polyline points="360.0,110.0" fill="none" stroke="#667eea" stroke-width="2" />
+            <circle cx="360.0" cy="110.0" r="3" fill="#667eea" />
+            <text x="360.0" y="102.0" text-anchor="end"
+                  font-size="11" font-weight="600" fill="#667eea">50.6%</text>
+        </svg>
+    </div>
+            
+    <div class="chart-block">
+        <div class="chart-head">
+            <h3>Total Lines Trend</h3>
+            <span style="color:#999; font-weight:600;">single run</span>
+        </div>
+        <svg viewBox="0 0 720 220" width="100%" role="img" aria-label="Total Lines Trend trend">
+            <line x1="40" y1="40.0" x2="680" y2="40.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="44.0" text-anchor="end" font-size="10" fill="#999">5,133</text><line x1="40" y1="110.0" x2="680" y2="110.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="114.0" text-anchor="end" font-size="10" fill="#999">5,132</text><line x1="40" y1="180.0" x2="680" y2="180.0" stroke="#eee" stroke-width="1" /><text x="34.0" y="184.0" text-anchor="end" font-size="10" fill="#999">5,131</text>
+            <polyline points="360.0,110.0" fill="none" stroke="#764ba2" stroke-width="2" />
+            <circle cx="360.0" cy="110.0" r="3" fill="#764ba2" />
+            <text x="360.0" y="102.0" text-anchor="end"
+                  font-size="11" font-weight="600" fill="#764ba2">5,132</text>
+        </svg>
+    </div>
         </div>
 
         <div class="modules">
@@ -142,12 +187,6 @@
                 <div>Lines</div>
                 <div>Coverage</div>
                 <div>Grade</div>
-            </div>
-            <div class="module-row">
-                <div class="module-name">App.kt</div>
-                <div class="coverage-pct">33</div>
-                <div class="coverage-pct coverage-low">0%</div>
-                <div class="coverage-pct coverage-low">C</div>
             </div>
             <div class="module-row">
                 <div class="module-name">AppViewModel.kt</div>
@@ -200,6 +239,12 @@
             <div class="module-row">
                 <div class="module-name">ai/ChatSessionSwitcher.kt</div>
                 <div class="coverage-pct">103</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">ai/ChatView.kt</div>
+                <div class="coverage-pct">15</div>
                 <div class="coverage-pct coverage-low">0%</div>
                 <div class="coverage-pct coverage-low">C</div>
             </div>
@@ -397,7 +442,7 @@
             </div>
             <div class="module-row">
                 <div class="module-name">core/Router.kt</div>
-                <div class="coverage-pct">130</div>
+                <div class="coverage-pct">136</div>
                 <div class="coverage-pct coverage-low">9%</div>
                 <div class="coverage-pct coverage-low">C</div>
             </div>
@@ -450,9 +495,21 @@
                 <div class="coverage-pct coverage-good">A</div>
             </div>
             <div class="module-row">
+                <div class="module-name">home/HomeView.kt</div>
+                <div class="coverage-pct">7</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
                 <div class="module-name">home/HomeViewModel.kt</div>
                 <div class="coverage-pct">148</div>
                 <div class="coverage-pct coverage-low">57%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">home/LazyDsl.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-low">0%</div>
                 <div class="coverage-pct coverage-low">C</div>
             </div>
             <div class="module-row">
@@ -504,9 +561,27 @@
                 <div class="coverage-pct coverage-good">A</div>
             </div>
             <div class="module-row">
+                <div class="module-name">place/LazyDsl.kt</div>
+                <div class="coverage-pct">6</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/MonthlyStatisticsView.kt</div>
+                <div class="coverage-pct">1</div>
+                <div class="coverage-pct coverage-low">0%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
                 <div class="module-name">place/MonthlyStatisticsViewModel.kt</div>
                 <div class="coverage-pct">217</div>
                 <div class="coverage-pct coverage-low">78%</div>
+                <div class="coverage-pct coverage-low">C</div>
+            </div>
+            <div class="module-row">
+                <div class="module-name">place/PlaceSummaryView.kt</div>
+                <div class="coverage-pct">17</div>
+                <div class="coverage-pct coverage-low">0%</div>
                 <div class="coverage-pct coverage-low">C</div>
             </div>
             <div class="module-row">
@@ -575,16 +650,10 @@
                 <div class="coverage-pct coverage-low">79%</div>
                 <div class="coverage-pct coverage-low">C</div>
             </div>
-            <div class="module-row">
-                <div class="module-name">ui/theme/ReWindsTheme.kt</div>
-                <div class="coverage-pct">46</div>
-                <div class="coverage-pct coverage-low">30%</div>
-                <div class="coverage-pct coverage-low">C</div>
-            </div>
         </div>
 
         <div class="footer">
-            <p>Generated 2026-06-22 15:17:58 from JaCoCo XML</p>
+            <p>Generated 2026-06-24 09:50:08 from JaCoCo XML</p>
         </div>
     </div>
 </body>

@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-06-24T09:50:08",
+    "total_lines": 5132,
+    "covered_lines": 2598,
+    "line_coverage_pct": 50.62,
+    "branch_coverage_pct": 32.6
+  }
+]
