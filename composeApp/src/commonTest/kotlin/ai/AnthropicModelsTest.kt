@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.addJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 /**
@@ -35,8 +36,8 @@ class AnthropicModelsTest {
 
         val block = ContentBlockDeserializer.deserializeFromJson(json)
         assertNotNull(block)
-        assert(block is ContentBlock.Text)
-        assertEquals("Hello, world!", (block as ContentBlock.Text).text)
+        assertIs<ContentBlock.Text>(block)
+        assertEquals("Hello, world!", block.text)
     }
 
     @Test
@@ -59,8 +60,8 @@ class AnthropicModelsTest {
 
         val block = ContentBlockDeserializer.deserializeFromJson(json)
         assertNotNull(block)
-        assert(block is ContentBlock.ToolUse)
-        val toolUse = block as ContentBlock.ToolUse
+        assertIs<ContentBlock.ToolUse>(block)
+        val toolUse = block
         assertEquals("tool-123", toolUse.id)
         assertEquals("get_wind_summary", toolUse.name)
         assertNotNull(toolUse.input)
@@ -77,8 +78,8 @@ class AnthropicModelsTest {
 
         val block = ContentBlockDeserializer.deserializeFromJson(json)
         assertNotNull(block)
-        assert(block is ContentBlock.ToolResult)
-        val result = block as ContentBlock.ToolResult
+        assertIs<ContentBlock.ToolResult>(block)
+        val result = block
         assertEquals("tool-123", result.toolUseId)
         assertEquals("Result data here", result.content)
         assertEquals(false, result.isError)

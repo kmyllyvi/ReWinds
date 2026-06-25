@@ -4,6 +4,7 @@ import core.WeatherRepository
 import core.WeatherResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 
 /**
@@ -60,8 +61,8 @@ class AiRepositoryTest {
         )
 
         assertNotNull(textBlock)
-        assert(textBlock is ContentBlock.Text)
-        assertEquals("Hello", (textBlock as ContentBlock.Text).text)
+        assertIs<ContentBlock.Text>(textBlock)
+        assertEquals("Hello", textBlock.text)
     }
 
     @Test
