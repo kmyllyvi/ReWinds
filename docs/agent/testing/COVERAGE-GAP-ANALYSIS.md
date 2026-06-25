@@ -20,8 +20,18 @@ implementing them touches `composeApp/src/`).
 > `.github/workflows/ci.yml` now runs `androidInstrumentedTest` and `iosTest` per
 > PR/push (`android-instrumented` and `ios-unit-tests` jobs). The
 > `TESTING-STRATEGY.md` refresh (priority item 5) is done too — it's now a
-> ground-truth snapshot instead of the stale Feb-2026 roadmap. Only §2.4
-> (platform-specific `DatabaseExportImport`/Keychain tests) remains open — see §3.
+> ground-truth snapshot instead of the stale Feb-2026 roadmap.
+>
+> **Final update (June 25, 2026):** §2.4 (platform-specific `DatabaseExportImport`/
+> Keychain tests) is now **done** too — `iosTest/core/DatabaseExportImportTest.kt`,
+> `iosTest/core/KeychainBridgeTest.kt`, `androidInstrumentedTest/core/DatabaseExportImportTest.kt`.
+> Writing these surfaced three silent no-op stubs masquerading as working backup
+> code (iOS `exportDatabase`/`listBackups` and Android `importDatabase` all did
+> nothing and returned hardcoded results) — all three now have real
+> implementations. Every item in §3's priority list is closed; only the
+> "run the new platform tests on real CI/hardware to confirm green" follow-up
+> remains, since this sandbox can't reach Google's Maven repos to execute
+> Android/iOS Gradle tasks.
 
 ## 0. Headline finding: the coverage report is fabricated
 
@@ -52,11 +62,14 @@ existing report as informationally void.
 
 | Suite | Files | `@Test` methods |
 |---|---|---|
-| `commonTest` (JVM, runs in CI via `testDebugUnitTest`) | 49 | 508 |
-| `androidInstrumentedTest` (Compose semantic / Maestro-adjacent, **not** run in CI) | 5 | 8 |
-| `iosTest` (Kotlin/Native, **not** run in CI) | 4 | 7 |
+| `commonTest` (JVM, runs in CI via `testDebugUnitTest`) | 53 | 531 |
+| `androidUnitTest` (JVM, DB-backed via JDBC driver, runs in CI via `testDebugUnitTest`) | 3 | 25 |
+| `androidInstrumentedTest` (Compose semantic / Maestro-adjacent, now CI-gated per §2.5) | 6 | 12 |
+| `iosTest` (Kotlin/Native, now CI-gated per §2.5) | 6 | 21 |
 
-So the real test count (~523) is actually higher than the fabricated report's "361"
+(Updated 2026-06-25 after the §2.4 follow-up landed — see the update notes above.)
+
+So the real test count (~589) is actually higher than the fabricated report's "361"
 — the project is not under-tested in volume. The gaps are about *what* isn't
 tested, not how many tests exist. `docs/agent/testing/TESTING-STRATEGY.md` is also
 stale (Feb 2026, describes 33+10 tests and a 30% coverage estimate); it predates
@@ -143,19 +156,28 @@ correct `httpStatus` and body text, and a connection failure produces a
 `NetworkException` with a wrapped message — cheap tests, currently entirely
 missing.
 
-### 2.4 iOS-only and Android-only platform code is essentially untested
+### 2.4 ~~iOS-only and Android-only platform code is essentially untested~~ — CLOSED 2026-06-25
 
-`iosMain/` (Platform.apple.kt, DatabaseExportImport.ios.kt, the two Keychain
-bridges) and `androidMain/` (Platform.android.kt, DatabaseExportImport.android.kt)
-together are ~570 lines of platform-specific file I/O and keychain/credential
-logic with only the 7 iOS smoke tests touching any of it (platform detection +
-driver creation), and nothing on the Android side. `DatabaseExportImport` (the
-backup/export-import file logic) has no test on either platform beyond being
-constructed as a dependency in one Android instrumented test
-(`HomeJourneyTest.kt`) — its actual file-write/read/parse behavior is unverified.
-This is lower priority than 2.1–2.3 (it requires platform-specific test
-infrastructure, not just more `commonTest` files) but is worth a ticket given it's
-backup/restore code — a place where silent bugs are costly.
+Fixed in `0da5e66` (`composeApp/src/iosTest/kotlin/core/DatabaseExportImportTest.kt`,
+`composeApp/src/iosTest/kotlin/core/KeychainBridgeTest.kt`,
+`composeApp/src/androidInstrumentedTest/kotlin/core/DatabaseExportImportTest.kt`).
+Writing these tests surfaced that the risk called out below was real, not
+hypothetical: `DatabaseExportImport` had **three silent no-op stubs**
+masquerading as working code — iOS `exportDatabase()` copied nothing and
+unconditionally returned success, iOS `listBackups()` always returned an empty
+list, and Android `importDatabase()` always returned a hardcoded failure. All
+three are now real implementations (mirroring the platform that already
+worked), with passing-by-inspection tests for the success and failure paths;
+the Keychain bridges (`KeychainBridge`/`WeatherKeychainBridge` callback wiring)
+are now covered too.
+
+Not yet executed on real hardware/CI — this sandbox can't reach
+`dl.google.com`/`maven.google.com` to resolve the Android Gradle Plugin, so
+neither `iosSimulatorArm64Test` nor `connectedDebugAndroidTest` has run.
+Original finding, for reference: `iosMain/`/`androidMain/`'s ~570 lines of
+platform-specific file I/O and keychain/credential logic had only the 7 iOS
+smoke tests touching any of it (platform detection + driver creation), and
+nothing on the Android side.
 
 ### 2.5 CI gates only the JVM unit tests — the other two suites can silently rot
 
@@ -178,7 +200,10 @@ least direct unit-test coverage is also the code whose existing tests aren't CI-
 4. ~~Add `NetworkService` error-mapping tests (§2.3)~~ — **done**.
 5. ~~Refresh or archive `TESTING-STRATEGY.md`~~ — **done**.
 6. ~~Wire the iOS/instrumented suites into per-PR CI (§2.5)~~ — **done**.
-7. **Remaining**: platform-specific tests for `DatabaseExportImport` and the
-   Keychain bridges (§2.4) — backlog, larger infra lift (needs real Android/iOS
-   test infra to verify, can't be done blind), track as a Linear ticket rather
-   than ad-hoc follow-up.
+7. ~~Platform-specific tests for `DatabaseExportImport` and the Keychain
+   bridges (§2.4)~~ — **done**.
+
+All items closed. **Remaining**: confirm the §2.4 suite actually runs green —
+it was written and statically reviewed in a sandbox that cannot reach Google's
+Maven repos to execute `iosSimulatorArm64Test`/`connectedDebugAndroidTest`, so
+it needs a real CI run or a machine with Maven access before being trusted.
