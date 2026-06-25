@@ -11,11 +11,17 @@ import platform.Foundation.NSString
 import platform.Foundation.stringByAppendingPathComponent
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSError
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 
 /**
  * iOS implementation of database export/import
  */
+@OptIn(ExperimentalForeignApi::class)
 actual class DatabaseExportImport {
+
+    private val backupPrefix = "rewinds_backup_"
+    private val backupSuffix = ".db"
 
     private fun getAppDocumentsDirectory(): String {
         val paths = NSSearchPathForDirectoriesInDomains(
@@ -32,19 +38,55 @@ actual class DatabaseExportImport {
         return docString.stringByAppendingPathComponent("app.db")
     }
 
+    /** Backup directory ("<documents>/ReWinds"), mirroring the Android layout. */
+    private fun getBackupDirectory(): String {
+        val documents = getAppDocumentsDirectory() as NSString
+        return documents.stringByAppendingPathComponent("ReWinds")
+    }
+
     /**
-     * Export database to Documents folder (iOS)
-     * Placeholder: The actual export would require file manager integration
+     * Export the database to a timestamped backup file in the ReWinds documents folder.
+     * Returns failure if the source database does not exist yet.
      */
     actual suspend fun exportDatabase(): Result<String> = withContext(Dispatchers.IO) {
-        Result.success("Export placeholder - copy app.db from ${getDatabasePath()} manually")
+        try {
+            val fileManager = NSFileManager.defaultManager
+            val sourcePath = getDatabasePath()
+
+            if (!fileManager.fileExistsAtPath(sourcePath)) {
+                return@withContext Result.failure(Exception("Database file not found"))
+            }
+
+            val backupDir = getBackupDirectory()
+            if (!fileManager.fileExistsAtPath(backupDir)) {
+                fileManager.createDirectoryAtPath(
+                    backupDir,
+                    withIntermediateDirectories = true,
+                    attributes = null,
+                    error = null
+                )
+            }
+
+            // Whole-millisecond timestamp, matching the Android backup naming.
+            val timestamp = (NSDate().timeIntervalSince1970 * 1000).toLong()
+            val backupPath = (backupDir as NSString)
+                .stringByAppendingPathComponent("$backupPrefix$timestamp$backupSuffix")
+
+            val copySuccess = fileManager.copyItemAtPath(sourcePath, toPath = backupPath, error = null)
+            if (copySuccess) {
+                Result.success("Database exported to: $backupPath")
+            } else {
+                Result.failure(Exception("Failed to copy database file"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /**
      * Import database from file (iOS)
      * Copies the file at filePath to the app's database location (app.db)
      */
-    @OptIn(ExperimentalForeignApi::class)
     actual suspend fun importDatabase(filePath: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val fileManager = NSFileManager.defaultManager
@@ -75,9 +117,28 @@ actual class DatabaseExportImport {
     }
 
     /**
-     * List available backup files
+     * List available backup files in the ReWinds documents folder.
+     * Returns an empty list if the backup directory does not exist yet.
      */
     actual suspend fun listBackups(): Result<List<String>> = withContext(Dispatchers.IO) {
-        Result.success(emptyList())
+        try {
+            val fileManager = NSFileManager.defaultManager
+            val backupDir = getBackupDirectory()
+
+            if (!fileManager.fileExistsAtPath(backupDir)) {
+                return@withContext Result.success(emptyList())
+            }
+
+            val entries = fileManager.contentsOfDirectoryAtPath(backupDir, error = null) ?: emptyList<Any?>()
+            val backupDirString = backupDir as NSString
+            val backups = entries
+                .mapNotNull { it as? String }
+                .filter { it.startsWith(backupPrefix) && it.endsWith(backupSuffix) }
+                .map { backupDirString.stringByAppendingPathComponent(it) }
+
+            Result.success(backups)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

@@ -107,6 +107,37 @@ jobs:
           profile: pixel_6
           script: ./gradlew :composeApp:connectedDebugAndroidTest -PincludeAllTargets=false --no-daemon --stacktrace
 
+      # Diagnostic-only: the artifact upload step below has been failing on every run with
+      # "Artifact storage quota has been hit", so the JUnit XML reports (the only place the full
+      # "Caused by: ..." stack trace exists) were never retrievable. Print them straight to the
+      # job log instead. Remove once the quota issue is resolved and uploads work again.
+      - name: Print instrumented test failure details
+        if: failure()
+        run: |
+          xml_dir="composeApp/build/outputs/androidTest-results/connected"
+          html_dir="composeApp/build/reports/androidTests/connected"
+          found=0
+          if [ -d "$xml_dir" ]; then
+            while IFS= read -r f; do
+              found=1
+              echo "=== $f ==="
+              cat "$f"
+              echo
+            done < <(find "$xml_dir" -name '*.xml' 2>/dev/null)
+          fi
+          if [ "$found" -eq 0 ]; then
+            echo "No XML reports found under $xml_dir; falling back to HTML reports."
+            if [ -d "$html_dir" ]; then
+              while IFS= read -r f; do
+                echo "=== $f ==="
+                cat "$f"
+                echo
+              done < <(find "$html_dir" -name '*.html' 2>/dev/null)
+            else
+              echo "No HTML reports found under $html_dir either; nothing to print."
+            fi
+          fi
+
       - name: Upload instrumented test results
         if: failure()
         uses: actions/upload-artifact@v4
