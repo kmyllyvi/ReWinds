@@ -9,8 +9,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 
 /**
  * Instrumented coverage for the Android [DatabaseExportImport] against a real [Context] and the
@@ -43,7 +43,7 @@ class DatabaseExportImportTest {
     fun exportDatabase_missingDb_returnsFailure() = runBlocking {
         // No app.db seeded.
         val result = dao.exportDatabase()
-        assertTrue(result.isFailure, "export should fail when app.db is absent")
+        assertTrue("export should fail when app.db is absent", result.isFailure)
     }
 
     @Test
@@ -53,14 +53,14 @@ class DatabaseExportImportTest {
         dbFile.writeText("SQLite payload")
 
         val export = dao.exportDatabase()
-        assertTrue(export.isSuccess, "export should succeed when app.db exists: ${export.exceptionOrNull()}")
+        assertTrue("export should succeed when app.db exists: ${export.exceptionOrNull()}", export.isSuccess)
 
         val list = dao.listBackups()
         assertTrue(list.isSuccess)
         val backups = list.getOrNull().orEmpty()
         assertTrue(
-            backups.any { it.substringAfterLast('/').startsWith("rewinds_backup_") && it.endsWith(".db") },
-            "exported backup should be listed by listBackups(): $backups"
+            "exported backup should be listed by listBackups(): $backups",
+            backups.any { it.substringAfterLast('/').startsWith("rewinds_backup_") && it.endsWith(".db") }
         )
     }
 
@@ -72,9 +72,9 @@ class DatabaseExportImportTest {
 
         val result = dao.importDatabase(source.absolutePath)
 
-        assertTrue(result.isSuccess, "import of an existing file should succeed: ${result.exceptionOrNull()}")
-        assertTrue(appDbFile().exists(), "app.db should exist after import")
-        assertTrue(appDbFile().readText() == "imported payload", "app.db should contain the imported bytes")
+        assertTrue("import of an existing file should succeed: ${result.exceptionOrNull()}", result.isSuccess)
+        assertTrue("app.db should exist after import", appDbFile().exists())
+        assertTrue("app.db should contain the imported bytes", appDbFile().readText() == "imported payload")
 
         source.delete()
     }
@@ -85,7 +85,7 @@ class DatabaseExportImportTest {
 
         val result = dao.importDatabase(missing)
 
-        assertTrue(result.isFailure, "import of a missing source file should fail")
-        assertFalse(appDbFile().exists(), "no app.db should be created from a missing source")
+        assertTrue("import of a missing source file should fail", result.isFailure)
+        assertFalse("no app.db should be created from a missing source", appDbFile().exists())
     }
 }
