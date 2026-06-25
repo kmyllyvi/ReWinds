@@ -1,8 +1,10 @@
 package onboarding
 
+import androidx.lifecycle.viewModelScope
 import core.WeatherApiKeyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -25,6 +27,12 @@ class VcKeyOnboardingViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
 
+    // Track every ViewModel so teardown can cancel its viewModelScope. Without this, a VM's
+    // scope (bound to Dispatchers.Main = this StandardTestDispatcher) is still live when
+    // resetMain() runs, and any leftover coroutine leaks into the next test class as an
+    // UncaughtExceptionsBeforeTest / IllegalStateException.
+    private val createdViewModels = mutableListOf<VcKeyOnboardingViewModel>()
+
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -34,12 +42,15 @@ class VcKeyOnboardingViewModelTest {
     @AfterTest
     fun tearDown() {
         WeatherApiKeyManager.setApiKey("")
+        createdViewModels.forEach { it.viewModelScope.cancel() }
+        createdViewModels.clear()
+        dispatcher.scheduler.advanceUntilIdle()
         Dispatchers.resetMain()
     }
 
     @Test
     fun gateIsActiveWhenNoKeyConfigured() = runTest(dispatcher) {
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         advanceUntilIdle()
         assertFalse(
             vm.isWeatherKeyConfigured.value,
@@ -49,7 +60,7 @@ class VcKeyOnboardingViewModelTest {
 
     @Test
     fun gateClearsOnFalseToTrueTransitionWhenValidKeySaved() = runTest(dispatcher) {
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         advanceUntilIdle()
         assertFalse(vm.isWeatherKeyConfigured.value, "Precondition: gate active without a key")
 
@@ -68,7 +79,7 @@ class VcKeyOnboardingViewModelTest {
         // Configure a valid key first so the gate clears, then remove it (Settings "delete").
         // The gate must reactively return in the same session — true → false transition.
         WeatherApiKeyManager.setApiKey("valid-vc-key-abc123")
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         advanceUntilIdle()
         assertTrue(vm.isWeatherKeyConfigured.value, "Precondition: gate cleared by valid key")
 
@@ -83,7 +94,7 @@ class VcKeyOnboardingViewModelTest {
 
     @Test
     fun whitespaceOnlyKeyDoesNotClearGate() = runTest(dispatcher) {
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         WeatherApiKeyManager.setApiKey("   ")
         advanceUntilIdle()
         assertFalse(
@@ -94,7 +105,7 @@ class VcKeyOnboardingViewModelTest {
 
     @Test
     fun placeholderKeyDoesNotClearGate() = runTest(dispatcher) {
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         WeatherApiKeyManager.setApiKey("your-placeholder-key")
         advanceUntilIdle()
         assertFalse(
@@ -105,7 +116,7 @@ class VcKeyOnboardingViewModelTest {
 
     @Test
     fun configureNowClickShowsKeyEntry() = runTest(dispatcher) {
-        val vm = VcKeyOnboardingViewModel()
+        val vm = VcKeyOnboardingViewModel().also { createdViewModels.add(it) }
         assertFalse(vm.showKeyEntry.value)
         vm.onConfigureNowClicked()
         assertTrue(vm.showKeyEntry.value, "CTA must route the user into the Settings key entry")
