@@ -60,7 +60,7 @@ class DatabaseExportImportTest {
     fun tearDown() = cleanup()
 
     @Test
-    fun importDatabase_copiesSourceOverAppDb() = runBlocking {
+    fun importDatabase_copiesSourceOverAppDb(): Unit = runBlocking {
         val sourcePath = joinPath(documentsDir(), "import_source.db")
         writeFile(sourcePath, "SQLite payload")
 
