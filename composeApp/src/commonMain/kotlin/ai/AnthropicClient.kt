@@ -18,11 +18,15 @@ import kotlinx.serialization.json.JsonObject
  * Ktor HTTP client for communicating with the Anthropic API.
  * Handles authentication and request/response serialization.
  */
-class AnthropicClient(
+class AnthropicClient internal constructor(
     private val apiKey: String,
-    private val enableLogs: Boolean = false
+    // HttpClient is kept as a constructor parameter so unit tests can inject a MockEngine-backed
+    // client to exercise request construction, response parsing and the error/non-200 paths
+    // without real network I/O. Mirrors the seam used by NetworkService.
+    private val client: HttpClient
 ) {
-    private val client: HttpClient = httpClient(enableLogs)
+    // Production constructor bound by Koin DI: builds the platform HttpClient.
+    constructor(apiKey: String, enableLogs: Boolean = false) : this(apiKey, httpClient(enableLogs))
 
     /**
      * Sends a message request to the Anthropic API and returns the response.
