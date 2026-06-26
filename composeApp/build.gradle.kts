@@ -332,6 +332,56 @@ android {
     }
 }
 
+// Two categories are excluded from the coverage denominator:
+//
+// 1. Generated / compiler scaffolding — code we never wrote, so counting it is noise:
+//    SQLDelight db classes, R/BuildConfig, serializers, the synthetic ComposableSingletons$
+//    lambda-holder classes the Compose compiler emits per file, and the compose-resources
+//    generated string/plural accessor tables (String0/Plurals0/ActualResourceCollectors).
+//
+// 2. Presentational Compose code — Views and reusable UI components. Per
+//    docs/agent/ARCHITECTURE-RULES.md the project deliberately keeps these untested:
+//    all logic lives in ViewModels (MV*), and "Views are hard to test - keep them
+//    simple so they don't need testing". Leaving their bytecode in the denominator
+//    inflates it with code that is untested *by design*, hiding the real coverage of
+//    the business logic. So we drop the *View.kt files (compiled to <Name>ViewKt.class),
+//    the *Modal/*Sheet/*Screen/*Switcher.kt presentational files that escape the *View
+//    naming, and the components/ packages.
+//
+// Globs match compiled .class paths under tmp/kotlin-classes/debug and
+// intermediates/javac/debug — i.e. package-qualified paths, not source paths.
+//
+// NOT excluded: core/ (Router.kt carries the unit-tested isShowingPlacesPush; the
+// TabRoutingNavigator is real, tested navigation logic) and every *ViewModel — those
+// are exactly what coverage is meant to measure.
+//
+// Shared so jacocoTestReport (measure) and jacocoTestCoverageVerification (enforce floor)
+// always use the same denominator and can never drift apart.
+val coverageExcludes = listOf(
+    // ── Generated / scaffolding ──
+    "**/com/km/rewinds/db/**",   // SQLDelight-generated
+    "**/*\$Companion*",
+    "**/R.class", "**/R$*.class", "**/BuildConfig.*",
+    "**/*ComposableSingletons*", "**/*\$\$serializer*",
+    "**/rewinds/composeapp/generated/resources/**", // compose-resources String0/Plurals0/ActualResourceCollectors
+    // ── Presentational: *View.kt screens (MV* — deliberately untested) ──
+    "**/*ViewKt.class",          // ChatView, HomeView, SettingsView, PlaceSummaryView, MonthlyStatisticsView
+    "**/*ModalKt.class",         // StationMapModal
+    "**/*SheetKt.class",         // DayDetailSheet
+    "**/*ScreenKt.class",        // VcKeyOnboardingScreen
+    "**/*SwitcherKt.class",      // ChatSessionSwitcher
+    "**/AppKt.class",            // App.kt — root Compose wiring, logic lives in AppViewModel
+    // ── Presentational: reusable UI component packages ──
+    "**/components/**",          // components/, place/components/, settings/components/
+    "**/ui/**"                   // ui/components/, ui/theme/
+)
+
+// Class directories with the shared excludes applied, reused by both coverage tasks.
+val coverageClassDirs = files(
+    fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(coverageExcludes) },
+    fileTree(layout.buildDirectory.dir("intermediates/javac/debug")) { exclude(coverageExcludes) }
+)
+
 // Real JaCoCo XML report over the debug unit-test execution data. The Python script parses this
 // XML — no hardcoded numbers. Requires -PenableCoverage=true so the .exec file is produced.
 val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
@@ -344,45 +394,7 @@ val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
         html.required.set(true)
     }
 
-    // Two categories are excluded from the coverage denominator:
-    //
-    // 1. Generated / compiler scaffolding — code we never wrote, so counting it is noise:
-    //    SQLDelight db classes, R/BuildConfig, serializers, and the synthetic
-    //    ComposableSingletons$ lambda-holder classes the Compose compiler emits per file.
-    //
-    // 2. Presentational Compose code — Views and reusable UI components. Per
-    //    docs/agent/ARCHITECTURE-RULES.md the project deliberately keeps these untested:
-    //    all logic lives in ViewModels (MV*), and "Views are hard to test - keep them
-    //    simple so they don't need testing". Leaving their bytecode in the denominator
-    //    inflates it with code that is untested *by design*, hiding the real coverage of
-    //    the business logic. So we drop the *View.kt files (compiled to <Name>ViewKt.class)
-    //    and the components/ packages.
-    //
-    // Globs match compiled .class paths under tmp/kotlin-classes/debug and
-    // intermediates/javac/debug — i.e. package-qualified paths, not source paths.
-    //
-    // NOT excluded: core/ (Router.kt carries the unit-tested isShowingPlacesPush; the
-    // TabRoutingNavigator is real, tested navigation logic) and every *ViewModel — those
-    // are exactly what coverage is meant to measure.
-    val excludes = listOf(
-        // ── Generated / scaffolding ──
-        "**/com/km/rewinds/db/**",   // SQLDelight-generated
-        "**/*\$Companion*",
-        "**/R.class", "**/R$*.class", "**/BuildConfig.*",
-        "**/*ComposableSingletons*", "**/*\$\$serializer*",
-        // ── Presentational: *View.kt screens (MV* — deliberately untested) ──
-        "**/*ViewKt.class",          // ChatView, HomeView, SettingsView, PlaceSummaryView, MonthlyStatisticsView
-        "**/AppKt.class",            // App.kt — root Compose wiring, logic lives in AppViewModel
-        // ── Presentational: reusable UI component packages ──
-        "**/components/**",          // components/, place/components/, settings/components/
-        "**/ui/**"                   // ui/components/, ui/theme/
-    )
-
-    val classDirs = files(
-        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(excludes) },
-        fileTree(layout.buildDirectory.dir("intermediates/javac/debug")) { exclude(excludes) }
-    )
-    classDirectories.setFrom(classDirs)
+    classDirectories.setFrom(coverageClassDirs)
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/androidMain/kotlin"))
     executionData.setFrom(
         fileTree(layout.buildDirectory) {
@@ -414,6 +426,40 @@ tasks.register("coverageReport") {
         } else {
             println("⚠ generate_coverage_metrics.py not found")
             println("   Expected at: ${scriptFile.absolutePath}")
+        }
+    }
+}
+
+// Enforced global floor (ratchet, not stretch target). Uses the SAME execution data and the
+// SAME class-directory excludes (coverageClassDirs) as jacocoTestReport, so the measured number
+// and the enforced number can never diverge. Thresholds are set at/just-below the cleaned
+// baseline (KIM-324) so this fails only on regression, not on today's code. Bump them upward as
+// coverage improves — never downward without a deliberate decision. Requires -PenableCoverage=true.
+tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    group = "verification"
+    description = "Fail the build if line/branch coverage drops below the enforced floor."
+    dependsOn("testDebugUnitTest")
+
+    classDirectories.setFrom(coverageClassDirs)
+    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/androidMain/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("**/testDebugUnitTest.exec", "**/*UnitTest*.exec")
+        }
+    )
+
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.60".toBigDecimal() // cleaned baseline 63.6% (KIM-324); ~4pt regression buffer
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.35".toBigDecimal() // cleaned baseline 38.4% (KIM-324); ~3pt regression buffer
+            }
         }
     }
 }
