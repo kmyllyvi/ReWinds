@@ -95,6 +95,7 @@ Linear tools: `mcp__linear-server__get_issue`, `list_issues`, `save_issue`. Team
 - [ ] New tests written in the same commit for all non-trivial logic (ViewModel, Repository, pure functions, bug fixes). No "tests later". Exempt only: pure UI styling, config/doc-only changes — see AC for this ticket's exemption status.
 - [ ] No MV* violations (see ARCHITECTURE-RULES.md)
 - [ ] No new lint violations
+- [ ] Passes the CI coverage gates: the enforced global floor (`jacocoTestCoverageVerification`) and the patch-coverage gate (`diff-cover` ≥ 70% on new/changed lines)
 
 ## Notes
 Priority set by po (Kimmo reranks freely); size proposed — Kimmo decides scope at Gate 1.
