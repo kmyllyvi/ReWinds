@@ -389,6 +389,15 @@
       </div>
     </div>
 
+    <!-- Merge policy -->
+    <div class="escape-valve">
+      <div class="escape-icon">🔀</div>
+      <div class="escape-body">
+        <h4>Merge policy — auto-merge after review</h4>
+        <p>A PR is merged <strong>without waiting for a human</strong> when all three hold: Marcy approved with no Critical/Major findings, CI is green (including the coverage floor + patch-coverage gate), and the change needs <strong>no manual verification</strong> (no device/simulator run, no UX/visual pass, nothing flagged <strong style="color:#E8A030">needs-human</strong>). Pure logic, config, CI, docs, and unit-tested code qualify. A human still merges when the PR needs a real device/simulator, a manual UX pass (Mr.T), or exploratory QA (Seppo) — it stays open until they sign off. Branch protection on <code>develop</code> is the backstop.</p>
+      </div>
+    </div>
+
     <!-- Linear labels -->
     <h3 style="font-size:13px; margin-bottom:8px;">Linear labels used</h3>
     <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">The free plan doesn't allow custom statuses, so labels carry the sub-state.</p>

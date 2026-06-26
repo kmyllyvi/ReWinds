@@ -62,6 +62,27 @@ manual loop is proven (see GitHub Action note at the end).
 
 Direction and pivot decisions are yours. Not delegated.
 
+## Merge policy
+
+**Auto-merge after review when there is nothing for a human to check.** A PR is merged without waiting
+for a human merge when **all** of these hold:
+
+1. **Code review passed** — `code-reviewer` (Marcy) approved with no Critical/Major findings.
+2. **CI is green** — all required checks pass, including the coverage floor and patch-coverage gate.
+3. **No manual verification needed** — the change requires no hardware/device/simulator run, no manual
+   UX/visual check, and no human-only validation. (Pure logic, config, CI, docs, and unit-tested code
+   qualify.)
+
+When all three hold, merge it — the review is the gate, not a human's final click.
+
+**A human still merges** when the PR needs verification a reviewer agent cannot perform: anything
+requiring a real device or simulator interaction, a manual UX/visual pass (`ux-ui-reviewer` / Mr.T
+territory), exploratory QA (`qa-test-agent` / Seppo), or any change flagged `needs-human`. In those
+cases the PR stays open after approval until the human signs off.
+
+Branch protection on `develop` (required status checks) is the backstop — even auto-merge cannot land a
+red PR once it is enabled.
+
 ---
 
 ## Linear handover protocol (every agent follows this)
@@ -102,7 +123,7 @@ Priority set by po (Kimmo reranks freely); size proposed — Kimmo decides scope
 Reviewers needed: code-reviewer [+ qa-test-agent if logic-heavy] [+ ux-ui-reviewer if UI]
 ```
 
-The five DoD bullets above are **generic and standard for every ticket** — po should not rewrite or
+The six DoD bullets above are **generic and standard for every ticket** — po should not rewrite or
 restate them per ticket (they're project-wide policy, not per-issue content). Anything
 ticket-specific (including exemptions to the "new tests required" rule) belongs in
 **Acceptance criteria**, not DoD.
@@ -159,8 +180,9 @@ labels under Team KIM: `spec-ready`, `in-review`, `needs-human`. Optionally `age
 Trigger: when Randy opens the PR and adds `in-review`, his final step is to invoke the `code-reviewer`
 agent via the Task tool (issue number + branch + PR link). Marcy reviews against AC/DoD/MV* rules,
 updates the Linear labels/status herself (Linear MCP is available locally), and Randy relays her verdict
-verbatim. A human still merges — the review is a first filter, not a guarantee. Runs inside Claude Code
-(Pro subscription, no API token cost).
+verbatim. Runs inside Claude Code (Pro subscription, no API token cost). On merge, see the **Merge
+policy** above — review-approved PRs that need no manual verification are merged without waiting for a
+human.
 
 The GitHub Actions code-review workflow (`.github/workflows/code-review.yml`) is retained for manual
 `workflow_dispatch` runs but no longer triggers on PR open. This was a **cost decision** (free-plan
