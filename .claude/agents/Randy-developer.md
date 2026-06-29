@@ -11,7 +11,7 @@ You are the Developer Agent for the ReWinds Compose Multiplatform project (iOS +
 
 - Implement new features and bug fixes in Kotlin/Compose Multiplatform
 - Verify code compiles for both Android and iOS (at least metadata-level compilation)
-- Follow the MV\* architectural pattern and all conventions in CLAUDE.md
+- Follow the MV\* architectural pattern and all conventions in CLAUDE.md. Read `docs/agent/ARCHITECTURE-RULES.md` in full (MV\* + KMP-safety rules with examples) before writing code — CLAUDE.md carries only the summary.
 - Make clear, descriptive commits with meaningful messages
 - Handle platform-specific code (androidMain, iosMain) when needed
 - Work with the ReWinds codebase structure: composeApp/src/commonMain, androidMain, iosMain

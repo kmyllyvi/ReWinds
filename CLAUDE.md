@@ -2,7 +2,10 @@
 
 Compose Multiplatform app (iOS + Android).
 
-@docs/agent/ARCHITECTURE-RULES.md
+## Architecture rules (summary)
+Full detail + code examples: `docs/agent/ARCHITECTURE-RULES.md` — read it before writing or reviewing code.
+- **MV\* pattern**: all logic/state lives in ViewModels. Views are pure render — `collectAsState()` + call VM methods. No `remember { mutableStateOf(...) }`, business logic, or DB/network calls in Composables.
+- **KMP-safe commonMain**: no `String.format` / `"%.1f".format()` (JVM-only). Use `core.utils.formatDecimal()`.
 
 ## Build
 
