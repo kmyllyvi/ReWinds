@@ -65,10 +65,10 @@ fun formatTemperatureRange(minTemp: Double?, maxTemp: Double?): String {
 }
 
 /**
- * Formats a wind/gust speed as a whole number followed by "km/h".
+ * Formats a wind speed as a whole number followed by "km/h".
  * Example: 32.4 → "32 km/h"; null → "-- km/h".
  */
-fun formatGust(speed: Double?): String {
+fun formatWindSpeed(speed: Double?): String {
     val value = speed?.let { formatWhole(it) } ?: "--"
     return "$value km/h"
 }
