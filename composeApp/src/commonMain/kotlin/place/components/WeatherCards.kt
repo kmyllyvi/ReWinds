@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import core.DaysOfInterestFilter
 import core.LocalAppStrings
 import core.matches
+import core.utils.formatWindSpeed
 import place.DayWeatherSummary
 import kotlin.math.roundToInt
 
@@ -47,11 +48,6 @@ fun StoredDaysList(
 private fun formatTemperature(value: Double?): String {
     if (value == null) return "--"
     return "${(value * 10).roundToInt() / 10.0}\u00B0C"
-}
-
-private fun formatWindSpeed(value: Double?): String {
-    if (value == null) return "--"
-    return "${(value * 10).roundToInt() / 10.0} km/h"
 }
 
 @Composable

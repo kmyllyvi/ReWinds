@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import core.LocalAppStrings
+import core.utils.WindSpeedUnit
 import core.utils.shortDayLabel
 import place.components.HourlyWindChart
 import ui.theme.rewinds
@@ -38,6 +39,7 @@ private val CHART_AREA_HEIGHT = 180.dp
  * @param shadingTiers Per-slot criteria shading derived by the ViewModel; empty renders no shading.
  * @param minThresholdKmh The active filter's minimum wind speed; null draws no min threshold line.
  * @param maxThresholdKmh The active filter's maximum wind speed; null draws no max threshold line.
+ * @param windSpeedUnit The active wind-speed unit; drives the chart's axis label (KIM-330).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +50,8 @@ fun DayDetailSheet(
     onDismiss: () -> Unit,
     shadingTiers: List<ShadingTier> = emptyList(),
     minThresholdKmh: Double? = null,
-    maxThresholdKmh: Double? = null
+    maxThresholdKmh: Double? = null,
+    windSpeedUnit: WindSpeedUnit = WindSpeedUnit.KMH
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateLabel = shortDayLabel(day.date)
@@ -76,6 +79,7 @@ fun DayDetailSheet(
                 else -> HourlyWindChart(
                     date = dateLabel,
                     points = hours,
+                    unitLabel = windSpeedUnit.label,
                     shadingTiers = shadingTiers,
                     minThresholdKmh = minThresholdKmh,
                     maxThresholdKmh = maxThresholdKmh

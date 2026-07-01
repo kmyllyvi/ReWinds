@@ -11,6 +11,7 @@ import core.Language
 import core.LanguageManager
 import core.PlatformApiKeyChecker
 import core.WeatherApiKeyManager
+import core.utils.WindSpeedUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,17 +26,13 @@ sealed class DaysOfInterestUiState {
     data class Error(val message: String) : DaysOfInterestUiState()
 }
 
-/** Measurement system shown in the General group. Display-only for now. */
+/**
+ * Measurement system for temperature. Retained for a future temperature-conversion ticket;
+ * the Settings row is hidden until then, since temperature is always shown in °C (KIM-330).
+ */
 enum class UnitSystem(val displayName: String) {
     METRIC("Metric"),
     IMPERIAL("Imperial")
-}
-
-/** Wind speed unit shown in the General group. Display-only for now. */
-enum class WindSpeedUnit(val displayName: String) {
-    KMH("km/h"),
-    KNOTS("knots"),
-    MPH("mph")
 }
 
 class SettingsViewModel(
@@ -55,9 +52,6 @@ class SettingsViewModel(
     // Language mirrors the global LanguageManager so the row reflects the live choice.
     private val _languageState = MutableStateFlow(LanguageManager.currentLanguage.value)
     val languageState: StateFlow<Language> = _languageState.asStateFlow()
-
-    private val _unitsState = MutableStateFlow(UnitSystem.METRIC)
-    val unitsState: StateFlow<UnitSystem> = _unitsState.asStateFlow()
 
     private val _windSpeedUnitState = MutableStateFlow(WindSpeedUnit.KMH)
     val windSpeedUnitState: StateFlow<WindSpeedUnit> = _windSpeedUnitState.asStateFlow()
@@ -80,7 +74,15 @@ class SettingsViewModel(
 
     init {
         loadSavedFilter()
+        loadWindSpeedUnit()
         refreshKeyStatus()
+    }
+
+    /** Restores the persisted wind-speed unit; falls back to km/h when absent or unrecognised. */
+    private fun loadWindSpeedUnit() {
+        val saved = settingsRepo.getString(WIND_SPEED_UNIT_KEY) ?: return
+        _windSpeedUnitState.value =
+            WindSpeedUnit.entries.firstOrNull { it.name == saved } ?: WindSpeedUnit.KMH
     }
 
     private fun loadSavedFilter() {
@@ -121,12 +123,9 @@ class SettingsViewModel(
         _languageState.value = language
     }
 
-    fun setUnits(units: UnitSystem) {
-        _unitsState.value = units
-    }
-
     fun setWindSpeedUnit(unit: WindSpeedUnit) {
         _windSpeedUnitState.value = unit
+        settingsRepo.setString(WIND_SPEED_UNIT_KEY, unit.name)
     }
 
     fun setAutoRefreshEnabled(enabled: Boolean) {
@@ -147,5 +146,6 @@ class SettingsViewModel(
 
     companion object {
         const val FILTER_KEY = "days_of_interest_filter"
+        const val WIND_SPEED_UNIT_KEY = "wind_speed_unit"
     }
 }

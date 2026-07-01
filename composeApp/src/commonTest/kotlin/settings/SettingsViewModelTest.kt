@@ -6,6 +6,7 @@ import core.ApiKeyChecker
 import core.AppSettingsStore
 import core.DaysOfInterestFilter
 import core.Language
+import core.utils.WindSpeedUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -144,15 +145,7 @@ class SettingsViewModelTest {
     @Test
     fun generalStateHasExpectedDefaults() {
         val vm = viewModel(FakeSettingsStore())
-        assertEquals(UnitSystem.METRIC, vm.unitsState.value)
         assertEquals(WindSpeedUnit.KMH, vm.windSpeedUnitState.value)
-    }
-
-    @Test
-    fun setUnits_updatesUnitsState() {
-        val vm = viewModel(FakeSettingsStore())
-        vm.setUnits(UnitSystem.IMPERIAL)
-        assertEquals(UnitSystem.IMPERIAL, vm.unitsState.value)
     }
 
     @Test
@@ -160,6 +153,50 @@ class SettingsViewModelTest {
         val vm = viewModel(FakeSettingsStore())
         vm.setWindSpeedUnit(WindSpeedUnit.KNOTS)
         assertEquals(WindSpeedUnit.KNOTS, vm.windSpeedUnitState.value)
+    }
+
+    // ── KIM-330: wind-speed unit persistence round-trip ──────────────────────
+
+    @Test
+    fun setWindSpeedUnit_persistsUnderExpectedKey() {
+        val store = FakeSettingsStore()
+        val vm = viewModel(store)
+        vm.setWindSpeedUnit(WindSpeedUnit.MPH)
+        assertEquals(WindSpeedUnit.MPH.name, store.map[SettingsViewModel.WIND_SPEED_UNIT_KEY])
+    }
+
+    @Test
+    fun init_loadsPersistedWindSpeedUnit() {
+        val store = FakeSettingsStore(
+            mapOf(SettingsViewModel.WIND_SPEED_UNIT_KEY to WindSpeedUnit.KNOTS.name)
+        )
+        val vm = viewModel(store)
+        assertEquals(WindSpeedUnit.KNOTS, vm.windSpeedUnitState.value)
+    }
+
+    @Test
+    fun init_absentWindSpeedUnitFallsBackToKmh() {
+        val vm = viewModel(FakeSettingsStore())
+        assertEquals(WindSpeedUnit.KMH, vm.windSpeedUnitState.value)
+    }
+
+    @Test
+    fun init_unrecognisedWindSpeedUnitFallsBackToKmh() {
+        val store = FakeSettingsStore(
+            mapOf(SettingsViewModel.WIND_SPEED_UNIT_KEY to "furlongs_per_fortnight")
+        )
+        val vm = viewModel(store)
+        assertEquals(WindSpeedUnit.KMH, vm.windSpeedUnitState.value)
+    }
+
+    @Test
+    fun windSpeedUnit_roundTripsThroughStore() {
+        val store = FakeSettingsStore()
+        viewModel(store).setWindSpeedUnit(WindSpeedUnit.KNOTS)
+
+        // A fresh ViewModel over the same store must restore the saved unit (simulates restart).
+        val reloaded = viewModel(store)
+        assertEquals(WindSpeedUnit.KNOTS, reloaded.windSpeedUnitState.value)
     }
 
     @Test
