@@ -63,6 +63,8 @@ object TestTags {
     const val PLACE_YEAR_TAB = "place_year_tab"
     const val PLACE_MONTH_GRID = "place_month_grid"
     const val PLACE_MONTH_CELL = "place_month_cell"
+    // Per-cell loading indicator shown while that month is downloading on demand (KIM-332).
+    const val PLACE_MONTH_CELL_DOWNLOADING = "place_month_cell_downloading"
 
     // ── Monthly statistics ──────────────────────────────────────────────────────
     const val MONTH_PREVIOUS_BUTTON = "month_previous_button"
