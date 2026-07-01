@@ -68,5 +68,8 @@ object TestTags {
     const val MONTH_PREVIOUS_BUTTON = "month_previous_button"
     const val MONTH_NEXT_BUTTON = "month_next_button"
     const val MONTH_STAT_CARD_GRID = "month_stat_card_grid"
+    // Loading placeholder for the stat-card grid — kept distinct so UI tests that gate on
+    // MONTH_STAT_CARD_GRID (loaded state) are not satisfied by the skeleton (KIM-327).
+    const val MONTH_STAT_CARD_GRID_SKELETON = "month_stat_card_grid_skeleton"
     const val MONTH_DAY_LIST = "month_day_list"
 }

@@ -325,7 +325,9 @@ private fun StatCardGrid(stats: CalculatedStats) {
 @Composable
 private fun StatCardGridSkeleton() {
     Column(
-        modifier = Modifier.testTag(TestTags.MONTH_STAT_CARD_GRID),
+        // Distinct from MONTH_STAT_CARD_GRID so tests that gate on the loaded grid are
+        // not satisfied by this placeholder (KIM-327).
+        modifier = Modifier.testTag(TestTags.MONTH_STAT_CARD_GRID_SKELETON),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         repeat(2) {
