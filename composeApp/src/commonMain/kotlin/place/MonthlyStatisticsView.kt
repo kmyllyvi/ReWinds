@@ -45,6 +45,7 @@ import org.koin.core.parameter.parametersOf
 import place.components.DailyWindBarChart
 import place.components.DaySummaryRow
 import place.components.MonthStatCard
+import place.components.MonthStatCardSkeleton
 import ui.components.IsobarBackground
 import ui.theme.rewinds
 import kotlin.math.roundToInt
@@ -133,17 +134,11 @@ fun MonthlyStatisticsView(
                         }
 
                         // Progressive render: day rows are already available, but the stats
-                        // card waits on the (cheap) aggregate calculation. Show a spinner only
-                        // where the card will land rather than holding back the whole list.
+                        // cards wait on the (cheap) aggregate calculation. Show skeleton stat
+                        // cards where they will land (KIM-327) instead of a blank/spinner gap,
+                        // rather than holding back the whole list.
                         if (currentStats == null) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(96.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
+                            StatCardGridSkeleton()
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
@@ -318,6 +313,26 @@ private fun StatCardGrid(stats: CalculatedStats) {
                 unit = strings.unitDays,
                 modifier = Modifier.weight(1f)
             )
+        }
+    }
+}
+
+/**
+ * Loading placeholder for the whole stat-card grid: a 2×2 layout of
+ * [MonthStatCardSkeleton]s mirroring [StatCardGrid], shown while the month's stats
+ * are still being computed (KIM-327) so the month cards never render blank.
+ */
+@Composable
+private fun StatCardGridSkeleton() {
+    Column(
+        modifier = Modifier.testTag(TestTags.MONTH_STAT_CARD_GRID),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        repeat(2) {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                MonthStatCardSkeleton(modifier = Modifier.weight(1f))
+                MonthStatCardSkeleton(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

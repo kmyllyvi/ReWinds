@@ -17,6 +17,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import ui.theme.rewinds
 
 /**
@@ -67,6 +70,40 @@ fun MonthStatCard(
                     append(unit)
                 }
             }
+        )
+    }
+}
+
+/**
+ * Loading placeholder shaped like a [MonthStatCard], shown while the month's stats
+ * are still being computed (KIM-327). Static muted bars — no shimmer — matching the
+ * DaySummaryRow skeleton approach so the month cards never render blank during load.
+ */
+@Composable
+fun MonthStatCardSkeleton(
+    modifier: Modifier = Modifier
+) {
+    val placeholderColor = MaterialTheme.rewinds.textTertiary.copy(alpha = 0.18f)
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(11.dp))
+            .background(MaterialTheme.rewinds.surface)
+            .padding(horizontal = 11.dp, vertical = 10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .height(9.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(placeholderColor)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .width(52.dp)
+                .height(18.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(placeholderColor)
         )
     }
 }
