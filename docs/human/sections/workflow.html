@@ -271,6 +271,7 @@
     <li><a href="ios.html">iOS Platform</a></li>
     <li><a href="decisions.html">Decisions</a></li>
     <li><a href="workflow.html" class="active">Workflow</a></li>
+    <li><a href="test-checklist.html">Test Checklist</a></li>
   </ul>
 </nav>
 
@@ -393,8 +394,8 @@
     <div class="escape-valve">
       <div class="escape-icon">🔀</div>
       <div class="escape-body">
-        <h4>Merge policy — auto-merge after review</h4>
-        <p>A PR is merged <strong>without waiting for a human</strong> when all three hold: Marcy approved with no Critical/Major findings, CI is green (including the coverage floor + patch-coverage gate), and the change needs <strong>no manual verification</strong> (no device/simulator run, no UX/visual pass, nothing flagged <strong style="color:#E8A030">needs-human</strong>). Pure logic, config, CI, docs, and unit-tested code qualify. A human still merges when the PR needs a real device/simulator, a manual UX pass (Mr.T), or exploratory QA (Seppo) — it stays open until they sign off. Branch protection on <code>develop</code> is the backstop.</p>
+        <h4>Merge policy — auto-merge after review, manual testing decoupled</h4>
+        <p>A PR merges <strong>without waiting for a human</strong> when <strong>both</strong> hold: Marcy approved with no Critical/Major findings, and CI is green (coverage floor + patch-coverage gate). <strong>Manual testing no longer gates the merge</strong> — even changes that want a device/simulator run or a visual/UX eye merge on review + CI. That verification is logged instead: the developer appends a case to the <a href="test-checklist.html">Manual Test Checklist</a> (steps → expected, plus an "automate?" note), and Kimmo verifies in batches on device, ticking cases off (git-tracked). A failed case becomes a new bug ticket, not a merge block. The only thing that still holds a PR open is <strong style="color:#E8A030">needs-human</strong> (Gate 2). Branch protection on <code>develop</code> is the backstop.</p>
       </div>
     </div>
 
@@ -547,7 +548,7 @@
           <td>Dispatch Marcy on PR open</td>
           <td>Randy invokes Marcy directly (Task tool) as his last step, right after adding <code>in-review</code></td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td>In-session Randy→Marcy handover, not a GitHub Action. Marcy reviews against AC/DoD/MV* rules, updates Linear labels/status herself, and Randy relays her verdict. A human still merges. The <code>.github/workflows/code-review.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>pull_request</code> trigger to re-enable CI-side review.</td>
+          <td>In-session Randy→Marcy handover, not a GitHub Action. Marcy reviews against AC/DoD/MV* rules, updates Linear labels/status herself, and Randy relays her verdict. Review + CI green → the PR merges (manual testing is logged, not gated — see Merge policy). The <code>.github/workflows/code-review.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>pull_request</code> trigger to re-enable CI-side review.</td>
         </tr>
         <tr>
           <td>Dispatch Seppo / Mr.T</td>
@@ -563,9 +564,9 @@
         </tr>
         <tr>
           <td>Merge PR to develop</td>
-          <td>Kimmo merges after review passes</td>
-          <td><span class="pill pill-manual">Manual — intentional</span></td>
-          <td>Auto-merge is explicitly deferred — the review agent shares the developer's blind spots. A passing Marcy review is a first filter, not a guarantee. Keep human merge.</td>
+          <td>Auto-merges on Marcy pass + CI green</td>
+          <td><span class="pill pill-auto">Automated ✓</span></td>
+          <td>Review + CI are the gate. Manual testing is decoupled — behaviour needing a device/UX check is logged to the <a href="test-checklist.html">Test Checklist</a> and verified async, not before merge. Only <code>needs-human</code> (Gate 2) holds a PR open.</td>
         </tr>
         <tr>
           <td>Dispatch doc-agent post-merge</td>
@@ -583,7 +584,7 @@
       <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>CI auto-fix — in-session blocking watch by Randy, bounded to 2 attempts.</li>
       <li>Once Randy is trusted end-to-end, automate <strong>Randy dispatch from Todo</strong> (scheduled sweep or GitHub Action).</li>
       <li>Add <strong>Seppo/Mr.T auto-trigger</strong> based on Marcy's review tags.</li>
-      <li>Keep Gate 1, Gate 2, and human merge <strong>permanently manual</strong>.</li>
+      <li>Keep Gate 1 and Gate 2 <strong>permanently manual</strong>. (Merge is now automated on review + CI; manual testing is decoupled to the Test Checklist and verified async.)</li>
     </ol>
     <p style="font-size:12px; color:var(--text-tertiary); margin-top:10px;">The corresponding GitHub Actions workflows (<code>code-review.yml</code>, <code>doc-agent.yml</code>, <code>ci-failure.yml</code>) are retained for manual <code>workflow_dispatch</code> runs but parked from auto-triggering — a cost decision (free-plan Actions minutes), not a quality one.</p>
   </section>

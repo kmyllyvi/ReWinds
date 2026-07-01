@@ -189,8 +189,15 @@ docs/agent/WORKFLOW.md.
   an architectural call) — stop, add `needs-human`, assign Kimmo, and report the failure. This runs in your
   session on the Pro subscription: no API tokens, but you *are* holding the session while CI runs, so don't
   start the Marcy handoff until CI is green.
-- Post a comment with: Branch, PR link, Build pass/fail, Tests pass/fail, Summary, Deviations.
-  Then add the **in-review** label (the issue stays In Progress).
+- Post a comment with: Branch, PR link, Build pass/fail, Tests pass/fail, Summary, Deviations,
+  Manual test cases (`none` | `appended N rows`). Then add the **in-review** label (issue stays In Progress).
+- **Log manual test cases (does NOT gate the merge).** Manual testing is decoupled from merge — a PR
+  merges on Marcy pass + CI green regardless. If the change has behaviour a reviewer agent can't verify
+  itself (on-device/simulator run, visual/UX correctness, exploratory feel), append a row **per case**
+  to `docs/human/sections/test-checklist.html` in this same PR: ticket, area, steps → expected, and an
+  "Automate?" recommendation (whether it should become a Compose/Maestro/unit test). Copy the row
+  template in that file and insert above the "append above this line" marker. If nothing needs manual
+  verification (pure logic/config/docs, fully unit-tested), append no row and report `Manual test cases: none`.
 - **Hand off to review (agent-to-agent — replaces the old CI review action).** As your final step,
   invoke the **Marcy (code-reviewer)** agent via the Task tool, passing the issue number, the branch,
   and the PR link. Marcy reviews against AC/DoD/MV* rules and updates the Linear labels/status herself.
