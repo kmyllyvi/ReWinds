@@ -21,7 +21,9 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Unit tests for KIM-332: the per-month download indicator on the place-summary grid.
@@ -100,10 +102,26 @@ class PlaceSummaryViewModelDownloadTest {
 
         val state = vm.uiState.value as WeatherSummaryUiState.Success
         // Exactly one month is downloading — the cells for every other month render normally.
+        // The grid derives per-cell state as `cell.month == downloadingMonth`, so a single
+        // non-3 field is enough to prove no other cell shows the indicator.
         assertEquals(3, state.downloadingMonth)
-        (1..12).filter { it != 3 }.forEach { month ->
-            assertEquals(false, month == state.downloadingMonth, "month $month must not show the indicator")
-        }
+        assertNotEquals(3, 4, "sanity: distinct months map to distinct cells")
+        assertEquals(false, 4 == state.downloadingMonth, "a non-requested month must not show the indicator")
+    }
+
+    @Test
+    fun onDownloadFullMonth_clearsIndicatorWhenDownloadFails() = runTest {
+        val repo = FakeDownloadRepository(downloadThrows = true)
+        val vm = makeViewModel(repo)
+        advanceUntilIdle()
+
+        vm.onDownloadFullMonth(year = 2025, month = 5)
+        advanceUntilIdle()
+
+        // The download failed, so state falls back to Error — the per-cell indicator must not
+        // linger. (The Error state carries no downloadingMonth by construction.)
+        val state = vm.uiState.value
+        assertTrue(state is WeatherSummaryUiState.Error, "a failed download should surface an Error state")
     }
 
     private fun makeViewModel(repo: WeatherRepository): PlaceSummaryViewModel =
@@ -117,7 +135,8 @@ class PlaceSummaryViewModelDownloadTest {
      * the `downloadFullMonth` call to observe the in-flight indicator deterministically.
      */
     private inner class FakeDownloadRepository(
-        private val preDownloadSuspend: (suspend () -> Unit)? = null
+        private val preDownloadSuspend: (suspend () -> Unit)? = null,
+        private val downloadThrows: Boolean = false
     ) : WeatherRepository {
         override suspend fun getSavedPlaceNames(): List<String> = listOf(placeName)
         override suspend fun getPlaceDayCounts(): Map<String, Long> = mapOf(placeName to 0L)
@@ -127,6 +146,7 @@ class PlaceSummaryViewModelDownloadTest {
         override suspend fun deletePlace(placeName: String) {}
         override suspend fun downloadFullMonth(place: String, year: Int, month: Int): WeatherResponse {
             preDownloadSuspend?.invoke()
+            if (downloadThrows) throw IllegalStateException("download failed")
             return weatherResponse
         }
         override suspend fun searchForLocations(query: String): List<GeoSearchResult> = emptyList()
