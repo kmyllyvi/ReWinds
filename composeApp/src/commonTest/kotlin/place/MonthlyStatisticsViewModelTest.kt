@@ -171,15 +171,15 @@ class MonthlyStatisticsViewModelTest {
     }
 
     // ---------------------------------------------------------------------------
-    // Peak sustained-wind day selection (KIM-270)
+    // Qualifying-day highlighting (KIM-328)
     //
     // The ViewModel ctor needs a live DB-backed AppSettingsRepository, so — as with
     // the mapping tests above — the small selection algorithm is mirrored here and
     // asserted directly. Mirror must stay in sync with
-    // MonthlyStatisticsViewModel.peakSustainedWindIndex.
+    // MonthlyStatisticsViewModel.qualifyingDayIndices.
     // ---------------------------------------------------------------------------
 
-    private fun summaryWithWind(date: String, sustained: Double?): DayWeatherSummary =
+    private fun summaryWithMatch(date: String, isMatch: Boolean): DayWeatherSummary =
         DayWeatherSummary(
             date = date,
             description = null,
@@ -188,70 +188,52 @@ class MonthlyStatisticsViewModelTest {
             avgTemp = null,
             avgWindSpeed = null,
             maxWindSpeed = null,
-            sustainedWindSpeed = sustained,
+            sustainedWindSpeed = null,
             solarenergy = null,
             isFoggy = false,
-            foggyHours = 0
+            foggyHours = 0,
+            isMatch = isMatch
         )
 
-    // Mirrors MonthlyStatisticsViewModel.peakSustainedWindIndex.
-    private fun peakSustainedWindIndex(days: List<DayWeatherSummary>): Int {
-        var peakIndex = -1
-        var peakValue = Double.NEGATIVE_INFINITY
-        days.forEachIndexed { index, day ->
-            val wind = day.sustainedWindSpeed ?: return@forEachIndexed
-            if (wind > peakValue) {
-                peakValue = wind
-                peakIndex = index
-            }
-        }
-        return peakIndex
+    // Mirrors MonthlyStatisticsViewModel.qualifyingDayIndices.
+    private fun qualifyingDayIndices(days: List<DayWeatherSummary>): Set<Int> =
+        days.withIndex()
+            .filter { (_, day) -> day.isMatch }
+            .map { (index, _) -> index }
+            .toSet()
+
+    @Test
+    fun qualifyingDayIndices_emptyList_returnsEmptySet() {
+        assertEquals(emptySet(), qualifyingDayIndices(emptyList()))
     }
 
     @Test
-    fun peakSustainedWindIndex_emptyList_returnsMinusOne() {
-        assertEquals(-1, peakSustainedWindIndex(emptyList()))
-    }
-
-    @Test
-    fun peakSustainedWindIndex_allNullWind_returnsMinusOne() {
+    fun qualifyingDayIndices_noMatches_returnsEmptySet() {
         val days = listOf(
-            summaryWithWind("2025-01-01", null),
-            summaryWithWind("2025-01-02", null)
+            summaryWithMatch("2025-01-01", isMatch = false),
+            summaryWithMatch("2025-01-02", isMatch = false)
         )
-        assertEquals(-1, peakSustainedWindIndex(days))
+        assertEquals(emptySet(), qualifyingDayIndices(days))
     }
 
     @Test
-    fun peakSustainedWindIndex_picksHighestValue() {
+    fun qualifyingDayIndices_returnsAllMatchingDays_notJustOne() {
         val days = listOf(
-            summaryWithWind("2025-01-01", 18.0),
-            summaryWithWind("2025-01-02", 34.0),
-            summaryWithWind("2025-01-03", 12.0)
+            summaryWithMatch("2025-01-01", isMatch = true),
+            summaryWithMatch("2025-01-02", isMatch = false),
+            summaryWithMatch("2025-01-03", isMatch = true),
+            summaryWithMatch("2025-01-04", isMatch = true)
         )
-        assertEquals(1, peakSustainedWindIndex(days))
+        assertEquals(setOf(0, 2, 3), qualifyingDayIndices(days))
     }
 
     @Test
-    fun peakSustainedWindIndex_tie_returnsEarliestDay() {
+    fun qualifyingDayIndices_allMatch_returnsEveryIndex() {
         val days = listOf(
-            summaryWithWind("2025-01-01", 20.0),
-            summaryWithWind("2025-01-02", 34.0),
-            summaryWithWind("2025-01-03", 34.0)
+            summaryWithMatch("2025-01-01", isMatch = true),
+            summaryWithMatch("2025-01-02", isMatch = true)
         )
-        assertEquals(1, peakSustainedWindIndex(days))
-    }
-
-    @Test
-    fun peakSustainedWindIndex_skipsNullsBetweenReadings() {
-        val days = listOf(
-            summaryWithWind("2025-01-01", null),
-            summaryWithWind("2025-01-02", 15.0),
-            summaryWithWind("2025-01-03", null),
-            summaryWithWind("2025-01-04", 40.0),
-            summaryWithWind("2025-01-05", null)
-        )
-        assertEquals(3, peakSustainedWindIndex(days))
+        assertEquals(setOf(0, 1), qualifyingDayIndices(days))
     }
 
     // ---------------------------------------------------------------------------

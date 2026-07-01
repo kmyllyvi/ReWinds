@@ -24,14 +24,14 @@ private val CHART_HEIGHT = 120.dp
  * Horizontal-scrolling Canvas bar chart of per-day sustained wind speed.
  *
  * One vertical bar per [DayWeatherSummary]; heights are normalised against the
- * month's peak value. The bar at [peakIndex] is drawn in the [attention] colour,
- * all others in [accentBlue]. Peak selection is decided by the ViewModel and
- * passed in — this composable performs no business logic.
+ * month's peak value. Every bar whose index is in [highlightedIndices] is drawn in
+ * the [attention] colour, all others in [accentBlue]. Which days qualify is decided
+ * by the ViewModel and passed in — this composable performs no business logic.
  */
 @Composable
 fun DailyWindBarChart(
     summaries: List<DayWeatherSummary>,
-    peakIndex: Int,
+    highlightedIndices: Set<Int>,
     modifier: Modifier = Modifier
 ) {
     if (summaries.isEmpty()) return
@@ -72,7 +72,7 @@ fun DailyWindBarChart(
 
             if (barHeight > 0f) {
                 drawRoundRect(
-                    color = if (index == peakIndex) attention else accent,
+                    color = if (index in highlightedIndices) attention else accent,
                     topLeft = Offset(x, size.height - barHeight),
                     size = Size(bw, barHeight),
                     cornerRadius = corner
