@@ -168,7 +168,7 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
       </tr>
 
       <tr>
-        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="PR_LINK_PLACEHOLDER">PR #__</a></td>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/65">PR #65</a></td>
         <td class="col-area">Settings + wind readouts</td>
         <td class="case">In Settings, tap the Wind speed row to cycle km/h → knots → mph, then open a place's monthly summary. <span class="expect">Expected: the day rows, the "avg wind" stat card, and the hourly chart's axis label all show the chosen unit with correctly converted whole-number values (e.g. 17 km/h ≈ 9 knots ≈ 11 mph).</span></td>
         <td class="automate">Recommended: Compose test asserting the unit label + converted value on a fixture month for each WindSpeedUnit.</td>
@@ -177,7 +177,7 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
       </tr>
 
       <tr>
-        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="PR_LINK_PLACEHOLDER">PR #__</a></td>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/65">PR #65</a></td>
         <td class="col-area">Settings — persistence</td>
         <td class="case">Set Wind speed to knots, fully kill and relaunch the app, reopen Settings. <span class="expect">Expected: the Wind speed row still reads "knots" and wind readouts across the app stay in knots (unit survives restart).</span></td>
         <td class="automate none">Covered by unit test (SettingsViewModel round-trip); on-device check is a one-off sanity pass for real persistence.</td>
@@ -186,7 +186,7 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
       </tr>
 
       <tr>
-        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="PR_LINK_PLACEHOLDER">PR #__</a></td>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-330">KIM-330</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/65">PR #65</a></td>
         <td class="col-area">Settings — hidden Units row</td>
         <td class="case">Open Settings → General group. <span class="expect">Expected: there is no "Units" (Metric/Imperial) row; only Language and Wind speed appear. Temperature everywhere stays °C.</span></td>
         <td class="automate none">No — one-off visual confirmation of a removed row.</td>
