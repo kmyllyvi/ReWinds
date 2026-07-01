@@ -37,6 +37,7 @@ import core.LocalAppStrings
 import core.Navigator
 import core.TestTags
 import core.WeatherApiKeyManager
+import core.utils.WindSpeedUnit
 import core.deleteApiKeyPlatform
 import core.deleteWeatherApiKeyPlatform
 import core.filterSummary
@@ -63,7 +64,6 @@ fun SettingsView(
     val strings = LocalAppStrings.current
 
     val language by vm.languageState.collectAsState()
-    val units by vm.unitsState.collectAsState()
     val windSpeedUnit by vm.windSpeedUnitState.collectAsState()
     val anthropicConfigured by vm.anthropicKeyConfigured.collectAsState()
     val weatherConfigured by vm.visualCrossingKeyConfigured.collectAsState()
@@ -109,23 +109,13 @@ fun SettingsView(
                                 }
                             )
                         },
-                        {
-                            SettingsValueRow(
-                                label = strings.settingsRowUnits,
-                                value = units.displayName,
-                                modifier = Modifier.testTag(TestTags.SETTINGS_UNITS_ROW),
-                                onClick = {
-                                    vm.setUnits(
-                                        if (units == UnitSystem.METRIC) UnitSystem.IMPERIAL
-                                        else UnitSystem.METRIC
-                                    )
-                                }
-                            )
-                        },
+                        // "Units" (Metric / Imperial) row is intentionally hidden: temperature is
+                        // always shown in °C and no conversion exists yet (KIM-330 Gate 1). It
+                        // returns with a temperature-conversion ticket.
                         {
                             SettingsValueRow(
                                 label = strings.settingsRowWindSpeed,
-                                value = windSpeedUnit.displayName,
+                                value = windSpeedUnit.label,
                                 modifier = Modifier.testTag(TestTags.SETTINGS_WIND_SPEED_ROW),
                                 onClick = {
                                     // Cycle through the supported wind units.

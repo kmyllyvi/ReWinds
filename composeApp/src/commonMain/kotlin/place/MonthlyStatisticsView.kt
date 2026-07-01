@@ -38,6 +38,7 @@ import core.LocalAppStrings
 import core.MonthlyStatisticsRoute
 import core.TestTags
 import core.isIOS
+import core.utils.WindSpeedUnit
 import core.utils.formatDecimal
 import core.utils.monthName
 import org.koin.compose.viewmodel.koinViewModel
@@ -82,6 +83,7 @@ fun MonthlyStatisticsView(
     val isLoadingHours by vm.isLoadingHours.collectAsState()
     val selectedDayShading by vm.selectedDayShading.collectAsState()
     val activeFilter by vm.activeFilter.collectAsState()
+    val windSpeedUnit by vm.windSpeedUnit.collectAsState()
     val strings = LocalAppStrings.current
 
     // No LaunchedEffect to (re)load here: the ViewModel's init already loads the initial
@@ -148,7 +150,7 @@ fun MonthlyStatisticsView(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         } else if (currentStats.numberOfDaysWithData > 0) {
-                            StatCardGrid(stats = currentStats)
+                            StatCardGrid(stats = currentStats, windSpeedUnit = windSpeedUnit)
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
@@ -178,7 +180,11 @@ fun MonthlyStatisticsView(
                     }
 
                     items(dailySummaries) { daySummary ->
-                        DaySummaryRow(daySummary, onClick = { vm.selectDay(daySummary) })
+                        DaySummaryRow(
+                            daySummary = daySummary,
+                            windSpeedUnit = windSpeedUnit,
+                            onClick = { vm.selectDay(daySummary) }
+                        )
                     }
 
                     item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -194,7 +200,8 @@ fun MonthlyStatisticsView(
                 onDismiss = { vm.dismissDaySheet() },
                 shadingTiers = selectedDayShading,
                 minThresholdKmh = activeFilter?.minWindSpeedKmh,
-                maxThresholdKmh = activeFilter?.maxWindSpeedKmh
+                maxThresholdKmh = activeFilter?.maxWindSpeedKmh,
+                windSpeedUnit = windSpeedUnit
             )
         }
     }
@@ -276,7 +283,7 @@ private fun MonthSummaryHeader(
 }
 
 @Composable
-private fun StatCardGrid(stats: CalculatedStats) {
+private fun StatCardGrid(stats: CalculatedStats, windSpeedUnit: WindSpeedUnit) {
     val strings = LocalAppStrings.current
 
     Column(
@@ -295,8 +302,10 @@ private fun StatCardGrid(stats: CalculatedStats) {
             )
             MonthStatCard(
                 label = strings.statWindLabel,
-                value = formatWholeNumber(stats.averageSustainedWindSpeed),
-                unit = strings.unitKmh,
+                // Stored in km/h; converted to the active unit for display (KIM-330). Leading
+                // space keeps the same value/unit spacing as the km/h string it replaces.
+                value = formatWholeNumber(stats.averageSustainedWindSpeed?.let { windSpeedUnit.fromKmh(it) }),
+                unit = " ${windSpeedUnit.label}",
                 modifier = Modifier.weight(1f)
             )
         }

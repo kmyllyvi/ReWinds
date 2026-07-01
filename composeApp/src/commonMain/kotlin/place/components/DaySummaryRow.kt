@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import place.DayWeatherSummary
+import core.utils.WindSpeedUnit
 import core.utils.formatTemperatureRange
 import core.utils.formatWindSpeed
 import core.utils.shortDayLabel
@@ -29,11 +30,13 @@ import core.utils.shortDayLabel
  * (MV*).
  *
  * @param daySummary The [DayWeatherSummary] to display.
+ * @param windSpeedUnit The active wind-speed unit for the peak-wind readout (KIM-330).
  * @param onClick Invoked when the card is tapped.
  */
 @Composable
 fun DaySummaryRow(
     daySummary: DayWeatherSummary,
+    windSpeedUnit: WindSpeedUnit = WindSpeedUnit.KMH,
     onClick: () -> Unit
 ) {
     ElevatedCard(
@@ -66,7 +69,7 @@ fun DaySummaryRow(
             )
             Text(
                 // Average top wind (peak sustained), not the gust (KIM-329).
-                text = formatWindSpeed(daySummary.collapsedRowWindSpeed),
+                text = formatWindSpeed(daySummary.collapsedRowWindSpeed, windSpeedUnit),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = 8.dp)
             )

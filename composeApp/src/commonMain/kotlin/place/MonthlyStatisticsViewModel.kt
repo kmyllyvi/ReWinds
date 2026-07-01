@@ -13,6 +13,7 @@ import core.WeatherRepository
 import core.WeatherResponse
 import core.filterSummary
 import core.matches
+import core.utils.WindSpeedUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +68,21 @@ class MonthlyStatisticsViewModel(
 
     private val _month = MutableStateFlow(route.month)
     val month: StateFlow<Int> = _month.asStateFlow()
+
+    /**
+     * The active wind-speed display unit (KIM-330), read from settings so every wind readout on
+     * this screen — day rows, the month average card and the hourly-chart axis label — renders in
+     * the user's chosen unit. Loaded once at construction; a settings change takes effect on the
+     * next screen entry, matching how the days-of-interest filter is picked up.
+     */
+    private val _windSpeedUnit = MutableStateFlow(loadWindSpeedUnit())
+    val windSpeedUnit: StateFlow<WindSpeedUnit> = _windSpeedUnit.asStateFlow()
+
+    private fun loadWindSpeedUnit(): WindSpeedUnit {
+        val saved = settingsRepo.getString(SettingsViewModel.WIND_SPEED_UNIT_KEY)
+            ?: return WindSpeedUnit.KMH
+        return WindSpeedUnit.entries.firstOrNull { it.name == saved } ?: WindSpeedUnit.KMH
+    }
 
     /**
      * Indices into [dailySummaries] of every day that meets the preferred-day (days-of-interest)

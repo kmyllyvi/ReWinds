@@ -4,6 +4,7 @@ import core.utils.formatDecimal
 import core.utils.formatMonthName
 import core.utils.formatWindSpeed
 import core.utils.formatTemperatureRange
+import core.utils.WindSpeedUnit
 import core.utils.monthName
 import core.utils.shortDayLabel
 import kotlin.test.Test
@@ -145,5 +146,44 @@ class FormatUtilsTest {
     @Test
     fun formatWindSpeed_nullShowsPlaceholder() {
         assertEquals("-- km/h", formatWindSpeed(null))
+    }
+
+    // ── KIM-330: wind-speed unit conversion ──────────────────────────────────
+
+    @Test
+    fun formatWindSpeed_kmhIsIdentity() {
+        assertEquals("17 km/h", formatWindSpeed(17.0, WindSpeedUnit.KMH))
+    }
+
+    @Test
+    fun formatWindSpeed_convertsToKnots() {
+        // 17 km/h ÷ 1.852 = 9.18 → 9 knots
+        assertEquals("9 knots", formatWindSpeed(17.0, WindSpeedUnit.KNOTS))
+    }
+
+    @Test
+    fun formatWindSpeed_convertsToMph() {
+        // 17 km/h ÷ 1.60934 = 10.56 → 11 mph
+        assertEquals("11 mph", formatWindSpeed(17.0, WindSpeedUnit.MPH))
+    }
+
+    @Test
+    fun formatWindSpeed_nullShowsPlaceholderWithActiveUnitLabel() {
+        assertEquals("-- knots", formatWindSpeed(null, WindSpeedUnit.KNOTS))
+        assertEquals("-- mph", formatWindSpeed(null, WindSpeedUnit.MPH))
+    }
+
+    @Test
+    fun windSpeedUnit_fromKmhConvertsMagnitude() {
+        assertEquals(50.0, WindSpeedUnit.KMH.fromKmh(50.0))
+        assertEquals(50.0 / 1.852, WindSpeedUnit.KNOTS.fromKmh(50.0))
+        assertEquals(50.0 / 1.60934, WindSpeedUnit.MPH.fromKmh(50.0))
+    }
+
+    @Test
+    fun windSpeedUnit_labelsMatchSettingsCopy() {
+        assertEquals("km/h", WindSpeedUnit.KMH.label)
+        assertEquals("knots", WindSpeedUnit.KNOTS.label)
+        assertEquals("mph", WindSpeedUnit.MPH.label)
     }
 }

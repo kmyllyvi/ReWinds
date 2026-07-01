@@ -65,12 +65,30 @@ fun formatTemperatureRange(minTemp: Double?, maxTemp: Double?): String {
 }
 
 /**
- * Formats a wind speed as a whole number followed by "km/h".
- * Example: 32.4 → "32 km/h"; null → "-- km/h".
+ * The wind-speed unit a user can pick in Settings. Weather data is stored in km/h; these
+ * describe how it is converted for *display only* — the database and API stay metric (KIM-330).
+ *
+ * [factor] is the divisor applied to a km/h magnitude to reach the unit; [label] is the suffix
+ * shown after the value and in the Settings row / chart axis.
  */
-fun formatWindSpeed(speed: Double?): String {
-    val value = speed?.let { formatWhole(it) } ?: "--"
-    return "$value km/h"
+enum class WindSpeedUnit(val label: String, private val factor: Double) {
+    KMH("km/h", 1.0),
+    KNOTS("knots", 1.852),
+    MPH("mph", 1.60934);
+
+    /** Converts a km/h magnitude to this unit (identity for [KMH]). */
+    fun fromKmh(speedKmh: Double): Double = speedKmh / factor
+}
+
+/**
+ * Formats a km/h wind speed into the active [unit] as a whole number plus its label,
+ * e.g. `"17 km/h"`, `"9 knots"`, `"11 mph"`. Returns `"-- <label>"` when [speedKmh] is null.
+ *
+ * KMP-safe: rounds via [roundToLong], no String.format.
+ */
+fun formatWindSpeed(speedKmh: Double?, unit: WindSpeedUnit = WindSpeedUnit.KMH): String {
+    val value = speedKmh?.let { formatWhole(unit.fromKmh(it)) } ?: "--"
+    return "$value ${unit.label}"
 }
 
 private fun formatWhole(value: Double): String = value.roundToLong().toString()
