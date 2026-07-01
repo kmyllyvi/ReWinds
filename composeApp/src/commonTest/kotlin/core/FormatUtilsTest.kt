@@ -1,8 +1,8 @@
 package core
 
 import core.utils.formatDecimal
-import core.utils.formatGust
 import core.utils.formatMonthName
+import core.utils.formatWindSpeed
 import core.utils.formatTemperatureRange
 import core.utils.monthName
 import core.utils.shortDayLabel
@@ -137,13 +137,13 @@ class FormatUtilsTest {
     }
 
     @Test
-    fun formatGust_roundsToWholeKmh() {
-        assertEquals("32 km/h", formatGust(32.4))
-        assertEquals("33 km/h", formatGust(32.6))
+    fun formatWindSpeed_roundsToWholeKmh() {
+        assertEquals("32 km/h", formatWindSpeed(32.4))
+        assertEquals("33 km/h", formatWindSpeed(32.6))
     }
 
     @Test
-    fun formatGust_nullShowsPlaceholder() {
-        assertEquals("-- km/h", formatGust(null))
+    fun formatWindSpeed_nullShowsPlaceholder() {
+        assertEquals("-- km/h", formatWindSpeed(null))
     }
 }

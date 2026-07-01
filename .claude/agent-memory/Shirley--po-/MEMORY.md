@@ -5,3 +5,4 @@
 - [UX-gating on Kimmo comments](feedback_ux_gating.md) — if a comment resolves scope but flags one UI detail as "needs a design first", spec the unblocked tickets and route the UI ticket to ux-ui-reviewer instead of guessing
 - [KIM-289 UI testing epic status](project_epic_kim289_ui_testing.md) — KIM-292-296 still need DoD block + spec-ready before Gate 1
 - [Behaviour change flag in Notes](feedback_behaviour_change_flag.md) — when a fix makes previously-silent behaviour explicit, flag it as an assumption in Notes for Kimmo to confirm at Gate 1
+- [Display-layer unit conversion](feedback_display_layer_conversion.md) — API always stores metric (km/h); convert at display time only via FormatUtils pure function + AppSettingsStore persistence; hide dead settings rows

@@ -17,4 +17,12 @@ data class DayWeatherSummary(
     val sunrise: String? = null,
     val sunset: String? = null,
     val isMatch: Boolean = false
-)
+) {
+    /**
+     * The wind value shown on the collapsed day summary row: the day's average top wind
+     * (peak sustained/rolling-average), not the momentary gust (KIM-329). Kept here so the
+     * collapsed-row semantics are unit-testable rather than decided inside the composable.
+     */
+    val collapsedRowWindSpeed: Double?
+        get() = sustainedWindSpeed
+}

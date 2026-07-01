@@ -16,12 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import place.DayWeatherSummary
-import core.utils.formatGust
 import core.utils.formatTemperatureRange
+import core.utils.formatWindSpeed
 import core.utils.shortDayLabel
 
 /**
- * A single day's collapsed summary row: date, temperature range and peak gust.
+ * A single day's collapsed summary row: date, temperature range and the day's
+ * average top wind (the peak sustained/rolling-average wind), not the momentary gust.
  *
  * Tapping anywhere on the card invokes [onClick]; the hosting screen opens the day detail sheet
  * in response. The row holds no expand/selection state of its own — that lives in the ViewModel
@@ -64,7 +65,8 @@ fun DaySummaryRow(
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
             Text(
-                text = formatGust(daySummary.maxWindSpeed),
+                // Average top wind (peak sustained), not the gust (KIM-329).
+                text = formatWindSpeed(daySummary.collapsedRowWindSpeed),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = 8.dp)
             )
