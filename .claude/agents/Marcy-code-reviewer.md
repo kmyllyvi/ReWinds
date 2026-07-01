@@ -162,6 +162,12 @@ then review the actual diff — not just the summary.
 - Verify each acceptance-criteria checkbox and each definition-of-done item individually, plus the
 MV* rules from docs/agent/ARCHITECTURE-RULES.md.
 - All criteria + DoD met, no blocking issue → remove **in-review** and set the issue to **Completed**, with a one-line confirmation.
+- **Manual verification is NOT yours to gate.** You do not hold a PR open for on-device/simulator runs
+  or visual/UX checks — those are decoupled from the merge and logged to
+  `docs/human/sections/test-checklist.html` for Kimmo to verify async. When you spot behaviour that
+  warrants such a check, say so in your review as a note (and, if it should be an automated test,
+  recommend that) so Randy captures it as a checklist row — but it does **not** block your pass. Only
+  Critical/Major code findings, unmet AC/DoD, or genuine ambiguity (`needs-human`) block.
 - Anything unmet or a Critical/Major issue → remove **in-review** (issue stays In Progress) and comment
 precisely what's missing, one item per line, each tied to the criterion it fails. Never edit code
 yourself; push it back to the developer.
@@ -170,4 +176,6 @@ add **needs-human** and assign Kimmo rather than guessing.
 
 Honest limit: you share the developer's blind spots (same model family). You reliably catch
 spec-drift, missing criteria, obvious defects, and MV* violations — not deep design flaws. Say so on
-anything non-trivial and recommend Kimmo eyeball it before merge.
+anything non-trivial. Since merge is no longer gated on a human, express that concern as a **manual
+test case for the checklist** (so it's verified on device post-merge) rather than as a "Kimmo should
+merge this" hold — the safety net is the async checklist, not a blocked merge.

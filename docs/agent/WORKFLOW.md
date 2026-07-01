@@ -11,6 +11,10 @@ Reusable machinery (this workflow, the gates) is mirrored in
 > **Keep in sync:** `docs/human/sections/workflow.html` is the human-readable rendering of this file
 > (pipeline diagram, roster cards, automation table). Whenever this file changes in a way that affects
 > the lane, gates, roster, or automation state, update that HTML page in the same change.
+>
+> **Manual Test Checklist:** the async QA backlog lives at `docs/human/sections/test-checklist.html`
+> (see Merge policy). It is a working document, not generated from this file — the developer appends
+> rows to it directly.
 
 ---
 
@@ -64,21 +68,27 @@ Direction and pivot decisions are yours. Not delegated.
 
 ## Merge policy
 
-**Auto-merge after review when there is nothing for a human to check.** A PR is merged without waiting
-for a human merge when **all** of these hold:
+**Manual testing no longer gates a merge.** A PR merges as soon as **both** of these hold:
 
 1. **Code review passed** — `code-reviewer` (Marcy) approved with no Critical/Major findings.
 2. **CI is green** — all required checks pass, including the coverage floor and patch-coverage gate.
-3. **No manual verification needed** — the change requires no hardware/device/simulator run, no manual
-   UX/visual check, and no human-only validation. (Pure logic, config, CI, docs, and unit-tested code
-   qualify.)
 
-When all three hold, merge it — the review is the gate, not a human's final click.
+The review + CI are the gate, not a human's final click. This applies **even when the change has
+behaviour that wants a device/simulator run or a visual/UX eye** — that verification is decoupled from
+the merge and logged instead (see below). The only thing that still holds a PR open is a `needs-human`
+flag (Gate 2), i.e. a genuine decision the agent couldn't make — not routine verification.
 
-**A human still merges** when the PR needs verification a reviewer agent cannot perform: anything
-requiring a real device or simulator interaction, a manual UX/visual pass (`ux-ui-reviewer` / Mr.T
-territory), exploratory QA (`qa-test-agent` / Seppo), or any change flagged `needs-human`. In those
-cases the PR stays open after approval until the human signs off.
+**Manual verification is async, via a logged checklist.** When a change has behaviour a reviewer agent
+can't verify itself (real device/simulator interaction, visual/UX correctness, exploratory feel), the
+developer appends a row to the **Manual Test Checklist**
+(`docs/human/sections/test-checklist.html`) describing the case: steps → expected, and whether it
+should become an automated test. Kimmo verifies those cases in batches on device, on his own schedule,
+and ticks them off (git-tracked). A failed manual case becomes a new bug ticket — it does not block the
+already-merged PR.
+
+`qa-test-agent` (Seppo) and `ux-ui-reviewer` (Mr.T) are still dispatched manually when a change warrants
+a deeper pass, but they too are off the merge path — their findings become tickets or checklist rows,
+not merge blockers.
 
 Branch protection on `develop` (required status checks) is the backstop — even auto-merge cannot land a
 red PR once it is enabled.
@@ -136,6 +146,12 @@ ticket-specific (including exemptions to the "new tests required" rule) belongs 
 - Open a PR using `.github/pull_request_template.md`, with `Closes KIM-<n>` in the Linear section.
 - The developer's closing comment must contain: `Branch: …`, `PR: <link>`, `Build: pass/fail`,
   `Tests: pass/fail`, `New tests written: <yes — list files> | <no — reason>`, `Summary`, `Deviations`. Then add the `in-review` label.
+- **Manual test cases:** if the change has behaviour that needs an on-device / visual / UX check the
+  reviewer can't perform, the developer appends a row per case to
+  `docs/human/sections/test-checklist.html` (steps → expected, and an "Automate?" recommendation) in
+  the same PR. This does **not** hold the merge — it's the async QA backlog. If there's nothing manual
+  to verify (pure logic/config/docs, fully unit-tested), no row is needed; note `Manual test cases: none`
+  in the closing comment.
 
 ---
 
@@ -181,8 +197,8 @@ Trigger: when Randy opens the PR and adds `in-review`, his final step is to invo
 agent via the Task tool (issue number + branch + PR link). Marcy reviews against AC/DoD/MV* rules,
 updates the Linear labels/status herself (Linear MCP is available locally), and Randy relays her verdict
 verbatim. Runs inside Claude Code (Pro subscription, no API token cost). On merge, see the **Merge
-policy** above — review-approved PRs that need no manual verification are merged without waiting for a
-human.
+policy** above — review-approved, CI-green PRs merge without waiting for a human; any manual verification
+is logged to the Test Checklist rather than gating the merge.
 
 The GitHub Actions code-review workflow (`.github/workflows/code-review.yml`) is retained for manual
 `workflow_dispatch` runs but no longer triggers on PR open. This was a **cost decision** (free-plan

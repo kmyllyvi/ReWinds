@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Test Checklist — ReWinds Docs</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+/* ── checklist page ── */
+.how-to {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 24px 0 8px;
+  font-size: 14px;
+}
+.how-to code {
+  background: var(--surface-raised);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+.progress {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 12px 0 20px;
+  font-weight: 600;
+}
+table.checklist {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 32px;
+  font-size: 13.5px;
+}
+table.checklist th,
+table.checklist td {
+  border: 1px solid var(--border);
+  padding: 9px 11px;
+  text-align: left;
+  vertical-align: top;
+}
+table.checklist th {
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+table.checklist tr.done td { opacity: 0.55; }
+table.checklist tr.done .case { text-decoration: line-through; }
+table.checklist td.done-cell { text-align: center; white-space: nowrap; }
+table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: var(--accent-pressed); }
+.col-ticket { width: 74px; white-space: nowrap; }
+.col-area   { width: 130px; }
+.col-done   { width: 60px; }
+.col-added  { width: 92px; white-space: nowrap; color: var(--text-tertiary); }
+.case .expect { color: var(--text-secondary); }
+.automate { color: var(--attention); font-size: 12.5px; }
+.automate.none { color: var(--text-tertiary); }
+.empty-note { color: var(--text-tertiary); font-style: italic; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo"><span class="logo-mark">RW</span> ReWinds</div>
+  <ul>
+    <li><a href="../rewinds.html">Overview</a></li>
+    <li><a href="architecture.html">Architecture</a></li>
+    <li><a href="features.html">Features</a></li>
+    <li><a href="ai-chat.html">AI Chat</a></li>
+    <li><a href="database.html">Database</a></li>
+    <li><a href="ios.html">iOS Platform</a></li>
+    <li><a href="decisions.html">Decisions</a></li>
+    <li><a href="workflow.html">Workflow</a></li>
+    <li><a href="test-checklist.html" class="active">Test Checklist</a></li>
+  </ul>
+</nav>
+
+<main class="content">
+  <header class="page-header">
+    <h1>Manual Test Checklist</h1>
+    <p class="subtitle">The async QA backlog. PRs no longer wait for a manual pass — once Marcy approves
+    and CI is green, they merge. Any manual verification that a reviewer agent can't perform is logged
+    here as a test case and checked off later, on device.</p>
+  </header>
+
+  <div class="how-to">
+    <strong>How this works</strong>
+    <ul style="margin:8px 0 0 18px; line-height:1.7;">
+      <li><strong>Randy appends a row</strong> for every merged PR that has behaviour needing a human
+        eye (device/simulator run, visual/UX check) — one row per distinct check.</li>
+      <li><strong>You verify on device</strong> whenever you like, in batches. To mark a case done,
+        add <code>checked</code> to its checkbox <em>and</em> add <code>class="done"</code> to its
+        <code>&lt;tr&gt;</code>, then commit. State is git-tracked, so verification status is shared
+        and auditable.</li>
+      <li><strong>Automate column</strong> — if the reviewer thinks the case should become an automated
+        test (Compose/Maestro/unit), it's flagged here. File a ticket for it, then you can delete the
+        row once the automated test lands.</li>
+      <li><strong>Remove rows</strong> once verified <em>and</em> either automated or no longer relevant.
+        This is a working backlog, not a permanent archive.</li>
+    </ul>
+  </div>
+
+  <p class="progress" id="progress"></p>
+
+  <table class="checklist">
+    <thead>
+      <tr>
+        <th class="col-ticket">Ticket</th>
+        <th class="col-area">Area</th>
+        <th>Test case — steps → expected</th>
+        <th>Automate?</th>
+        <th class="col-done">Done</th>
+        <th class="col-added">Added</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!--
+        ROW TEMPLATE — copy this block, fill it in, append directly above the "append above" marker.
+        Add `checked` to the checkbox AND `class="done"` to the <tr> when verified.
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-000">KIM-000</a></td>
+        <td class="col-area">Area name</td>
+        <td class="case">Steps to reproduce/trigger. <span class="expect">Expected: what should be observed.</span></td>
+        <td class="automate">Recommended: how (e.g. Compose test asserting testTag X). / <span class="none">No — one-off visual.</span></td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">YYYY-MM-DD</td>
+      </tr>
+      -->
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-329">KIM-329</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/60">PR #60</a></td>
+        <td class="col-area">Monthly summary — day row</td>
+        <td class="case">Open a place's monthly summary; look at a collapsed day row. <span class="expect">Expected: the wind figure is the day's <strong>average top (sustained)</strong> wind, not the gust — cross-check against the gust shown in the expanded day detail sheet.</span></td>
+        <td class="automate none">Covered by unit test (<code>DayWeatherSummaryTest</code>); on-device check is a one-off sanity pass.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-01</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-328">KIM-328</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/61">PR #61</a></td>
+        <td class="col-area">Monthly summary — daily chart</td>
+        <td class="case">View a month where several days exceed the preferred-day criteria. <span class="expect">Expected: <strong>every</strong> qualifying day bar is highlighted (not just the single peak), and the highlighted set matches the tinted day rows below.</span></td>
+        <td class="automate">Recommended: Compose UI test asserting highlighted bar count == qualifying-day count for a fixture month.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-01</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-327">KIM-327</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/62">PR #62</a> <span style="color:var(--text-tertiary)">(merged)</span></td>
+        <td class="col-area">Monthly summary — stat cards</td>
+        <td class="case">Open a monthly summary and watch the stat-card area while stats compute (throttle if needed). <span class="expect">Expected: skeleton stat cards show during load — no blank gap, no bare spinner flash — then resolve to real values.</span></td>
+        <td class="automate none">No — timing/visual polish; hard to assert meaningfully in a test.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-01</td>
+      </tr>
+
+      <tr class="done">
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-332">KIM-332</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/63">PR #63</a></td>
+        <td class="col-area">Place summary — month grid</td>
+        <td class="case">On the place summary, trigger an on-demand download of a single month. <span class="expect">Expected: only that month's cell shows a spinner + "Downloading…" label; tapping it again while in flight does nothing; the indicator clears when data arrives.</span></td>
+        <td class="automate">Recommended: Compose test asserting <code>PLACE_MONTH_CELL_DOWNLOADING</code> visible on the target cell during download.</td>
+        <td class="done-cell"><input type="checkbox" checked></td>
+        <td class="col-added">2026-07-01</td>
+      </tr>
+
+      <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
+    </tbody>
+  </table>
+
+<script>
+  // Progress counter — reads the git-tracked `checked` state on load.
+  (function () {
+    var boxes = document.querySelectorAll('table.checklist tbody input[type="checkbox"]');
+    var done = 0;
+    boxes.forEach(function (b) { if (b.checked) done++; });
+    var el = document.getElementById('progress');
+    el.textContent = boxes.length
+      ? done + ' / ' + boxes.length + ' verified'
+      : 'No open manual test cases.';
+  })();
+</script>
+</main>
+</body>
+</html>

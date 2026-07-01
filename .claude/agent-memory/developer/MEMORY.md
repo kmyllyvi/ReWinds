@@ -320,6 +320,39 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
 - gh tip: PR/commit bodies with apostrophes break bash heredocs — write to a temp file and use
   `gh pr create --body-file`.
 
+## Monthly-summary bug fixes (KIM-327/328/329)
+- "Day card" terminology: collapsed/closed = `DaySummaryRow`; open = `DayDetailSheet`
+  (hourly chart). Collapsed row shows `DayWeatherSummary.collapsedRowWindSpeed`
+  (= `sustainedWindSpeed`, the average top / peak-sustained wind), NOT gust
+  (`maxWindSpeed` ← `windgust`). Field choice lives in the data-class accessor so it's
+  unit-testable, not in the composable (KIM-329).
+- `formatGust` was renamed to `formatWindSpeed` (core/utils/FormatUtils.kt; generic
+  whole-number km/h). CAVEAT: `place/components/WeatherCards.kt` has its OWN file-private
+  `formatWindSpeed` with different rounding — future cleanup to collapse onto the shared one.
+- `DailyWindBarChart` highlights via `highlightedIndices: Set<Int>` derived in the VM from
+  `DayWeatherSummary.isMatch` (set by `filter.matches`), NOT a single `peakIndex`. Chart does
+  no selection logic. VM helper `qualifyingDayIndices(days): Set<Int>` (KIM-328).
+- Skeleton/loading placeholders MUST use a DISTINCT testTag from the loaded element.
+  `StatCardGridSkeleton` uses `MONTH_STAT_CARD_GRID_SKELETON`; the loaded `StatCardGrid`
+  keeps `MONTH_STAT_CARD_GRID`. Reusing it lets a Maestro flow's "loaded" wait be satisfied
+  by the skeleton and mask the loaded-state assertion (Marcy caught this on KIM-327).
+- Marcy sub-agents run git ops that can leave the PARENT session on `develop` — always
+  re-checkout your feature branch before applying review fixes.
+
+## Per-cell "which item is busy" state (KIM-332)
+- To show a loading indicator on ONE cell/row of a list (not a screen-wide flag), model the
+  identity in the VM state, not a boolean: `PlaceSummaryViewModel` replaced
+  `isDownloadingMonth: Boolean` with `downloadingMonth: Int?` on `WeatherSummaryUiState.Success`.
+  The grid derives per-cell `isDownloading = cell.month == downloadingMonth` (pure mapping in the
+  composable, not logic). A boolean can't tell WHICH cell to mark — always use the id/index.
+- The indicator clears "for free" because `loadWeatherData()` emits a FRESH `Success(...)` (defaults
+  `downloadingMonth = null`) after the download, rather than `.copy()`. Verify this when relying on
+  reload-to-clear; a `.copy()`-based reload would keep the stale value.
+- Guard the in-flight cell against re-taps: `.clickable(enabled = !isDownloading, onClick = ...)`.
+- `MonthCell` download indicator: small `CircularProgressIndicator(size=14.dp, strokeWidth=2.dp,
+  color=accentBlue)` + shared `strings.downloading` ("Downloading..."/"Herunterladen..." already
+  in both locales). testTag `PLACE_MONTH_CELL_DOWNLOADING`.
+
 ## Compose semantic UI tests (KIM-293, Layer 1) — canonical pattern
 - Doc: `composeApp/src/androidInstrumentedTest/README.md`. Tests in `uitest/` package; shared fakes
   in `uitest/Fakes.kt` (FakeWeatherRepository, FakeAiConversationRepository, FakeChatRepository,
