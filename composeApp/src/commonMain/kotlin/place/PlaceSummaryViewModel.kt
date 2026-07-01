@@ -38,7 +38,9 @@ sealed interface WeatherSummaryUiState {
         val latitude: Double? = null,
         val longitude: Double? = null,
         val currentPlaceDescription: String? = null,
-        val isDownloadingMonth: Boolean = false,
+        // Month number (1-12) currently being downloaded on demand, or null when idle.
+        // Drives the per-cell loading indicator in the month grid (KIM-332).
+        val downloadingMonth: Int? = null,
         // Stations from the WeatherStation table. Empty list = no station data available.
         val stations: List<StationDisplayData> = emptyList(),
         // Non-null when the last station fetch/refresh failed (existing stations still shown).
@@ -371,12 +373,14 @@ class PlaceSummaryViewModel(
         viewModelScope.launch {
             val currentState = _uiState.value
             if (currentState is WeatherSummaryUiState.Success) {
-                _uiState.value = currentState.copy(isDownloadingMonth = true)
+                _uiState.value = currentState.copy(downloadingMonth = month)
             }
 
             try {
                 weatherRepository.downloadFullMonth(placeName, year, month)
                 Log.d("Successfully downloaded full month data for $year-$month. Reloading weather data...")
+                // loadWeatherData() emits a fresh Success (downloadingMonth defaults to null),
+                // so the per-cell indicator clears once the reload completes.
                 loadWeatherData()
             } catch (e: Exception) {
                 Log.e("Error downloading full month data for $year-$month", e)

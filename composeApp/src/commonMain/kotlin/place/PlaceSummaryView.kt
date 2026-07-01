@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -288,6 +289,7 @@ private fun YearTab(year: Int, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun MonthGrid(
     monthCells: List<MonthCellInfo>,
+    downloadingMonth: Int?,
     onMonthClick: (MonthCellInfo) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -303,6 +305,7 @@ private fun MonthGrid(
                 rowCells.forEach { cell ->
                     MonthCell(
                         cell = cell,
+                        isDownloading = cell.month == downloadingMonth,
                         onClick = { onMonthClick(cell) },
                         modifier = Modifier.weight(1f)
                     )
@@ -326,6 +329,7 @@ private fun MonthGrid(
 @Composable
 private fun MonthCell(
     cell: MonthCellInfo,
+    isDownloading: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -337,7 +341,8 @@ private fun MonthCell(
         .testTag(TestTags.PLACE_MONTH_CELL)
         .height(96.dp)
         .clip(shape)
-        .clickable(onClick = onClick)
+        // Ignore taps while the month is downloading to avoid re-triggering the request.
+        .clickable(enabled = !isDownloading, onClick = onClick)
 
     val styled = when (cell.state) {
         MonthCellState.FULL ->
@@ -363,6 +368,10 @@ private fun MonthCell(
                 color = titleColor
             )
             Spacer(modifier = Modifier.height(4.dp))
+            if (isDownloading) {
+                MonthCellDownloadingIndicator()
+                return@Column
+            }
             when (cell.state) {
                 MonthCellState.NO_DATA -> {
                     Text(
@@ -393,6 +402,32 @@ private fun MonthCell(
                 }
             }
         }
+    }
+}
+
+/**
+ * Per-cell loading row shown inside a [MonthCell] while that month is being downloaded
+ * on demand (KIM-332). A small spinner plus the shared "Downloading…" label, styled to
+ * match the muted-feedback approach used by the other loading states.
+ */
+@Composable
+private fun MonthCellDownloadingIndicator() {
+    val strings = LocalAppStrings.current
+    Row(
+        modifier = Modifier.testTag(TestTags.PLACE_MONTH_CELL_DOWNLOADING),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(14.dp),
+            strokeWidth = 2.dp,
+            color = MaterialTheme.rewinds.accentBlue
+        )
+        Text(
+            text = strings.downloading,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.rewinds.textSecondary
+        )
     }
 }
 
@@ -450,6 +485,7 @@ private fun SuccessStateView(
 
         MonthGrid(
             monthCells = monthCells,
+            downloadingMonth = successState.downloadingMonth,
             onMonthClick = { cell ->
                 val year = selectedYear
                 if (year == null || year == Int.MIN_VALUE) return@MonthGrid
