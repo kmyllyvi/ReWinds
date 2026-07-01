@@ -68,9 +68,13 @@ class MonthlyStatisticsViewModel(
     private val _month = MutableStateFlow(route.month)
     val month: StateFlow<Int> = _month.asStateFlow()
 
-    /** Index into [dailySummaries] of the day with the peak sustained wind speed, or -1 when none. */
-    private val _peakWindDayIndex = MutableStateFlow(-1)
-    val peakWindDayIndex: StateFlow<Int> = _peakWindDayIndex.asStateFlow()
+    /**
+     * Indices into [dailySummaries] of every day that meets the preferred-day (days-of-interest)
+     * criteria, so the daily wind chart can highlight all qualifying days rather than only the
+     * single peak (KIM-328). Empty when no day qualifies.
+     */
+    private val _highlightedDayIndices = MutableStateFlow<Set<Int>>(emptySet())
+    val highlightedDayIndices: StateFlow<Set<Int>> = _highlightedDayIndices.asStateFlow()
 
     /** The day whose detail sheet is open. Non-null drives sheet visibility; null means closed. */
     private val _selectedDay = MutableStateFlow<DayWeatherSummary?>(null)
@@ -173,7 +177,7 @@ class MonthlyStatisticsViewModel(
             loadedData = allDaysForPlace
             val relevantDaysSummary = filterAndMapDaysForMonth(allDaysForPlace, currentYear, currentMonth)
             _dailySummaries.value = relevantDaysSummary
-            _peakWindDayIndex.value = peakSustainedWindIndex(relevantDaysSummary)
+            _highlightedDayIndices.value = qualifyingDayIndices(relevantDaysSummary)
 
             if (relevantDaysSummary.isNotEmpty()) {
                 _statistics.value = calculateStatsInternal(relevantDaysSummary)
@@ -257,24 +261,15 @@ class MonthlyStatisticsViewModel(
 
 
     /**
-     * Index of the day holding the peak [DayWeatherSummary.sustainedWindSpeed] value.
-     *
-     * Returns -1 when no day carries a sustained-wind reading. On ties the earliest
-     * day wins, so a single bar is highlighted in the chart. Kept here (not in the
-     * composable) so peak selection is unit-testable per MV* rules.
+     * Indices of every day matching the preferred-day criteria ([DayWeatherSummary.isMatch]),
+     * used to highlight all qualifying bars in the daily wind chart (KIM-328). Empty when none
+     * qualify. Kept here (not in the composable) so the selection is unit-testable per MV* rules.
      */
-    internal fun peakSustainedWindIndex(daysData: List<DayWeatherSummary>): Int {
-        var peakIndex = -1
-        var peakValue = Double.NEGATIVE_INFINITY
-        daysData.forEachIndexed { index, day ->
-            val wind = day.sustainedWindSpeed ?: return@forEachIndexed
-            if (wind > peakValue) {
-                peakValue = wind
-                peakIndex = index
-            }
-        }
-        return peakIndex
-    }
+    internal fun qualifyingDayIndices(daysData: List<DayWeatherSummary>): Set<Int> =
+        daysData.withIndex()
+            .filter { (_, day) -> day.isMatch }
+            .map { (index, _) -> index }
+            .toSet()
 
     /**
      * Opens the detail sheet for [summary] and resolves its 09:00–21:00 local-time hourly wind

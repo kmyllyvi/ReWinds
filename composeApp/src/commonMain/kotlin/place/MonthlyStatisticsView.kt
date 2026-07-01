@@ -76,7 +76,7 @@ fun MonthlyStatisticsView(
     val isDownloading by vm.isDownloading.collectAsState()
     val currentYear by vm.year.collectAsState()
     val currentMonth by vm.month.collectAsState()
-    val peakWindDayIndex by vm.peakWindDayIndex.collectAsState()
+    val highlightedDayIndices by vm.highlightedDayIndices.collectAsState()
     val selectedDay by vm.selectedDay.collectAsState()
     val selectedDayHours by vm.selectedDayHours.collectAsState()
     val isLoadingHours by vm.isLoadingHours.collectAsState()
@@ -159,7 +159,7 @@ fun MonthlyStatisticsView(
                             Spacer(modifier = Modifier.height(8.dp))
                             DailyWindBarChart(
                                 summaries = dailySummaries,
-                                peakIndex = peakWindDayIndex
+                                highlightedIndices = highlightedDayIndices
                             )
                             Spacer(modifier = Modifier.height(20.dp))
 
