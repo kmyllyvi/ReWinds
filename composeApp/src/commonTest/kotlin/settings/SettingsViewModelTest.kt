@@ -281,7 +281,8 @@ class SettingsViewModelTest {
     @Test
     fun buildFeedbackBody_isDeterministicAndOrdered() {
         val body = SettingsViewModel.buildFeedbackBody("Intro", "2.3.4", "iOS")
-        assertEquals("Intro\n\n---\nApp version: 2.3.4\nPlatform: iOS", body)
+        // CRLF line breaks — RFC 6068 for mailto bodies once percent-encoded.
+        assertEquals("Intro\r\n\r\n---\r\nApp version: 2.3.4\r\nPlatform: iOS", body)
     }
 
     @Test

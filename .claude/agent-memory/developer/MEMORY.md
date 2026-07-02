@@ -353,6 +353,37 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   color=accentBlue)` + shared `strings.downloading` ("Downloading..."/"Herunterladen..." already
   in both locales). testTag `PLACE_MONTH_CELL_DOWNLOADING`.
 
+## Launch-flow gates + welcome onboarding (KIM-334)
+- `core/Router.kt` `Navigation()` is the ordered launch gate chain. Order: first-run welcome
+  (`WelcomeViewModel.showFirstRunWelcome`) → VC-key hard gate (`VcKeyOnboardingViewModel`) →
+  `AppTabs()`. Each gate `return`s early; add new gates as ordered `if (...) { X(); return }` blocks.
+- Revisitable-screen pattern (welcome from Settings): add a `data object XRoute : NavRoute`, a
+  `navigateToX()` on `Navigator` with a DEFAULT `{}` body (so fakes/decorators don't all need it),
+  override it in `NavigatorImpl` (push route) + `FakeNavigator` (record a `NavigationCall.X`), then
+  render it in the owning tab branch by matching `settingsStack.lastOrNull() is XRoute` — its
+  dismiss calls `navigator.navigateBack()`. No need to touch `PushDestination`/`isShowingPlacesPush`
+  (those are Places-tab-only).
+- "Seen once" flag: `WelcomeViewModel(AppSettingsStore)` reads/writes `has_seen_onboarding_v1`
+  ("true"/absent). All logic in VM; View pure-render taking `buttonLabel` + `onDismiss`. Same
+  `WelcomeView` reused for first-run ("Get Started") and revisit ("Done").
+
+## Opening email / URLs cross-platform (KIM-334)
+- `expect fun sendEmail(recipient, subject, body)` in `core/Platform.kt`; `core.platformName()`
+  ("Android"/"iOS") is a shared non-expect helper off `isIOS()`.
+- Android actual: `Intent(ACTION_SENDTO, Uri.parse("mailto:$recipient"))` + `EXTRA_SUBJECT`/
+  `EXTRA_TEXT` extras + `FLAG_ACTIVITY_NEW_TASK` (launched from app context, not an Activity).
+  ACTION_SENDTO restricts the chooser to email apps. Extras need NO manual encoding.
+- iOS actual: `platform.UIKit.UIApplication.sharedApplication.openURL(NSURL.URLWithString(s))`.
+  `openURL(url)` is deprecated (pre-iOS-10) but compiles + links on Kotlin/Native (CI iOS job
+  confirms) — no @OptIn needed (deprecated ≠ experimental).
+- iOS mailto MUST be percent-encoded. `core/MailtoBuilder.kt` is a shared KMP-safe RFC-3986
+  encoder (`encodeToByteArray()` + `%HH`, unreserved `A-Za-z0-9-_.~` pass through). Unit-tested
+  in `MailtoBuilderTest`. Android doesn't use it (extras path); iOS builds the URL string from it.
+- Injectable seams for testing a VM email action: pass `emailSender: (r,s,b)->Unit = ::sendEmail`
+  and `platformLabel: ()->String = ::platformName` as defaulted ctor params. DI already uses an
+  explicit `viewModel { SettingsViewModel(get(), get()) }` lambda so defaulted params aren't
+  reflection-resolved — no DI change needed when adding more defaulted params.
+
 ## Compose semantic UI tests (KIM-293, Layer 1) — canonical pattern
 - Doc: `composeApp/src/androidInstrumentedTest/README.md`. Tests in `uitest/` package; shared fakes
   in `uitest/Fakes.kt` (FakeWeatherRepository, FakeAiConversationRepository, FakeChatRepository,

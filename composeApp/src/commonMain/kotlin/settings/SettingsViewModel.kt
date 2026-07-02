@@ -173,17 +173,24 @@ class SettingsViewModel(
         /**
          * Assembles the feedback email body: the localized intro followed by app version and
          * platform diagnostics on their own lines. Pure so it's directly unit-testable.
+         *
+         * Line breaks use CRLF: once percent-encoded into the `mailto:` body (iOS), RFC 6068
+         * calls for `%0D%0A`, and email composers render it consistently.
          */
         fun buildFeedbackBody(bodyIntro: String, appVersion: String, platform: String): String =
             buildString {
                 append(bodyIntro)
-                append("\n\n")
-                append("---\n")
+                append(CRLF)
+                append(CRLF)
+                append("---")
+                append(CRLF)
                 append("App version: ")
                 append(appVersion)
-                append("\n")
+                append(CRLF)
                 append("Platform: ")
                 append(platform)
             }
+
+        private const val CRLF = "\r\n"
     }
 }
