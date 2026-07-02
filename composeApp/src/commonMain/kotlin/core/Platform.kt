@@ -39,3 +39,13 @@ expect fun deleteWeatherApiKeyPlatform()
 // Persist and load language preference across app restarts
 expect fun saveLanguagePreference(code: String)
 expect fun loadLanguagePreference(): String?
+
+/**
+ * Opens the device email client with a pre-filled message. Subject and body are plain
+ * (un-encoded) strings — each platform actual is responsible for building and percent-encoding
+ * a valid `mailto:` URL. On Android this uses `ACTION_SENDTO` so only email apps are offered.
+ */
+expect fun sendEmail(recipient: String, subject: String, body: String)
+
+/** Short platform name for diagnostics / feedback triage, e.g. "Android" or "iOS". */
+fun platformName(): String = if (isIOS()) "iOS" else "Android"

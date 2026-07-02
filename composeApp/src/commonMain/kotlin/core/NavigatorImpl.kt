@@ -27,6 +27,10 @@ class NavigatorImpl(
         backStack.add(SettingsRoute)
     }
 
+    override fun navigateToWelcome() {
+        backStack.add(WelcomeRoute)
+    }
+
     override fun navigateBack() {
         if (backStack.size > 1) {
             backStack.removeAt(backStack.size - 1)

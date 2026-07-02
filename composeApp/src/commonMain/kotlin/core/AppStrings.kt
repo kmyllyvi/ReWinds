@@ -92,6 +92,23 @@ data class AppStrings(
     val settingsAnthropicSubLabel: String,
     val settingsVisualCrossingSubLabel: String,
     val settingsAppVersion: String,
+    // About group — welcome guide + feedback (KIM-334)
+    val settingsRowWhatIsReWinds: String,
+    val settingsRowSendFeedback: String,
+
+    // Welcome / onboarding guide (KIM-334)
+    val welcomeTitle: String,
+    val welcomeWhatItIsHeading: String,
+    val welcomeWhatItIsBody: String,
+    val welcomeWhatItIsNotHeading: String,
+    val welcomeWhatItIsNotBody: String,
+    val welcomeGetStarted: String,
+    val welcomeDone: String,
+
+    // Feedback email (KIM-334)
+    val feedbackEmailSubject: String,
+    /** Body prefix; caller appends "App version: … / Platform: …" diagnostics. */
+    val feedbackEmailBodyIntro: String,
 
     // StationMapModal
     val noStationData: String,
@@ -313,6 +330,21 @@ data class AppStrings(
             settingsAnthropicSubLabel = "AI chat feature",
             settingsVisualCrossingSubLabel = "Weather data",
             settingsAppVersion = "1.0.0",
+            settingsRowWhatIsReWinds = "What is ReWinds?",
+            settingsRowSendFeedback = "Send feedback",
+
+            // Welcome / onboarding guide (KIM-334)
+            welcomeTitle = "Welcome to ReWinds",
+            welcomeWhatItIsHeading = "What it's for",
+            welcomeWhatItIsBody = "ReWinds helps wind sports enthusiasts find great spots. Search a location and explore its historical wind and weather patterns — sustained wind, gusts, and monthly stats — to plan trips and chase the wind.",
+            welcomeWhatItIsNotHeading = "What it's not",
+            welcomeWhatItIsNotBody = "It's not a live forecast app. ReWinds won't tell you tomorrow's weather — it shows the historical patterns that reveal where and when the wind tends to blow.",
+            welcomeGetStarted = "Get Started",
+            welcomeDone = "Done",
+
+            // Feedback email (KIM-334)
+            feedbackEmailSubject = "ReWinds Feedback",
+            feedbackEmailBodyIntro = "Tell us what you think:",
 
             // StationMapModal
             noStationData = "No station data available",
@@ -531,6 +563,21 @@ data class AppStrings(
             settingsAnthropicSubLabel = "KI-Chat-Funktion",
             settingsVisualCrossingSubLabel = "Wetterdaten",
             settingsAppVersion = "1.0.0",
+            settingsRowWhatIsReWinds = "Was ist ReWinds?",
+            settingsRowSendFeedback = "Feedback senden",
+
+            // Welcome / onboarding guide (KIM-334)
+            welcomeTitle = "Willkommen bei ReWinds",
+            welcomeWhatItIsHeading = "Wofür es da ist",
+            welcomeWhatItIsBody = "ReWinds hilft Windsport-Begeisterten, gute Spots zu finden. Suche einen Ort und erkunde seine historischen Wind- und Wettermuster – Dauerwind, Böen und Monatsstatistiken – um Reisen zu planen und dem Wind zu folgen.",
+            welcomeWhatItIsNotHeading = "Was es nicht ist",
+            welcomeWhatItIsNotBody = "Es ist keine Live-Wettervorhersage-App. ReWinds sagt dir nicht das Wetter von morgen – es zeigt die historischen Muster, die verraten, wo und wann der Wind typischerweise weht.",
+            welcomeGetStarted = "Los geht’s",
+            welcomeDone = "Fertig",
+
+            // Feedback email (KIM-334)
+            feedbackEmailSubject = "ReWinds Feedback",
+            feedbackEmailBodyIntro = "Sag uns, was du denkst:",
 
             // StationMapModal
             noStationData = "Keine Stationsdaten verfügbar",

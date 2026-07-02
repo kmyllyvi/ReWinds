@@ -11,6 +11,8 @@ import core.Language
 import core.LanguageManager
 import core.PlatformApiKeyChecker
 import core.WeatherApiKeyManager
+import core.platformName
+import core.sendEmail
 import core.utils.WindSpeedUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +41,15 @@ class SettingsViewModel(
     private val settingsRepo: AppSettingsStore,
     private val anthropicClient: AnthropicClient,
     /** Anthropic key gate. Injectable so the Configured chip is testable without the platform store (J10). */
-    private val apiKeyChecker: ApiKeyChecker = PlatformApiKeyChecker
+    private val apiKeyChecker: ApiKeyChecker = PlatformApiKeyChecker,
+    /**
+     * Email launcher seam. Defaults to the platform [sendEmail]; injectable so feedback
+     * assembly is unit-testable without opening a real mail client (KIM-334).
+     */
+    private val emailSender: (recipient: String, subject: String, body: String) -> Unit =
+        ::sendEmail,
+    /** Platform label for the feedback body. Injectable for deterministic tests. */
+    private val platformLabel: () -> String = ::platformName
 ) : ViewModel() {
 
     private val _doiState = MutableStateFlow<DaysOfInterestUiState>(DaysOfInterestUiState.Idle)
@@ -140,6 +150,17 @@ class SettingsViewModel(
         _wifiOnlyEnabled.value = enabled
     }
 
+    /**
+     * Opens the device email client pre-addressed to the feedback inbox (KIM-334). Localized
+     * subject/body intro are supplied by the View (from AppStrings); the ViewModel appends the
+     * app version + platform for beta triage. Body assembly is delegated to [buildFeedbackBody]
+     * so it can be unit-tested.
+     */
+    fun onSendFeedbackClicked(subject: String, bodyIntro: String, appVersion: String) {
+        val body = buildFeedbackBody(bodyIntro, appVersion, platformLabel())
+        emailSender(FEEDBACK_EMAIL, subject, body)
+    }
+
     fun toggleWifiOnly() {
         _wifiOnlyEnabled.value = !_wifiOnlyEnabled.value
     }
@@ -147,5 +168,22 @@ class SettingsViewModel(
     companion object {
         const val FILTER_KEY = "days_of_interest_filter"
         const val WIND_SPEED_UNIT_KEY = "wind_speed_unit"
+        const val FEEDBACK_EMAIL = "apps@goaheadand.dev"
+
+        /**
+         * Assembles the feedback email body: the localized intro followed by app version and
+         * platform diagnostics on their own lines. Pure so it's directly unit-testable.
+         */
+        fun buildFeedbackBody(bodyIntro: String, appVersion: String, platform: String): String =
+            buildString {
+                append(bodyIntro)
+                append("\n\n")
+                append("---\n")
+                append("App version: ")
+                append(appVersion)
+                append("\n")
+                append("Platform: ")
+                append(platform)
+            }
     }
 }

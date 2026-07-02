@@ -239,6 +239,51 @@ class SettingsViewModelTest {
         assertFalse(vm.visualCrossingKeyConfigured.value)
     }
 
+    // ── KIM-334: Send Feedback ───────────────────────────────────────────────
+
+    /** Captures a single email launch so feedback assembly is assertable without a mail client. */
+    private class CapturingEmailSender {
+        var recipient: String? = null
+        var subject: String? = null
+        var body: String? = null
+        var callCount = 0
+        val send: (String, String, String) -> Unit = { r, s, b ->
+            recipient = r; subject = s; body = b; callCount++
+        }
+    }
+
+    @Test
+    fun onSendFeedbackClicked_launchesEmailToFeedbackInboxWithDiagnostics() {
+        val sender = CapturingEmailSender()
+        val vm = SettingsViewModel(
+            FakeSettingsStore(),
+            dummyClient,
+            apiKeyChecker = ApiKeyChecker { false },
+            emailSender = sender.send,
+            platformLabel = { "Android" }
+        ).also { createdViewModels.add(it) }
+
+        vm.onSendFeedbackClicked(
+            subject = "ReWinds Feedback",
+            bodyIntro = "Tell us what you think:",
+            appVersion = "1.0.0"
+        )
+
+        assertEquals(1, sender.callCount)
+        assertEquals(SettingsViewModel.FEEDBACK_EMAIL, sender.recipient)
+        assertEquals("ReWinds Feedback", sender.subject)
+        val body = sender.body ?: ""
+        assertTrue(body.contains("Tell us what you think:"), "intro missing")
+        assertTrue(body.contains("App version: 1.0.0"), "version missing")
+        assertTrue(body.contains("Platform: Android"), "platform missing")
+    }
+
+    @Test
+    fun buildFeedbackBody_isDeterministicAndOrdered() {
+        val body = SettingsViewModel.buildFeedbackBody("Intro", "2.3.4", "iOS")
+        assertEquals("Intro\n\n---\nApp version: 2.3.4\nPlatform: iOS", body)
+    }
+
     @Test
     fun refreshKeyStatus_picksUpAConfiguredVisualCrossingKey() {
         val vm = viewModel(FakeSettingsStore())

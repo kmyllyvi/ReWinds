@@ -31,3 +31,7 @@ data class ChatRoute(
 
 @Serializable
 data object SettingsRoute : NavRoute
+
+/** Revisited welcome / "what is ReWinds" guide, reached from Settings (KIM-334). */
+@Serializable
+data object WelcomeRoute : NavRoute

@@ -21,6 +21,10 @@ object TestTags {
     /** "Configure now" CTA on the blocking VC-key onboarding gate. */
     const val ONBOARDING_VC_KEY_CONFIGURE = "onboarding_vc_key_configure"
 
+    // ── Welcome guide (KIM-334) ──────────────────────────────────────────────────
+    /** "Get Started" / "Done" CTA on the welcome / what-is-ReWinds screen. */
+    const val WELCOME_DISMISS_BUTTON = "welcome_dismiss_button"
+
     // ── Tab bar ─────────────────────────────────────────────────────────────────
     const val TAB_PLACES = "tab_places"
     const val TAB_CHAT = "tab_chat"
@@ -56,6 +60,9 @@ object TestTags {
     const val SETTINGS_API_KEY_SAVE_BUTTON = "settings_api_key_save_button"
     const val SETTINGS_API_KEY_DELETE_BUTTON = "settings_api_key_delete_button"
     const val SETTINGS_API_KEY_CANCEL_BUTTON = "settings_api_key_cancel_button"
+    // About group rows (KIM-334)
+    const val SETTINGS_WHAT_IS_REWINDS_ROW = "settings_what_is_rewinds_row"
+    const val SETTINGS_SEND_FEEDBACK_ROW = "settings_send_feedback_row"
 
     // ── Place summary ─────────────────────────────────────────────────────────────
     const val PLACE_STATION_MAP_BUTTON = "place_station_map_button"

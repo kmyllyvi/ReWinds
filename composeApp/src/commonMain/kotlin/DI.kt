@@ -9,6 +9,7 @@ import com.km.rewinds.db.AppDatabase
 import core.*
 import home.HomeViewModel
 import onboarding.VcKeyOnboardingViewModel
+import onboarding.WelcomeViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 import org.koin.core.module.dsl.viewModel
@@ -61,6 +62,7 @@ fun appModule(databaseDriverFactory: DatabaseDriverFactory, enableNetworkLogs: B
     viewModel { SettingsViewModel(get(), get()) } // AppSettingsStore, AnthropicClient
     viewModelOf(::TabNavigationViewModel)
     viewModelOf(::VcKeyOnboardingViewModel)
+    viewModelOf(::WelcomeViewModel) // AppSettingsStore
 }
 
 fun initKoin(databaseDriverFactory: DatabaseDriverFactory) {

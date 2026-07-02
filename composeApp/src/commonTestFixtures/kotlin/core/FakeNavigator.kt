@@ -66,6 +66,10 @@ class FakeNavigator(
         calls.add(NavigationCall.Settings)
     }
 
+    override fun navigateToWelcome() {
+        calls.add(NavigationCall.Welcome)
+    }
+
     override fun navigateBack() {
         calls.add(NavigationCall.Back)
     }
@@ -80,5 +84,6 @@ sealed interface NavigationCall {
     data class MonthlyStatistics(val placeName: String, val year: Int, val month: Int) : NavigationCall
     data class Chat(val initialMessage: String? = null, val placeId: String? = null) : NavigationCall
     data object Settings : NavigationCall
+    data object Welcome : NavigationCall
     data object Back : NavigationCall
 }

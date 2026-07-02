@@ -39,6 +39,8 @@ import ai.ChatView
 import home.HomeView
 import onboarding.VcKeyOnboardingScreen
 import onboarding.VcKeyOnboardingViewModel
+import onboarding.WelcomeView
+import onboarding.WelcomeViewModel
 import place.MonthlyStatisticsView
 import place.PlaceSummaryView
 import settings.SettingsView
@@ -64,6 +66,22 @@ private val tabItems = listOf(
 
 @Composable
 fun Navigation() {
+    // First-run welcome (KIM-334): on the very first launch, show the informational welcome
+    // screen ahead of everything else. It's dismissible and non-blocking — once dismissed (and
+    // the seen flag persisted) the launch flow continues to the VC-key gate below. Visibility +
+    // persistence live in the ViewModel; this composable only collects state.
+    val welcomeVm: WelcomeViewModel = koinViewModel()
+    val showWelcome by welcomeVm.showFirstRunWelcome.collectAsState()
+    val strings = LocalAppStrings.current
+
+    if (showWelcome) {
+        WelcomeView(
+            buttonLabel = strings.welcomeGetStarted,
+            onDismiss = welcomeVm::onFirstRunDismissed
+        )
+        return
+    }
+
     // Hard gate (KIM-309): until a valid Visual Crossing key is configured the app must not
     // expose the functional tab surface. All gate logic lives in the ViewModel; this composable
     // only collects state and routes the single "Configure now" CTA into the Settings VC entry.
@@ -212,7 +230,18 @@ private fun AppTabs() {
                             navigator = chatNavigatorDelegate
                         )
                     }
-                    AppTab.SETTINGS -> SettingsView(navigator = settingsNav)
+                    AppTab.SETTINGS -> {
+                        // The Settings tab can push the revisitable welcome guide (KIM-334).
+                        // Render it in place when it's the top of the settings stack; its
+                        // "Done" button pops back to Settings.
+                        when (settingsStack.lastOrNull()) {
+                            is WelcomeRoute -> WelcomeView(
+                                buttonLabel = LocalAppStrings.current.welcomeDone,
+                                onDismiss = { settingsNav.navigateBack() }
+                            )
+                            else -> SettingsView(navigator = settingsNav)
+                        }
+                    }
                 }
             }
         }
