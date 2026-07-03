@@ -161,7 +161,15 @@ yourself per the protocol below. Follow the Linear handover protocol in docs/age
 then review the actual diff — not just the summary.
 - Verify each acceptance-criteria checkbox and each definition-of-done item individually, plus the
 MV* rules from docs/agent/ARCHITECTURE-RULES.md.
-- All criteria + DoD met, no blocking issue → remove **in-review** and set the issue to **Completed**, with a one-line confirmation.
+- All criteria + DoD met, no blocking issue → **merge the PR yourself**: confirm CI is actually green right
+  now (`gh pr checks <n>` or equivalent — don't trust a stale run), then `gh pr merge <n> --merge` (a
+  regular merge commit into `develop`, matching this repo's history — never `--squash` or `--rebase`, and
+  don't pass `--delete-branch`). Only after the merge succeeds, remove **in-review** and set the issue to
+  **Completed**, with a one-line confirmation that includes the merge commit. There is no GitHub
+  auto-merge or branch protection on this repo (private, free plan) — if you don't merge it, nothing does,
+  so don't treat "review passed" as the finish line. If CI is red or still running when you check, do not
+  merge — report that instead (it's Randy's job to get CI green before handing off to you, not yours to
+  wait on).
 - **Manual verification is NOT yours to gate.** You do not hold a PR open for on-device/simulator runs
   or visual/UX checks — those are decoupled from the merge and logged to
   `docs/human/sections/test-checklist.html` for Kimmo to verify async. When you spot behaviour that

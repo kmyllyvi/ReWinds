@@ -394,8 +394,8 @@
     <div class="escape-valve">
       <div class="escape-icon">🔀</div>
       <div class="escape-body">
-        <h4>Merge policy — auto-merge after review, manual testing decoupled</h4>
-        <p>A PR merges <strong>without waiting for a human</strong> when <strong>both</strong> hold: Marcy approved with no Critical/Major findings, and CI is green (coverage floor + patch-coverage gate). <strong>Manual testing no longer gates the merge</strong> — even changes that want a device/simulator run or a visual/UX eye merge on review + CI. That verification is logged instead: the developer appends a case to the <a href="test-checklist.html">Manual Test Checklist</a> (steps → expected, plus an "automate?" note), and Kimmo verifies in batches on device, ticking cases off (git-tracked). A failed case becomes a new bug ticket, not a merge block. The only thing that still holds a PR open is <strong style="color:#E8A030">needs-human</strong> (Gate 2). Branch protection on <code>develop</code> is the backstop.</p>
+        <h4>Merge policy — Marcy merges in-session after review, manual testing decoupled</h4>
+        <p>A PR merges <strong>without waiting for a human</strong> when <strong>both</strong> hold: Marcy approved with no Critical/Major findings, and CI is green (coverage floor + patch-coverage gate). There's no GitHub-native auto-merge or branch protection on this repo (private, free plan) to do this on its own, so <strong>Marcy merges the PR herself</strong> (<code>gh pr merge --merge</code>, a regular merge commit) the moment she confirms both conditions — same pass that sets the Linear issue to Completed, not a separate step. <strong>Manual testing no longer gates the merge</strong> — even changes that want a device/simulator run or a visual/UX eye merge on review + CI. That verification is logged instead: the developer appends a case to the <a href="test-checklist.html">Manual Test Checklist</a> (steps → expected, plus an "automate?" note), and Kimmo verifies in batches on device, ticking cases off (git-tracked). A failed case becomes a new bug ticket, not a merge block. The only thing that still holds a PR open is <strong style="color:#E8A030">needs-human</strong> (Gate 2).</p>
       </div>
     </div>
 
@@ -419,7 +419,7 @@
         <tr><td>Backlog, no label</td><td>Triage — dispatch <strong>Shirley</strong> at chosen items</td></tr>
         <tr><td>Backlog + <code>spec-ready</code></td><td><strong>Gate 1</strong> — you review; if approved → move to Todo</td></tr>
         <tr><td>Todo</td><td>Dispatch <strong>Randy</strong> (he moves it to In Progress and codes)</td></tr>
-        <tr><td>In Progress + <code>in-review</code></td><td><strong>Marcy</strong> already ran — Randy invokes her in-session right after opening the PR. Dispatch <strong>Seppo</strong> and/or <strong>Mr.T</strong> manually if relevant.</td></tr>
+        <tr><td>In Progress + <code>in-review</code></td><td><strong>Marcy</strong> already ran — Randy invokes her in-session right after opening the PR. On a pass she merges the PR herself and moves it to Completed. Dispatch <strong>Seppo</strong> and/or <strong>Mr.T</strong> manually if relevant.</td></tr>
         <tr><td>Any + <code>needs-human</code></td><td><strong>Gate 2</strong> — yours to resolve</td></tr>
         <tr><td>Completed</td><td><strong>Phill</strong> picks it up automatically on the next cron sweep (Tue–Sat 09:07)</td></tr>
       </tbody>
@@ -564,9 +564,9 @@
         </tr>
         <tr>
           <td>Merge PR to develop</td>
-          <td>Auto-merges on Marcy pass + CI green</td>
+          <td>Marcy runs <code>gh pr merge</code> herself on pass + CI green</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td>Review + CI are the gate. Manual testing is decoupled — behaviour needing a device/UX check is logged to the <a href="test-checklist.html">Test Checklist</a> and verified async, not before merge. Only <code>needs-human</code> (Gate 2) holds a PR open.</td>
+          <td>Review + CI are the gate, but nothing merges on its own — no GitHub auto-merge or branch protection exists on this repo (private, free plan), so Marcy executes the merge in-session as part of her review pass. Manual testing is decoupled — behaviour needing a device/UX check is logged to the <a href="test-checklist.html">Test Checklist</a> and verified async, not before merge. Only <code>needs-human</code> (Gate 2) holds a PR open.</td>
         </tr>
         <tr>
           <td>Dispatch doc-agent post-merge</td>

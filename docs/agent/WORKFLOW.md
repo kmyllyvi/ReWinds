@@ -50,7 +50,7 @@ manual loop is proven (see GitHub Action note at the end).
 | **GATE 1 — you**          | you                                      | the spec                                                     | approval                                                              | **Planned**                                         |
 | Todo                      | — (dev queue)                            | —                                                            | orchestrator picks it up                                              | In Progress                                         |
 | In Progress               | **developer** agent                      | spec + AC + DoD, repo, ARCHITECTURE-RULES                    | branch + commits + PR; handoff comment; adds `in-review`              | In Progress + `in-review`                           |
-| In Progress + `in-review` | **code-reviewer** (auto on PR open)      | the diff/PR vs AC + DoD + MV\* rules                         | pass, or fail with specifics                                          | Completed / (remove `in-review`, stays In Progress) |
+| In Progress + `in-review` | **code-reviewer** (auto on PR open)      | the diff/PR vs AC + DoD + MV\* rules                         | pass + **merges the PR herself** (`gh pr merge`), or fail with specifics | Completed (merged) / (remove `in-review`, stays In Progress) |
 | `needs-human`             | **GATE 2 — you**                         | the blocker the agent hit                                    | a decision                                                            | back into the lane                                  |
 | Completed                 | **doc-agent** (Phill — scheduled sweep)  | —                                                            | —                                                                     | —                                                   |
 
@@ -78,6 +78,15 @@ behaviour that wants a device/simulator run or a visual/UX eye** — that verifi
 the merge and logged instead (see below). The only thing that still holds a PR open is a `needs-human`
 flag (Gate 2), i.e. a genuine decision the agent couldn't make — not routine verification.
 
+**Who actually presses merge:** there is no GitHub-native auto-merge or branch protection wired up (this
+repo is private on the free plan — branch protection needs GitHub Pro or a public repo, so it isn't the
+backstop it might look like). Since nothing merges the PR on its own, **Marcy merges it herself**,
+in-session, the moment she confirms both conditions above: `gh pr merge <n> --merge` (regular merge
+commit into `develop`, matching existing history — not squash, not rebase; branch is left in place, not
+auto-deleted). This happens as part of the same review pass that sets the issue to **Completed** — it is
+not a separate step and does not wait for Kimmo. If CI shows red or is still pending when she checks, she
+does not merge — she reports the block instead (that's a Randy problem to fix, not hers to wait out).
+
 **Manual verification is async, via a logged checklist.** When a change has behaviour a reviewer agent
 can't verify itself (real device/simulator interaction, visual/UX correctness, exploratory feel), the
 developer appends a row to the **Manual Test Checklist**
@@ -90,8 +99,10 @@ already-merged PR.
 a deeper pass, but they too are off the merge path — their findings become tickets or checklist rows,
 not merge blockers.
 
-Branch protection on `develop` (required status checks) is the backstop — even auto-merge cannot land a
-red PR once it is enabled.
+There is no branch-protection backstop today (see above) — the discipline is Marcy only ever running
+`gh pr merge` after she's personally confirmed both gates, never before. If this repo is ever upgraded to
+GitHub Pro or made public, turn on branch protection with required status checks on `develop` as a second
+backstop.
 
 ---
 
@@ -194,11 +205,12 @@ labels under Team KIM: `spec-ready`, `in-review`, `needs-human`. Optionally `age
 
 ### Code review (Marcy) — in-session Randy→Marcy handover
 Trigger: when Randy opens the PR and adds `in-review`, his final step is to invoke the `code-reviewer`
-agent via the Task tool (issue number + branch + PR link). Marcy reviews against AC/DoD/MV* rules,
-updates the Linear labels/status herself (Linear MCP is available locally), and Randy relays her verdict
-verbatim. Runs inside Claude Code (Pro subscription, no API token cost). On merge, see the **Merge
-policy** above — review-approved, CI-green PRs merge without waiting for a human; any manual verification
-is logged to the Test Checklist rather than gating the merge.
+agent via the Task tool (issue number + branch + PR link). Marcy reviews against AC/DoD/MV* rules. If she
+passes it (no Critical/Major, CI confirmed green), she **merges the PR herself** (`gh pr merge <n>
+--merge`) and sets the Linear status/labels to Completed in the same pass — see **Merge policy** above for
+why this has to be an explicit in-session action rather than an assumption. If she fails it, she removes
+`in-review` and comments the specifics instead; nothing merges. Randy relays her verdict verbatim. Runs
+inside Claude Code (Pro subscription, no API token cost).
 
 The GitHub Actions code-review workflow (`.github/workflows/code-review.yml`) is retained for manual
 `workflow_dispatch` runs but no longer triggers on PR open. This was a **cost decision** (free-plan

@@ -17,7 +17,6 @@ Closes
 - [ ] New/updated tests written for changed logic (in `commonTest/`)
 - [ ] Android unit tests pass (`./gradlew :composeApp:testDebugUnitTest`)
 - [ ] No existing tests broken
-- [ ] Manually verified on Android emulator
 
 **If no tests were added**, explain why:
 <!-- e.g. "pure UI styling change", "docs only", "config change" -->

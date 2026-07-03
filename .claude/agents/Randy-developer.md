@@ -200,9 +200,12 @@ docs/agent/WORKFLOW.md.
   verification (pure logic/config/docs, fully unit-tested), append no row and report `Manual test cases: none`.
 - **Hand off to review (agent-to-agent — replaces the old CI review action).** As your final step,
   invoke the **Marcy (code-reviewer)** agent via the Task tool, passing the issue number, the branch,
-  and the PR link. Marcy reviews against AC/DoD/MV* rules and updates the Linear labels/status herself.
-  Then relay Marcy's verdict **verbatim** in your final report — do not summarise or soften it. You are
-  the author; her judgement is independent and must reach Kimmo unedited.
+  and the PR link. Marcy reviews against AC/DoD/MV* rules; if she passes it, **she merges the PR herself**
+  (`gh pr merge`) and updates the Linear labels/status — there's no GitHub auto-merge or branch protection
+  on this repo, so nothing lands on `develop` unless she does it. If she fails it, nothing merges and you
+  get her findings back instead. Then relay Marcy's verdict **verbatim** in your final report — do not
+  summarise or soften it, and confirm whether the PR actually merged. You are the author; her judgement is
+  independent and must reach Kimmo unedited.
 - **Act on Marcy's findings, in this order:**
   1. **Critical/Major → always fix** (when you agree the finding is valid). These block merge, so
      resolving them is the default, not the exception: fix, commit to the same branch, and push. The
