@@ -91,3 +91,13 @@ actual fun loadLanguagePreference(): String? {
     return platform.Foundation.NSUserDefaults.standardUserDefaults
         .stringForKey("rewinds_language_code")
 }
+
+actual fun sendEmail(recipient: String, subject: String, body: String) {
+    // MailtoBuilder percent-encodes subject/body, so the resulting string is a valid URL.
+    val urlString = MailtoBuilder.build(recipient, subject, body)
+    val url = platform.Foundation.NSURL.URLWithString(urlString) ?: run {
+        Log.d("Platform: could not build mailto URL")
+        return
+    }
+    platform.UIKit.UIApplication.sharedApplication.openURL(url)
+}

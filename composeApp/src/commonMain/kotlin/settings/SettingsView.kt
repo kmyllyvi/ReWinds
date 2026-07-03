@@ -205,6 +205,26 @@ fun SettingsView(
                             )
                         },
                         {
+                            SettingsValueRow(
+                                label = strings.settingsRowWhatIsReWinds,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_WHAT_IS_REWINDS_ROW),
+                                onClick = { navigator.navigateToWelcome() }
+                            )
+                        },
+                        {
+                            SettingsValueRow(
+                                label = strings.settingsRowSendFeedback,
+                                modifier = Modifier.testTag(TestTags.SETTINGS_SEND_FEEDBACK_ROW),
+                                onClick = {
+                                    vm.onSendFeedbackClicked(
+                                        subject = strings.feedbackEmailSubject,
+                                        bodyIntro = strings.feedbackEmailBodyIntro,
+                                        appVersion = strings.settingsAppVersion
+                                    )
+                                }
+                            )
+                        },
+                        {
                             SettingsDestructiveRow(
                                 label = strings.settingsRowDeleteAllData,
                                 onClick = { /* Routed to the existing data-management flow elsewhere. */ }

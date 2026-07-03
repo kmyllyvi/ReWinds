@@ -194,6 +194,33 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-01</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-334">KIM-334</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/67">PR #67</a></td>
+        <td class="col-area">Onboarding — first-run welcome</td>
+        <td class="case">Fresh install (or clear app data), launch the app. <span class="expect">Expected: the "Welcome to ReWinds" guide appears first (what it's for / what it's not), before the API-key gate. Tap "Get Started" → the VC-key gate (or Home) follows. Kill and relaunch → the welcome guide does NOT appear again.</span></td>
+        <td class="automate none">Covered by unit test (<code>WelcomeViewModelTest</code> first-run + persistence); on-device pass confirms real DB-backed persistence + launch ordering.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-02</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-334">KIM-334</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/67">PR #67</a></td>
+        <td class="col-area">Settings — revisit welcome</td>
+        <td class="case">Open Settings → About → "What is ReWinds?". <span class="expect">Expected: the same welcome content opens with a "Done" button (not "Get Started"); tapping "Done" returns to Settings. It does NOT re-mark first-run or affect the first-launch flag.</span></td>
+        <td class="automate">Recommended: Compose test asserting the About row navigates to <code>WelcomeRoute</code> and the button reads "Done".</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-02</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-334">KIM-334</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/67">PR #67</a></td>
+        <td class="col-area">Settings — Send feedback</td>
+        <td class="case">Open Settings → About → "Send feedback" on a real device (Android and iOS). <span class="expect">Expected: the device email composer opens, pre-addressed to apps@goaheadand.dev, with subject "ReWinds Feedback" and a body containing the app version + platform. On iOS, subject/body are correctly readable (percent-encoding decoded). On Android only email apps are offered (ACTION_SENDTO).</span></td>
+        <td class="automate none">No — launches an external email app; unit-tested at the assembly level (<code>SettingsViewModelTest</code>, <code>MailtoBuilderTest</code>), but the actual intent/URL open is device-only.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-02</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>

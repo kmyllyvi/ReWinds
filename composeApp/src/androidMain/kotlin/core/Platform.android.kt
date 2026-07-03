@@ -1,6 +1,8 @@
 package core
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.km.rewinds.BuildConfig
@@ -140,6 +142,28 @@ actual fun loadLanguagePreference(): String? {
     val ctx = androidAppContext ?: return null
     return ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)
         .getString("language_code", null)
+}
+
+actual fun sendEmail(recipient: String, subject: String, body: String) {
+    val ctx = androidAppContext ?: run {
+        Log.d("Platform: androidAppContext not set - cannot open email client")
+        return
+    }
+    // ACTION_SENDTO with a mailto: data URI restricts the chooser to email apps only.
+    // Subject/body ride as intent extras (no manual encoding needed) — the mailto URI
+    // carries just the recipient, which every email app resolves reliably.
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$recipient")).apply {
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
+        // Required because we launch from the application context, not an Activity.
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        ctx.startActivity(intent)
+    } catch (e: Exception) {
+        // No email app installed / nothing resolved the intent.
+        Log.d("Platform: no email client available - ${e.message}")
+    }
 }
 
 fun loadWeatherApiKeyFromPreferences() {
