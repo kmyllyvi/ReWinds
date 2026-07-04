@@ -43,6 +43,7 @@ iOS device builds have known OOM constraints — see `iOS_BUILD_GUIDE.md`.
 | `ARCHITECTURE-RULES.md` | MV* patterns and architectural conventions code must follow |
 | `WORKFLOW.md` | The agentic lane, labels, gates, and handover contract |
 | `iOS_BUILD_GUIDE.md` | iOS build detail and OOM constraints |
+| `SESSION-INTERRUPTIONS.md` | What to do when a session is cut off by a credit limit (no auto-sweep is possible) |
 | `agent instruction - doc.txt` | Post-merge documentation agent |
 | `old dev logs/` | Historical dated session logs (archive) |
 | `plans/` | Feature plans (`plans/DONE/` = completed) |
