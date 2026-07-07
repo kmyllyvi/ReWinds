@@ -16,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import place.DayWeatherSummary
+import core.LocalAppStrings
 import core.utils.WindSpeedUnit
 import core.utils.formatTemperatureRange
 import core.utils.formatWindSpeed
 import core.utils.shortDayLabel
+import ui.theme.rewinds
 
 /**
  * A single day's collapsed summary row: date, temperature range and the day's
@@ -39,6 +41,7 @@ fun DaySummaryRow(
     windSpeedUnit: WindSpeedUnit = WindSpeedUnit.KMH,
     onClick: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -67,12 +70,26 @@ fun DaySummaryRow(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
-            Text(
-                // Average top wind (peak sustained), not the gust (KIM-329).
-                text = formatWindSpeed(daySummary.collapsedRowWindSpeed, windSpeedUnit),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+            Column(
+                modifier = Modifier.padding(start = 8.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    // Average top wind (peak sustained), not the gust (KIM-329).
+                    text = formatWindSpeed(daySummary.collapsedRowWindSpeed, windSpeedUnit),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // Qualify the figure as a sustained (2h rolling-average) reading, not a peak
+                // gust, so it doesn't read as inconsistent with the hourly chart (KIM-354).
+                // Only shown when there is a wind value to qualify.
+                if (daySummary.collapsedRowWindSpeed != null) {
+                    Text(
+                        text = strings.dayWindBestWindowLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.rewinds.textTertiary
+                    )
+                }
+            }
         }
     }
 }

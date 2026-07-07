@@ -207,6 +207,9 @@ data class AppStrings(
     val noDate: String,
 
     // DaySummaryRow
+    // Caption qualifying the collapsed-row wind figure as a sustained (2h rolling-average)
+    // reading rather than a peak gust (KIM-354).
+    val dayWindBestWindowLabel: String,
     val noDetails: String,
     val solarEnergy: (String) -> String,
     val lowVisibilityDesc: String,
@@ -440,6 +443,7 @@ data class AppStrings(
             noDate = "No date",
 
             // DaySummaryRow
+            dayWindBestWindowLabel = "best 2h avg",
             noDetails = "No details",
             solarEnergy = { value -> "Solar Energy: $value" },
             lowVisibilityDesc = "Low Visibility",
@@ -673,6 +677,7 @@ data class AppStrings(
             noDate = "Kein Datum",
 
             // DaySummaryRow
+            dayWindBestWindowLabel = "bester 2-Std.-Ø",
             noDetails = "Keine Details",
             solarEnergy = { value -> "Sonnenenergie: $value" },
             lowVisibilityDesc = "Geringe Sichtweite",
