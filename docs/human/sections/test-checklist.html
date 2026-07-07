@@ -221,6 +221,15 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-02</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-354">KIM-354</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/68">PR #68</a></td>
+        <td class="col-area">Monthly summary — day row</td>
+        <td class="case">Open a place's monthly summary; look at a collapsed day row that has a wind figure. <span class="expect">Expected: a small "best 2h avg" caption sits directly beneath the wind value (subtle/tertiary colour), making clear the number is a sustained 2h rolling-average, not the peak gust shown in the hourly chart. Rows with no wind value show no caption. In German locale the caption reads "bester 2-Std.-Ø".</span></td>
+        <td class="automate none">No — caption is a static localized label with no logic; visual placement/copy is the only thing to eyeball.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-07</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>
