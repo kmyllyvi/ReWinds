@@ -230,6 +230,15 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-07</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-279">KIM-279</a></td>
+        <td class="col-area">Settings — API key dialog & Home nudge</td>
+        <td class="case">Open Settings → tap the Visual Crossing API Key entry to open the dialog; then view the "Weather data not set up" nudge banner on Home. Repeat in German locale. <span class="expect">Expected: the dialog description reads as clear onboarding guidance (what Visual Crossing is, free account, 1,000 records/day, no credit card) and fits/wraps without truncation; the URL line reads as a "Create a free account at …/weather-api" CTA; the Home nudge body now includes the "weather data source" context sentence. German copy conveys the same and wraps cleanly in the dialog and banner.</span></td>
+        <td class="automate none">No — pure localized copy/tone and wrapping; nothing with logic to assert. UX/tone check only.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-07</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>

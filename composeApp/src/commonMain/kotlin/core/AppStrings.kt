@@ -273,7 +273,7 @@ data class AppStrings(
             chatIconDesc = "AI Chat",
             daysStored = { count -> if (count == 1) "$count day stored data" else "$count days stored data" },
             vcKeyNudgeTitle = "Weather data not set up",
-            vcKeyNudgeBody = "Add your Visual Crossing API key to start downloading weather data.",
+            vcKeyNudgeBody = "ReWinds uses Visual Crossing as its weather data source. Add your API key to start downloading weather data.",
             vcKeyNudgeAction = "Set up now",
 
             // ChatView
@@ -311,8 +311,8 @@ data class AppStrings(
             anthropicApiUrl = "Get your API key from: https://console.anthropic.com/account/keys",
             saveKey = "Save Key",
             visualCrossingKeyTitle = "Visual Crossing API Key",
-            visualCrossingKeyDescription = "Enter your Visual Crossing API key to enable weather data queries. Your key will be securely stored locally on your device.",
-            visualCrossingApiUrl = "Get your API key from: https://www.visualcrossing.com/",
+            visualCrossingKeyDescription = "Visual Crossing provides the historical and forecast weather data that powers ReWinds. You can create a free account with no credit card required. The free tier allows 1,000 records per day, which is plenty for personal use. Your key is stored securely on your device.",
+            visualCrossingApiUrl = "Create a free account at: https://www.visualcrossing.com/weather-api",
             deleteKeyTitle = { keyType -> "Delete $keyType?" },
             deleteKeyMessage = { keyType -> "This will remove your stored $keyType. You can add it again later from settings." },
 
@@ -507,7 +507,7 @@ data class AppStrings(
             chatIconDesc = "KI-Chat",
             daysStored = { count -> if (count == 1) "$count Tag gespeichert" else "$count Tage gespeichert" },
             vcKeyNudgeTitle = "Wetterdaten nicht eingerichtet",
-            vcKeyNudgeBody = "Fügen Sie Ihren Visual Crossing API-Schlüssel hinzu, um Wetterdaten herunterladen zu können.",
+            vcKeyNudgeBody = "ReWinds nutzt Visual Crossing als Wetterdatenquelle. Fügen Sie Ihren API-Schlüssel hinzu, um Wetterdaten herunterladen zu können.",
             vcKeyNudgeAction = "Jetzt einrichten",
 
             // ChatView
@@ -545,8 +545,8 @@ data class AppStrings(
             anthropicApiUrl = "Holen Sie sich Ihren API-Schl\u00FCssel unter: https://console.anthropic.com/account/keys",
             saveKey = "Schl\u00FCssel speichern",
             visualCrossingKeyTitle = "Visual Crossing API-Schl\u00FCssel",
-            visualCrossingKeyDescription = "Geben Sie Ihren Visual Crossing API-Schl\u00FCssel ein, um Wetterdatenabfragen zu aktivieren. Ihr Schl\u00FCssel wird sicher lokal gespeichert.",
-            visualCrossingApiUrl = "Holen Sie sich Ihren API-Schl\u00FCssel unter: https://www.visualcrossing.com/",
+            visualCrossingKeyDescription = "Visual Crossing liefert die historischen Wetter- und Vorhersagedaten, die ReWinds antreiben. Sie k\u00F6nnen ein kostenloses Konto ohne Kreditkarte erstellen. Der kostenlose Tarif erlaubt 1.000 Datens\u00E4tze pro Tag, was f\u00FCr die private Nutzung reichlich ist. Ihr Schl\u00FCssel wird sicher lokal auf Ihrem Ger\u00E4t gespeichert.",
+            visualCrossingApiUrl = "Erstellen Sie ein kostenloses Konto unter: https://www.visualcrossing.com/weather-api",
             deleteKeyTitle = { keyType -> "$keyType l\u00F6schen?" },
             deleteKeyMessage = { keyType -> "Dadurch wird Ihr gespeicherter $keyType entfernt. Sie k\u00F6nnen ihn sp\u00E4ter erneut \u00FCber die Einstellungen hinzuf\u00FCgen." },
 
