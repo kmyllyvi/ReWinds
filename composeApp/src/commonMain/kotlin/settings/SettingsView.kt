@@ -29,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import components.AppHeader
 import core.AppConstants
@@ -428,18 +430,24 @@ private fun AnthropicKeyDialog(
                     text = strings.anthropicApiLinkLabel,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.rewinds.accentBlue,
+                    // Underline so the affordance isn't colour-only (WCAG 1.4.1), and expose a
+                    // Button role so VoiceOver announces it as interactive (KIM-252 review).
+                    textDecoration = TextDecoration.Underline,
                     modifier = Modifier
                         .testTag(TestTags.SETTINGS_ANTHROPIC_API_LINK)
-                        .clickable { openUrl(AppConstants.ANTHROPIC_CONSOLE_KEYS_URL) }
+                        .clickable(
+                            role = Role.Button,
+                            onClickLabel = strings.anthropicApiLinkLabel
+                        ) { openUrl(AppConstants.ANTHROPIC_CONSOLE_KEYS_URL) }
                 )
             }
         },
         confirmButton = {
+            // Save keeps the dialog open so the "✓ API key saved" confirmation is actually
+            // seen; the trailing button (now labelled "Done") is the explicit close. Blank
+            // saves stay open too and surface the inline validation (KIM-252 review fix).
             Button(
-                onClick = {
-                    // Validation lives in the ViewModel; close only on a successful save.
-                    if (vm.saveAnthropicKey(key)) onDismiss()
-                },
+                onClick = { vm.saveAnthropicKey(key) },
                 modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_SAVE_BUTTON)
             ) {
                 Text(strings.saveKey)
@@ -461,7 +469,8 @@ private fun AnthropicKeyDialog(
                     onClick = onDismiss,
                     modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_CANCEL_BUTTON)
                 ) {
-                    Text(strings.cancel)
+                    // Reads as "Done" once a key was saved this session, else "Cancel".
+                    Text(if (saveState is AnthropicKeySaveState.Saved) strings.done else strings.cancel)
                 }
             }
         }
