@@ -11,6 +11,8 @@ data class AppStrings(
     // Common / Shared
     val ok: String,
     val cancel: String,
+    /** Generic "Done" confirm-and-close label (e.g. after a successful key save). */
+    val done: String,
     val delete: String,
     val back: String,
     val save: String,
@@ -262,6 +264,7 @@ data class AppStrings(
             // Common / Shared
             ok = "OK",
             cancel = "Cancel",
+            done = "Done",
             delete = "Delete",
             back = "Back",
             save = "Save",
@@ -501,6 +504,7 @@ data class AppStrings(
             // Common / Shared
             ok = "OK",
             cancel = "Abbrechen",
+            done = "Fertig",
             delete = "L\u00F6schen",
             back = "Zur\u00FCck",
             save = "Speichern",

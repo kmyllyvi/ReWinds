@@ -192,6 +192,23 @@ class ChatTabGeneralSessionViewModelTest {
 
         assertFalse(vm.uiState.value.showClaudeKeyNudge)
     }
+
+    @Test
+    fun refreshClaudeKeyNudgeReRaisesBannerAfterKeyIsRemoved() = runTest(dispatcher) {
+        // Reverse of the save path: user deletes their key in Settings and returns to Chat.
+        // Refresh must re-show the banner, not only ever clear it.
+        val repo = GeneralSessionFakeChatRepository().apply { seed(id = 1L, ts = 100L, placeId = null) }
+        var configured = true
+        val vm = viewModel(repo, apiKeyChecker = core.ApiKeyChecker { configured })
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.showClaudeKeyNudge)
+
+        configured = false
+        vm.refreshClaudeKeyNudge()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.showClaudeKeyNudge)
+    }
 }
 
 /**
