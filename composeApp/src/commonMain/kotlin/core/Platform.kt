@@ -47,5 +47,12 @@ expect fun loadLanguagePreference(): String?
  */
 expect fun sendEmail(recipient: String, subject: String, body: String)
 
+/**
+ * Opens [url] in the device's default web browser (system browser, never an in-app WebView).
+ * Used for the "get an API key" links in onboarding/Settings (KIM-252). Invalid or
+ * unopenable URLs are a no-op — the caller controls only trusted, hard-coded links.
+ */
+expect fun openUrl(url: String)
+
 /** Short platform name for diagnostics / feedback triage, e.g. "Android" or "iOS". */
 fun platformName(): String = if (isIOS()) "iOS" else "Android"

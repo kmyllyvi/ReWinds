@@ -1,6 +1,7 @@
 package settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,17 +32,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import components.AppHeader
-import core.ApiKeyManager
+import core.AppConstants
 import core.Language
 import core.LocalAppStrings
 import core.Navigator
 import core.TestTags
 import core.WeatherApiKeyManager
 import core.utils.WindSpeedUnit
-import core.deleteApiKeyPlatform
 import core.deleteWeatherApiKeyPlatform
 import core.filterSummary
-import core.saveApiKeyPlatform
+import core.openUrl
 import core.saveWeatherApiKeyPlatform
 import org.koin.compose.viewmodel.koinViewModel
 import settings.components.SettingsDestructiveRow
@@ -239,22 +239,13 @@ fun SettingsView(
     }
 
     when (openDialog) {
-        SettingsDialog.ANTHROPIC_KEY -> ApiKeyDialog(
-            title = strings.anthropicKeyTitle,
-            description = strings.anthropicKeyDescription,
-            urlHint = strings.anthropicApiUrl,
+        SettingsDialog.ANTHROPIC_KEY -> AnthropicKeyDialog(
+            vm = vm,
             configured = anthropicConfigured,
-            onSave = { key ->
-                saveApiKeyPlatform(key)
-                ApiKeyManager.setApiKey(key)
-                vm.refreshKeyStatus()
-            },
-            onDelete = {
-                deleteApiKeyPlatform()
-                ApiKeyManager.setApiKey("")
-                vm.refreshKeyStatus()
-            },
-            onDismiss = { openDialog = SettingsDialog.NONE }
+            onDismiss = {
+                openDialog = SettingsDialog.NONE
+                vm.resetAnthropicKeySaveState()
+            }
         )
         SettingsDialog.WEATHER_KEY -> ApiKeyDialog(
             title = strings.visualCrossingKeyTitle,
@@ -347,6 +338,118 @@ private fun ApiKeyDialog(
                 TextButton(
                     onClick = {
                         onDelete()
+                        onDismiss()
+                    },
+                    enabled = configured,
+                    modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_DELETE_BUTTON)
+                ) {
+                    Text(strings.delete)
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_CANCEL_BUTTON)
+                ) {
+                    Text(strings.cancel)
+                }
+            }
+        }
+    )
+}
+
+/**
+ * Editor dialog for the Anthropic API key (KIM-252). Adds first-run onboarding on top of the
+ * generic key editor: a tappable "get an API key" link that opens the Anthropic console in the
+ * system browser, inline validation when the field is blank, and a success confirmation on save.
+ * All logic lives in [SettingsViewModel]; this composable only renders state and forwards intent.
+ */
+@Composable
+private fun AnthropicKeyDialog(
+    vm: SettingsViewModel,
+    configured: Boolean,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    val saveState by vm.anthropicKeySaveState.collectAsState()
+    var key by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.anthropicKeyTitle) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = strings.anthropicKeyDescription,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textSecondary
+                )
+                OutlinedTextField(
+                    value = key,
+                    onValueChange = {
+                        key = it
+                        // Clear any prior validation/success as soon as the user edits again.
+                        if (saveState !is AnthropicKeySaveState.Idle) vm.resetAnthropicKeySaveState()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.SETTINGS_API_KEY_FIELD),
+                    placeholder = { Text(strings.apiKeyPlaceholder) },
+                    label = { Text(strings.apiKeyFieldLabel) },
+                    isError = saveState is AnthropicKeySaveState.EmptyError,
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = false,
+                    maxLines = 3
+                )
+
+                // Inline save feedback: validation error or success confirmation.
+                when (saveState) {
+                    is AnthropicKeySaveState.EmptyError -> Text(
+                        text = strings.apiKeyEmptyError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.error,
+                        modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_ERROR)
+                    )
+                    is AnthropicKeySaveState.Saved -> Text(
+                        text = strings.apiKeySaved,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.rewinds.accentBlue,
+                        modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_SUCCESS)
+                    )
+                    else -> Unit
+                }
+
+                // "Get an API key" onboarding link — opens the Anthropic console in the system
+                // browser (never an in-app WebView), per KIM-252.
+                Text(
+                    text = strings.anthropicApiUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textTertiary
+                )
+                Text(
+                    text = strings.anthropicApiLinkLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.accentBlue,
+                    modifier = Modifier
+                        .testTag(TestTags.SETTINGS_ANTHROPIC_API_LINK)
+                        .clickable { openUrl(AppConstants.ANTHROPIC_CONSOLE_KEYS_URL) }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    // Validation lives in the ViewModel; close only on a successful save.
+                    if (vm.saveAnthropicKey(key)) onDismiss()
+                },
+                modifier = Modifier.testTag(TestTags.SETTINGS_API_KEY_SAVE_BUTTON)
+            ) {
+                Text(strings.saveKey)
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = {
+                        vm.deleteAnthropicKey()
                         onDismiss()
                     },
                     enabled = configured,

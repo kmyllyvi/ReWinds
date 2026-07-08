@@ -166,6 +166,23 @@ actual fun sendEmail(recipient: String, subject: String, body: String) {
     }
 }
 
+actual fun openUrl(url: String) {
+    val ctx = androidAppContext ?: run {
+        Log.d("Platform: androidAppContext not set - cannot open URL")
+        return
+    }
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+        // Required because we launch from the application context, not an Activity.
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        ctx.startActivity(intent)
+    } catch (e: Exception) {
+        // No browser available / nothing resolved the intent.
+        Log.d("Platform: no browser available - ${e.message}")
+    }
+}
+
 fun loadWeatherApiKeyFromPreferences() {
     val ctx = androidAppContext ?: return
     val key = ctx.getSharedPreferences("rewinds_prefs", Context.MODE_PRIVATE)

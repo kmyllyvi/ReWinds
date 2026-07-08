@@ -29,6 +29,32 @@ sealed class DaysOfInterestUiState {
 }
 
 /**
+ * Outcome of an Anthropic key save/delete, so the Settings dialog can render inline
+ * validation and success feedback without owning any logic (KIM-252). [messageKey] is a
+ * stable, locale-independent token the View maps to a localized string.
+ */
+sealed class AnthropicKeySaveState {
+    /** No save attempted yet, or the field is being edited again. */
+    object Idle : AnthropicKeySaveState()
+
+    /** Save was rejected because the field was blank. */
+    object EmptyError : AnthropicKeySaveState()
+
+    /** A non-blank key was persisted successfully. */
+    object Saved : AnthropicKeySaveState()
+}
+
+/**
+ * Persistence seam for the Anthropic API key. Production binds the platform Keychain
+ * (iOS) / SharedPreferences (Android) store; tests substitute an in-memory fake so the
+ * save/validate flow is exercised without touching the device (KIM-252).
+ */
+interface AnthropicKeyStore {
+    fun save(key: String)
+    fun delete()
+}
+
+/**
  * Measurement system for temperature. Retained for a future temperature-conversion ticket;
  * the Settings row is hidden until then, since temperature is always shown in °C (KIM-330).
  */
@@ -42,6 +68,11 @@ class SettingsViewModel(
     private val anthropicClient: AnthropicClient,
     /** Anthropic key gate. Injectable so the Configured chip is testable without the platform store (J10). */
     private val apiKeyChecker: ApiKeyChecker = PlatformApiKeyChecker,
+    /**
+     * Anthropic key persistence seam. Defaults to the platform Keychain/SharedPreferences
+     * store; injectable so the save/validate flow is testable without a device (KIM-252).
+     */
+    private val anthropicKeyStore: AnthropicKeyStore = core.PlatformAnthropicKeyStore,
     /**
      * Email launcher seam. Defaults to the platform [sendEmail]; injectable so feedback
      * assembly is unit-testable without opening a real mail client (KIM-334).
@@ -74,6 +105,11 @@ class SettingsViewModel(
 
     private val _visualCrossingKeyConfigured = MutableStateFlow(false)
     val visualCrossingKeyConfigured: StateFlow<Boolean> = _visualCrossingKeyConfigured.asStateFlow()
+
+    // Result of the last Anthropic key save/delete: drives inline validation + success text
+    // in the dialog. Owned here so the composable stays pure render (KIM-252).
+    private val _anthropicKeySaveState = MutableStateFlow<AnthropicKeySaveState>(AnthropicKeySaveState.Idle)
+    val anthropicKeySaveState: StateFlow<AnthropicKeySaveState> = _anthropicKeySaveState.asStateFlow()
 
     // ── Data group state ─────────────────────────────────────────────────────
     private val _autoRefreshEnabled = MutableStateFlow(true)
@@ -126,6 +162,35 @@ class SettingsViewModel(
     fun refreshKeyStatus() {
         _anthropicKeyConfigured.value = apiKeyChecker.isAnthropicKeyConfigured()
         _visualCrossingKeyConfigured.value = WeatherApiKeyManager.hasValidKey()
+    }
+
+    /**
+     * Validates and persists the Anthropic API key (KIM-252). A blank field is rejected with
+     * [AnthropicKeySaveState.EmptyError] and nothing is written; a non-blank key is stored via
+     * the key seam and reported as [AnthropicKeySaveState.Saved]. Returns true on a successful
+     * save so the View can close the dialog only when the key was actually persisted.
+     */
+    fun saveAnthropicKey(key: String): Boolean {
+        if (key.isBlank()) {
+            _anthropicKeySaveState.value = AnthropicKeySaveState.EmptyError
+            return false
+        }
+        anthropicKeyStore.save(key.trim())
+        _anthropicKeySaveState.value = AnthropicKeySaveState.Saved
+        refreshKeyStatus()
+        return true
+    }
+
+    /** Removes the stored Anthropic key and clears any prior save feedback. */
+    fun deleteAnthropicKey() {
+        anthropicKeyStore.delete()
+        _anthropicKeySaveState.value = AnthropicKeySaveState.Idle
+        refreshKeyStatus()
+    }
+
+    /** Clears save feedback, e.g. when the field is edited again or the dialog reopens. */
+    fun resetAnthropicKeySaveState() {
+        _anthropicKeySaveState.value = AnthropicKeySaveState.Idle
     }
 
     fun setLanguage(language: Language) {

@@ -52,6 +52,7 @@ import core.TestTags
 import org.koin.compose.viewmodel.koinViewModel
 import components.AppHeader
 import ui.components.IsobarBackground
+import ui.components.KeyNudgeBanner
 import ui.theme.rewinds
 
 @Composable
@@ -86,6 +87,9 @@ fun ChatView(
             // make sure we're showing the general session, not a stale place-tagged one.
             vm.ensureGeneralChat()
         }
+        // Re-derive the first-run key nudge on every (re-)entry, so saving a key in Settings
+        // and returning here clears the banner without an app restart (KIM-252).
+        vm.refreshClaudeKeyNudge()
     }
 
     // Pre-fill input with initial message (e.g. "Chat about Helsinki")
@@ -140,6 +144,19 @@ fun ChatView(
         // only — switching chats is the session switcher's job (KIM-286), not this pill.
         uiState.currentPlaceTag?.let { placeTag ->
             PlaceTagPill(placeName = placeTag)
+        }
+
+        // First-run onboarding: guide the user to add their Anthropic API key before they
+        // try to chat. Visibility is derived from the key store in the ViewModel (KIM-252),
+        // so it disappears automatically once a key is saved.
+        if (uiState.showClaudeKeyNudge) {
+            KeyNudgeBanner(
+                title = strings.claudeKeyNudgeTitle,
+                body = strings.claudeKeyNudgeBody,
+                actionLabel = strings.claudeKeyNudgeAction,
+                onActionClick = { navigator.navigateToSettings() },
+                modifier = Modifier.testTag(TestTags.CHAT_CLAUDE_KEY_NUDGE)
+            )
         }
 
         // Messages area with keyboard dismissal on click

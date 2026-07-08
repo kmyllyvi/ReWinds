@@ -60,6 +60,12 @@ object TestTags {
     const val SETTINGS_API_KEY_SAVE_BUTTON = "settings_api_key_save_button"
     const val SETTINGS_API_KEY_DELETE_BUTTON = "settings_api_key_delete_button"
     const val SETTINGS_API_KEY_CANCEL_BUTTON = "settings_api_key_cancel_button"
+    // Anthropic first-run onboarding (KIM-252)
+    const val SETTINGS_API_KEY_ERROR = "settings_api_key_error"
+    const val SETTINGS_API_KEY_SUCCESS = "settings_api_key_success"
+    const val SETTINGS_ANTHROPIC_API_LINK = "settings_anthropic_api_link"
+    const val CHAT_CLAUDE_KEY_NUDGE = "chat_claude_key_nudge"
+    const val CHAT_CLAUDE_KEY_NUDGE_ACTION = "chat_claude_key_nudge_action"
     // About group rows (KIM-334)
     const val SETTINGS_WHAT_IS_REWINDS_ROW = "settings_what_is_rewinds_row"
     const val SETTINGS_SEND_FEEDBACK_ROW = "settings_send_feedback_row"

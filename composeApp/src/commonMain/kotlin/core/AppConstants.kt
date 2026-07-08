@@ -28,6 +28,12 @@ object AppConstants {
     const val ANTHROPIC_API_BASE_URL = "https://api.anthropic.com/v1/"
 
     /**
+     * Anthropic console page where a user creates/manages their API key. Opened in the
+     * system browser from the first-run onboarding link (KIM-252).
+     */
+    const val ANTHROPIC_CONSOLE_KEYS_URL = "https://console.anthropic.com/settings/keys"
+
+    /**
      * Maximum tokens per response from Claude.
      * Balances response length with token cost.
      * Typical conversation response: 200-500 tokens

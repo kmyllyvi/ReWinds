@@ -66,6 +66,12 @@ data class ChatUiState(
     val inputText: String = "",
     val showApiKeyMissingDialog: Boolean = false,
     val showApiKeyInvalidError: Boolean = false,
+    /**
+     * First-run onboarding banner: true when no Anthropic key is stored, so the user is
+     * guided to Settings before they even try to send (KIM-252). Re-derived from the key
+     * store on entry, so it clears automatically once a key is saved — no separate flag.
+     */
+    val showClaudeKeyNudge: Boolean = false,
     val pendingDataFetch: PendingDataFetch? = null,
     /**
      * Place this chat is tagged to, shown as a static informational pill above the
@@ -136,6 +142,16 @@ class ChatViewModel(
             loadActiveSession(requestedId = null)
         }
         observeDownloadedMonths()
+        refreshClaudeKeyNudge()
+    }
+
+    /**
+     * Re-derives the first-run onboarding banner from the Anthropic key store (KIM-252).
+     * Called on init and whenever the Chat tab is (re-)entered, so saving a key in Settings
+     * and returning clears the banner without an app restart.
+     */
+    fun refreshClaudeKeyNudge() {
+        _uiState.update { it.copy(showClaudeKeyNudge = !apiKeyChecker.isAnthropicKeyConfigured()) }
     }
 
     /**

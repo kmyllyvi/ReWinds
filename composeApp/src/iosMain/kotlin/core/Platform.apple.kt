@@ -101,3 +101,11 @@ actual fun sendEmail(recipient: String, subject: String, body: String) {
     }
     platform.UIKit.UIApplication.sharedApplication.openURL(url)
 }
+
+actual fun openUrl(url: String) {
+    val nsUrl = platform.Foundation.NSURL.URLWithString(url) ?: run {
+        Log.d("Platform: could not parse URL for openUrl")
+        return
+    }
+    platform.UIKit.UIApplication.sharedApplication.openURL(nsUrl)
+}

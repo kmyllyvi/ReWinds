@@ -63,11 +63,22 @@ class SettingsViewModelTest {
     // PlatformApiKeyChecker reads BuildConfig.ANTHROPIC_API_KEY, which is baked from
     // System.getenv("ANTHROPIC_API_KEY") at build time — so on a runner where that key is present
     // the flag would be true and assertions expecting "absent" would fail.
+    /** In-memory Anthropic key store standing in for the platform Keychain/SharedPreferences. */
+    private class FakeAnthropicKeyStore : AnthropicKeyStore {
+        var saved: String? = null
+        var saveCount = 0
+        var deleteCount = 0
+        override fun save(key: String) { saved = key; saveCount++ }
+        override fun delete() { saved = null; deleteCount++ }
+    }
+
     private fun viewModel(
         store: AppSettingsStore,
-        apiKeyChecker: ApiKeyChecker = ApiKeyChecker { false }
+        apiKeyChecker: ApiKeyChecker = ApiKeyChecker { false },
+        anthropicKeyStore: AnthropicKeyStore = FakeAnthropicKeyStore()
     ): SettingsViewModel =
-        SettingsViewModel(store, dummyClient, apiKeyChecker).also { createdViewModels.add(it) }
+        SettingsViewModel(store, dummyClient, apiKeyChecker, anthropicKeyStore)
+            .also { createdViewModels.add(it) }
 
     @BeforeTest
     fun setUp() {
@@ -283,6 +294,69 @@ class SettingsViewModelTest {
         val body = SettingsViewModel.buildFeedbackBody("Intro", "2.3.4", "iOS")
         // CRLF line breaks — RFC 6068 for mailto bodies once percent-encoded.
         assertEquals("Intro\r\n\r\n---\r\nApp version: 2.3.4\r\nPlatform: iOS", body)
+    }
+
+    // ── KIM-252: Anthropic key save / validation ─────────────────────────────
+
+    @Test
+    fun saveAnthropicKey_blankIsRejectedWithEmptyErrorAndDoesNotPersist() {
+        val keyStore = FakeAnthropicKeyStore()
+        val vm = viewModel(FakeSettingsStore(), anthropicKeyStore = keyStore)
+
+        val blankResult = vm.saveAnthropicKey("")
+        val whitespaceResult = vm.saveAnthropicKey("   ")
+
+        assertFalse(blankResult)
+        assertFalse(whitespaceResult)
+        assertEquals(0, keyStore.saveCount)
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.EmptyError)
+    }
+
+    @Test
+    fun saveAnthropicKey_nonBlankPersistsTrimmedKeyAndReportsSaved() {
+        val keyStore = FakeAnthropicKeyStore()
+        val vm = viewModel(
+            FakeSettingsStore(),
+            // Report "configured" after save so the configured flag reflects a real persist.
+            apiKeyChecker = ApiKeyChecker { keyStore.saved != null },
+            anthropicKeyStore = keyStore
+        )
+
+        val result = vm.saveAnthropicKey("  sk-ant-abc123  ")
+
+        assertTrue(result)
+        assertEquals(1, keyStore.saveCount)
+        assertEquals("sk-ant-abc123", keyStore.saved)
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.Saved)
+        assertTrue(vm.anthropicKeyConfigured.value)
+    }
+
+    @Test
+    fun resetAnthropicKeySaveState_returnsToIdle() {
+        val vm = viewModel(FakeSettingsStore())
+        vm.saveAnthropicKey("") // -> EmptyError
+        vm.resetAnthropicKeySaveState()
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.Idle)
+    }
+
+    @Test
+    fun deleteAnthropicKey_clearsStoreAndSaveFeedback() {
+        val keyStore = FakeAnthropicKeyStore()
+        val vm = viewModel(FakeSettingsStore(), anthropicKeyStore = keyStore)
+        vm.saveAnthropicKey("sk-ant-abc")
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.Saved)
+
+        vm.deleteAnthropicKey()
+
+        assertEquals(1, keyStore.deleteCount)
+        assertNull(keyStore.saved)
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.Idle)
+    }
+
+    @Test
+    fun anthropicKeySaveState_defaultsToIdle() {
+        val vm = viewModel(FakeSettingsStore())
+        assertTrue(vm.anthropicKeySaveState.value is AnthropicKeySaveState.Idle)
     }
 
     @Test
