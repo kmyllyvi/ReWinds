@@ -13,7 +13,9 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * ViewModel-level tests for the bottom-nav Chat tab default: entering the Chat tab
@@ -27,11 +29,14 @@ class ChatTabGeneralSessionViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val createdViewModels = mutableListOf<ChatViewModel>()
 
-    private fun viewModel(repo: ChatRepository): ChatViewModel {
+    private fun viewModel(
+        repo: ChatRepository,
+        apiKeyChecker: core.ApiKeyChecker = core.ApiKeyChecker { true }
+    ): ChatViewModel {
         val weather = GeneralSessionFakeWeatherRepository()
         val client = AnthropicClient(apiKey = "test-key", enableLogs = false)
         val ai = AiRepository(client, WeatherTools, weather)
-        return ChatViewModel(ai, weather, repo, ioDispatcher = dispatcher)
+        return ChatViewModel(ai, weather, repo, ioDispatcher = dispatcher, apiKeyChecker = apiKeyChecker)
             .also { createdViewModels.add(it) }
     }
 
@@ -149,6 +154,43 @@ class ChatTabGeneralSessionViewModelTest {
 
         assertEquals(null, vm.uiState.value.currentPlaceTag)
         assertEquals(null, repo.placeIdOf(vm.uiState.value.activeSessionId))
+    }
+
+    // ── KIM-252: first-run Claude key nudge ──────────────────────────────────
+
+    @Test
+    fun claudeKeyNudgeShownWhenNoKeyConfigured() = runTest(dispatcher) {
+        val repo = GeneralSessionFakeChatRepository().apply { seed(id = 1L, ts = 100L, placeId = null) }
+        val vm = viewModel(repo, apiKeyChecker = core.ApiKeyChecker { false })
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.showClaudeKeyNudge)
+    }
+
+    @Test
+    fun claudeKeyNudgeHiddenWhenKeyConfigured() = runTest(dispatcher) {
+        val repo = GeneralSessionFakeChatRepository().apply { seed(id = 1L, ts = 100L, placeId = null) }
+        val vm = viewModel(repo, apiKeyChecker = core.ApiKeyChecker { true })
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.showClaudeKeyNudge)
+    }
+
+    @Test
+    fun refreshClaudeKeyNudgeClearsBannerOnceKeyBecomesConfigured() = runTest(dispatcher) {
+        // Simulates saving a key in Settings then returning to Chat: the checker flips to
+        // "configured" and refresh must clear the banner without an app restart.
+        val repo = GeneralSessionFakeChatRepository().apply { seed(id = 1L, ts = 100L, placeId = null) }
+        var configured = false
+        val vm = viewModel(repo, apiKeyChecker = core.ApiKeyChecker { configured })
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.showClaudeKeyNudge)
+
+        configured = true
+        vm.refreshClaudeKeyNudge()
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.showClaudeKeyNudge)
     }
 }
 

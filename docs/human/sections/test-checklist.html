@@ -239,6 +239,33 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-07</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-252">KIM-252</a></td>
+        <td class="col-area">Onboarding — Claude API key (iOS)</td>
+        <td class="case">On a clean iOS install with <strong>no</strong> Anthropic key in Keychain, open the Chat tab. <span class="expect">Expected: an "AI chat not set up" nudge banner appears above the messages before you send anything; tapping it opens Settings.</span></td>
+        <td class="automate none">No — on-device first-run/Keychain state; nudge visibility logic is unit-tested, but the real Keychain-absent path is iOS-only.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-08</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-252">KIM-252</a></td>
+        <td class="col-area">Settings — Anthropic key dialog (iOS)</td>
+        <td class="case">Open Settings → Anthropic API Key. Tap the "Get an API key from the Anthropic console" link; press Save with an empty field; then paste a key and Save. Repeat in German locale. <span class="expect">Expected: the link opens <code>console.anthropic.com/settings/keys</code> in the <strong>system browser</strong> (not an in-app WebView); empty Save shows the inline "Please enter your API key." validation and persists nothing; a non-empty Save shows the "✓ API key saved" confirmation and the row flips to Configured. All copy says "API key" (never "token"). German copy conveys the same and wraps cleanly.</span></td>
+        <td class="automate none">No — external-browser hand-off and Keychain persistence are on-device/iOS; validation + save-state logic is covered by <code>SettingsViewModelTest</code>.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-08</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-252">KIM-252</a></td>
+        <td class="col-area">Onboarding — nudge clears after save (iOS)</td>
+        <td class="case">With the Chat nudge showing, tap it → save a valid key in Settings → return to Chat, then relaunch the app. <span class="expect">Expected: the nudge is gone immediately on return and stays gone on subsequent launches (state derived purely from the Keychain, no separate first-run flag).</span></td>
+        <td class="automate none">No — requires a real app relaunch + Keychain persistence on iOS; the "refresh clears banner" transition is unit-tested.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-08</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>
