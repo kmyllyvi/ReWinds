@@ -574,6 +574,12 @@
           <td><span class="pill pill-auto">Automated ✓</span></td>
           <td>Runs inside Claude Code (Pro subscription, no API token cost) — not a GitHub Action. Checks Linear for tickets moved to Done in the last 24h, finds the merge commit on <code>develop</code>, and opens a docs PR. Exits cleanly if nothing completed. The <code>.github/workflows/doc-agent.yml</code> Action is parked at <code>workflow_dispatch</code> only (no longer triggers on push).</td>
         </tr>
+        <tr>
+          <td>Layer 1 UI-test sweep (Compose instrumented)</td>
+          <td>Claude Code scheduled task runs <code>/run-instrumented-tests</code> Mon/Fri at 09:07</td>
+          <td><span class="pill pill-auto">Automated ✓</span></td>
+          <td>Runs locally against a booted Android emulator, not a GitHub-hosted runner — Compose instrumented tests need a real emulator, unlike the doc-sweep/code-review moves. Skips cleanly (not a failure) if no emulator is available at run time. On a failure, opens/updates a <code>needs-human</code> Linear ticket rather than attempting a fix — detection only. The <code>android-instrumented</code> job in <code>.github/workflows/ci.yml</code> is parked at <code>workflow_dispatch</code> only (no longer triggers on push/PR) — this was the real per-PR cost driver among the UI-test layers.</td>
+        </tr>
       </tbody>
     </table>
 
@@ -582,11 +588,12 @@
       <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>Doc sweep — Phill now runs on a Claude Code cron (Tue–Sat 09:07), no GitHub Action needed.</li>
       <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>Marcy on PR open — in-session Randy→Marcy handover, no GitHub Action needed.</li>
       <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>CI auto-fix — in-session blocking watch by Randy, bounded to 2 attempts.</li>
+      <li><span class="pill pill-auto" style="margin-right:6px;">Done</span>Layer 1 UI-test sweep — moved off per-PR CI to a Claude Code scheduled task (Mon/Fri 09:07), running locally against an emulator.</li>
       <li>Once Randy is trusted end-to-end, automate <strong>Randy dispatch from Todo</strong> (scheduled sweep or GitHub Action).</li>
       <li>Add <strong>Seppo/Mr.T auto-trigger</strong> based on Marcy's review tags.</li>
       <li>Keep Gate 1 and Gate 2 <strong>permanently manual</strong>. (Merge is now automated on review + CI; manual testing is decoupled to the Test Checklist and verified async.)</li>
     </ol>
-    <p style="font-size:12px; color:var(--text-tertiary); margin-top:10px;">The corresponding GitHub Actions workflows (<code>code-review.yml</code>, <code>doc-agent.yml</code>, <code>ci-failure.yml</code>) are retained for manual <code>workflow_dispatch</code> runs but parked from auto-triggering — a cost decision (free-plan Actions minutes), not a quality one.</p>
+    <p style="font-size:12px; color:var(--text-tertiary); margin-top:10px;">The corresponding GitHub Actions workflows (<code>code-review.yml</code>, <code>doc-agent.yml</code>, <code>ci-failure.yml</code>, and the <code>android-instrumented</code> job in <code>ci.yml</code>) are retained for manual <code>workflow_dispatch</code> runs but parked from auto-triggering — a cost decision (free-plan Actions minutes), not a quality one.</p>
   </section>
 
 </main>

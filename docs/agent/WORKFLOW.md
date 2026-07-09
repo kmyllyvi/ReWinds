@@ -217,6 +217,22 @@ The GitHub Actions code-review workflow (`.github/workflows/code-review.yml`) is
 Actions minutes), not a quality one — restore the `pull_request` trigger to re-enable CI review if the
 budget ever allows.
 
+### Layer 1 UI-test sweep — Claude Code scheduled task, Mon/Fri 09:07
+The `android-instrumented` CI job (Layer 1 Compose semantic UI tests, `connectedDebugAndroidTest` on an
+emulator) no longer runs on every push/PR — that was the real per-PR cost driver among the UI-test
+layers (the Maestro E2E suite was already push-to-master/manual-only since KIM-294). The GitHub Actions
+job is parked at `workflow_dispatch` only in `.github/workflows/ci.yml`, same cost-decision pattern as
+`code-review.yml`/`doc-agent.yml`.
+
+In its place, a Claude Code scheduled task (`rewinds-instrumented-ui-tests`, Mon/Fri 09:07 local) runs
+`/run-instrumented-tests` against a locally-booted Android emulator — Compose instrumented tests need a
+real emulator to execute, so unlike the doc-sweep/code-review moves this genuinely runs on Kimmo's
+machine, not a GitHub-hosted runner, and only fires anything useful if an emulator happens to be
+available at run time (it skips cleanly, not as a failure, if none is booted). On a test failure it
+opens/updates a `needs-human` Linear ticket rather than attempting a fix — this is a detection sweep, not
+an auto-fix loop. Runs inside Claude Code (Pro subscription, no API token cost). Restore the `pull_request`
+trigger in `ci.yml` to go back to unattended per-PR coverage if the budget ever allows.
+
 ### Doc sweep (Phill) — Claude Code cron, Tue–Sat 09:07
 Runs inside Claude Code (Pro subscription, no API token cost). Checks Linear for tickets that moved
 to Done in the last 24h, finds the corresponding merge commit on `develop`, and opens a docs PR
