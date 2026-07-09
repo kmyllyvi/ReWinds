@@ -266,6 +266,33 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-08</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-365">KIM-365</a></td>
+        <td class="col-area">Home — archive place long-press</td>
+        <td class="case">On the Home place list, long-press a place row. <span class="expect">Expected: an action menu appears anchored to the row with a single "Archive" item (archive-box icon, never the word Delete/Remove). Long-press is discoverable enough / the gesture feels responsive.</span></td>
+        <td class="automate">Recommended: Compose/Maestro test triggering long-press and asserting <code>home_place_action_menu</code> / <code>home_archive_action</code>. Gesture feel is a one-off manual check.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-09</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-365">KIM-365</a></td>
+        <td class="col-area">Home — archive confirmation + list update</td>
+        <td class="case">Tap "Archive" in the menu → read the confirmation modal → confirm. Then re-add the same place via search. <span class="expect">Expected: modal copy clearly says the place leaves the list but downloaded data is kept and returns on re-add; confirming drops the row with no full-screen flicker; re-adding restores it with previously downloaded months intact. Cancelling/tapping outside changes nothing.</span></td>
+        <td class="automate none">No — end-to-end archive→re-add persistence and no-flicker are on-device/UX; ViewModel state transitions are unit-tested.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-09</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-365">KIM-365</a></td>
+        <td class="col-area">Home — empty state</td>
+        <td class="case">Archive the last remaining place. <span class="expect">Expected: Home shows the minimal "No places yet" row with a search hint instead of a blank scroll area.</span></td>
+        <td class="automate">Recommended: Compose test asserting <code>home_empty_state</code> is shown when the list is empty and not loading.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-09</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>
