@@ -16,6 +16,11 @@ object TestTags {
     const val HOME_SEARCH_FIELD = "home_search_field"
     const val HOME_PLACE_ROW = "home_place_row"
     const val HOME_SEARCH_SUGGESTION = "home_search_suggestion"
+    // Archive place flow (KIM-365)
+    const val HOME_PLACE_ACTION_MENU = "home_place_action_menu"
+    const val HOME_ARCHIVE_ACTION = "home_archive_action"
+    const val HOME_ARCHIVE_CONFIRM = "home_archive_confirm"
+    const val HOME_EMPTY_STATE = "home_empty_state"
 
     // ── First-run onboarding (KIM-309) ───────────────────────────────────────────
     /** "Configure now" CTA on the blocking VC-key onboarding gate. */

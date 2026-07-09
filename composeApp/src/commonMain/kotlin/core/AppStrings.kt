@@ -29,6 +29,20 @@ data class AppStrings(
     val apiError: String,
     val deletePlaceTitle: String,
     val deletePlaceMessage: (String) -> String,
+    // Archive place flow (KIM-365) — long-press action menu + confirmation modal.
+    /** Action-menu item label. Must never say "Delete"/"Remove" — data is retained. */
+    val archivePlaceAction: String,
+    /** Content description for the archive action icon. */
+    val archivePlaceIconDesc: String,
+    /** Confirmation modal title. */
+    val archivePlaceTitle: String,
+    /** Confirmation modal body; explains the place leaves the list but data is kept and restorable. */
+    val archivePlaceMessage: (String) -> String,
+    /** Confirm-button label on the archive modal. */
+    val archivePlaceConfirm: String,
+    /** Empty-state row shown when no places remain. */
+    val noPlacesTitle: String,
+    val noPlacesHint: String,
     val settingsIconDesc: String,
     val chatIconDesc: String,
     val daysStored: (Int) -> String,
@@ -281,6 +295,13 @@ data class AppStrings(
             apiError = "API Error",
             deletePlaceTitle = "Delete Place",
             deletePlaceMessage = { name -> "Are you sure you want to delete '$name'? This action cannot be undone." },
+            archivePlaceAction = "Archive",
+            archivePlaceIconDesc = "Archive place",
+            archivePlaceTitle = "Archive place?",
+            archivePlaceMessage = { name -> "'$name' will be removed from your list, but its downloaded weather data is kept. Add the place back via search anytime and it'll return with all previously downloaded months intact." },
+            archivePlaceConfirm = "Archive",
+            noPlacesTitle = "No places yet",
+            noPlacesHint = "Search for a place above to get started.",
             settingsIconDesc = "Settings",
             chatIconDesc = "AI Chat",
             daysStored = { count -> if (count == 1) "$count day stored data" else "$count days stored data" },
@@ -521,6 +542,13 @@ data class AppStrings(
             apiError = "API-Fehler",
             deletePlaceTitle = "Ort l\u00F6schen",
             deletePlaceMessage = { name -> "M\u00F6chten Sie '$name' wirklich l\u00F6schen? Diese Aktion kann nicht r\u00FCckg\u00E4ngig gemacht werden." },
+            archivePlaceAction = "Archivieren",
+            archivePlaceIconDesc = "Ort archivieren",
+            archivePlaceTitle = "Ort archivieren?",
+            archivePlaceMessage = { name -> "'$name' wird aus Ihrer Liste entfernt, aber die heruntergeladenen Wetterdaten bleiben erhalten. F\u00FCgen Sie den Ort jederzeit \u00FCber die Suche wieder hinzu \u2013 er kehrt mit allen zuvor heruntergeladenen Monaten zur\u00FCck." },
+            archivePlaceConfirm = "Archivieren",
+            noPlacesTitle = "Noch keine Orte",
+            noPlacesHint = "Suchen Sie oben nach einem Ort, um zu beginnen.",
             settingsIconDesc = "Einstellungen",
             chatIconDesc = "KI-Chat",
             daysStored = { count -> if (count == 1) "$count Tag gespeichert" else "$count Tage gespeichert" },

@@ -1,9 +1,11 @@
 package home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,8 +30,9 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,6 +57,7 @@ import core.GeoSearchResult
 import core.LocalAppStrings
 import core.Navigator
 import core.TestTags
+import ui.components.ArchiveBoxIcon
 import ui.components.IsobarBackground
 import ui.theme.ReWindsColors
 import ui.theme.rewinds
@@ -93,6 +97,15 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                 navigator.navigateToSettings()
             },
             onDismiss = vm::onVcKeyErrorDismissed
+        )
+    }
+
+    // Archive confirmation modal — nothing is archived until this is confirmed.
+    uiState.archiveConfirmationPlace?.let { placeName ->
+        ArchiveConfirmationDialog(
+            placeName = placeName,
+            onConfirm = vm::onArchiveConfirmed,
+            onDismiss = vm::onArchiveCancelled
         )
     }
 
@@ -151,12 +164,23 @@ fun HomeView(vm: HomeViewModel = koinViewModel(), navigator: Navigator) {
                     }
                 }
 
+                // Empty state — no places and not loading. Minimal single row (KIM-365).
+                if (!uiState.isLoading && uiState.placeDisplayData.isEmpty()) {
+                    item {
+                        EmptyPlacesRow()
+                    }
+                }
+
                 // Places list
                 if (uiState.placeDisplayData.isNotEmpty()) {
                     items(uiState.placeDisplayData, key = { it.name }) { place ->
                         PlaceRow(
                             place = place,
-                            onClick = { vm.onSavedPlaceSelected(place.name) }
+                            onClick = { vm.onSavedPlaceSelected(place.name) },
+                            onLongPress = { vm.onPlaceLongPressed(place.name) },
+                            menuExpanded = uiState.archiveMenuPlace == place.name,
+                            onMenuDismiss = vm::onArchiveMenuDismissed,
+                            onArchive = vm::onArchiveRequested
                         )
                     }
                 }
@@ -224,50 +248,144 @@ private fun AlertBannerRow(banner: AlertBanner) {
 
 /**
  * A single place row: status dot, name, subtitle, chevron.
+ * Tap opens the place; long-press opens the archive action menu (KIM-365).
  * Status dot colour comes from [PlaceDisplayData.status] — never computed here.
+ * Menu visibility is driven entirely by [menuExpanded] (VM state), not local state.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PlaceRow(
+    place: PlaceDisplayData,
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+    menuExpanded: Boolean,
+    onMenuDismiss: () -> Unit,
+    onArchive: () -> Unit
+) {
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.HOME_PLACE_ROW)
+                .padding(horizontal = 12.dp, vertical = 5.dp)
+                .background(
+                    color = MaterialTheme.rewinds.surface.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(13.dp)
+                )
+                .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Status dot — colour is purely determined by VM state
+            StatusDot(status = place.status)
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Name + subtitle
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.rewinds.textPrimary
+                )
+                Text(
+                    text = place.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.rewinds.textSecondary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            // Chevron
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.rewinds.textTertiary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        // Long-press action menu — single "Archive" item, never "Delete".
+        PlaceActionMenu(
+            expanded = menuExpanded,
+            onDismiss = onMenuDismiss,
+            onArchive = onArchive
+        )
+    }
+}
+
+/**
+ * Dropdown action menu shown on long-press of a place row. Contains exactly one
+ * item — "Archive" — with a dedicated archive-box icon distinct from the trash icon.
  */
 @Composable
-private fun PlaceRow(place: PlaceDisplayData, onClick: () -> Unit) {
+private fun PlaceActionMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onArchive: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        modifier = Modifier.testTag(TestTags.HOME_PLACE_ACTION_MENU)
+    ) {
+        DropdownMenuItem(
+            text = { Text(strings.archivePlaceAction) },
+            onClick = onArchive,
+            leadingIcon = {
+                Icon(
+                    imageVector = ArchiveBoxIcon,
+                    contentDescription = strings.archivePlaceIconDesc,
+                    tint = MaterialTheme.rewinds.textSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+            modifier = Modifier.testTag(TestTags.HOME_ARCHIVE_ACTION)
+        )
+    }
+}
+
+/**
+ * Minimal empty-state row shown when there are no saved places (KIM-365).
+ * A single row — icon + one line + a search hint — not a full onboarding screen.
+ */
+@Composable
+private fun EmptyPlacesRow() {
+    val strings = LocalAppStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag(TestTags.HOME_PLACE_ROW)
+            .testTag(TestTags.HOME_EMPTY_STATE)
             .padding(horizontal = 12.dp, vertical = 5.dp)
             .background(
-                color = MaterialTheme.rewinds.surface.copy(alpha = 0.75f),
+                color = MaterialTheme.rewinds.surface.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(13.dp)
             )
-            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Status dot — colour is purely determined by VM state
-        StatusDot(status = place.status)
+        Icon(
+            imageVector = ArchiveBoxIcon,
+            contentDescription = null,
+            tint = MaterialTheme.rewinds.textTertiary,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(modifier = Modifier.width(12.dp))
-
-        // Name + subtitle
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = place.name,
+                text = strings.noPlacesTitle,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.rewinds.textPrimary
             )
             Text(
-                text = place.subtitle,
+                text = strings.noPlacesHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.rewinds.textSecondary,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
-
-        // Chevron
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.rewinds.textTertiary,
-            modifier = Modifier.size(20.dp)
-        )
     }
 }
 
@@ -470,6 +588,36 @@ private fun VcKeyErrorDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(strings.dismiss) }
+        }
+    )
+}
+
+@Composable
+private fun ArchiveConfirmationDialog(
+    placeName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalAppStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = ArchiveBoxIcon,
+                contentDescription = strings.archivePlaceIconDesc,
+                tint = MaterialTheme.rewinds.accentBlue
+            )
+        },
+        title = { Text(strings.archivePlaceTitle) },
+        text = { Text(strings.archivePlaceMessage(placeName)) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.testTag(TestTags.HOME_ARCHIVE_CONFIRM)
+            ) { Text(strings.archivePlaceConfirm) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(strings.cancel) }
         }
     )
 }

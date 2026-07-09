@@ -25,9 +25,18 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
  * Mock implementation of WeatherRepository for testing
  */
 class MockWeatherRepository : WeatherRepository {
+    // Names returned by getSavedPlaceNames(); archivePlace() removes from this set so the
+    // ViewModel's reload reflects the soft-delete, mirroring the real repository's behaviour.
+    val savedPlaceNames = mutableListOf<String>()
+    val archivedPlaces = mutableListOf<String>()
+
     override suspend fun searchForLocations(query: String): List<GeoSearchResult> = emptyList()
-    override suspend fun getSavedPlaceNames(): List<String> = emptyList()
+    override suspend fun getSavedPlaceNames(): List<String> = savedPlaceNames.toList()
     override suspend fun getPlaceDayCounts(): Map<String, Long> = emptyMap()
+    override suspend fun archivePlace(placeName: String) {
+        archivedPlaces.add(placeName)
+        savedPlaceNames.remove(placeName)
+    }
     override suspend fun getSavedDataFor(resolvedPlace: String): core.WeatherResponse? = null
     override suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): core.WeatherResponse {
         return core.WeatherResponse(resolvedAddress = "", address = "", queryCost = 0, latitude = 0.0, longitude = 0.0, timezone = "", tzoffset = 0.0, days = emptyList())
@@ -111,6 +120,15 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // Rebuilds the ViewModel so its init-time loadSavedPlaces() picks up names seeded on the
+    // mock repository after the default setup() construction. Avoids exposing test-only
+    // production API just to reload the list.
+    private fun freshViewModel(): HomeViewModel {
+        val vm = HomeViewModel(weatherRepository, DatabaseExportImport(), database)
+        testDispatcher.scheduler.advanceUntilIdle()
+        return vm
+    }
+
     @Test
     fun testHomeViewModelInitialState() {
         // Verify initial UI state is correct
@@ -175,18 +193,78 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun testDeleteRequestFlow() {
-        // Initially no delete confirmation
-        assertFalse(viewModel.uiState.value.showDeleteConfirmation)
+    fun testLongPressOpensActionMenuForTargetPlace() {
+        // Initially no menu open
+        assertEquals(null, viewModel.uiState.value.archiveMenuPlace)
 
-        // Request delete
-        viewModel.onDeleteRequest("Test Place")
-        assertTrue(viewModel.uiState.value.showDeleteConfirmation)
-        assertEquals("Test Place", viewModel.uiState.value.placeToDelete)
+        viewModel.onPlaceLongPressed("Helsinki")
+        assertEquals("Helsinki", viewModel.uiState.value.archiveMenuPlace)
 
-        // Cancel delete
-        viewModel.onDeleteCancelled()
-        assertFalse(viewModel.uiState.value.showDeleteConfirmation)
+        // Dismissing the menu clears the target
+        viewModel.onArchiveMenuDismissed()
+        assertEquals(null, viewModel.uiState.value.archiveMenuPlace)
+    }
+
+    @Test
+    fun testArchiveRequestClosesMenuAndOpensConfirmation() {
+        viewModel.onPlaceLongPressed("Helsinki")
+        assertEquals("Helsinki", viewModel.uiState.value.archiveMenuPlace)
+
+        viewModel.onArchiveRequested()
+        // Menu closed, confirmation targets the same place — no data changed yet
+        assertEquals(null, viewModel.uiState.value.archiveMenuPlace)
+        assertEquals("Helsinki", viewModel.uiState.value.archiveConfirmationPlace)
+        assertTrue(weatherRepository.archivedPlaces.isEmpty())
+    }
+
+    @Test
+    fun testConfirmArchiveCallsRepositoryAndUpdatesList() {
+        weatherRepository.savedPlaceNames.addAll(listOf("Helsinki", "Turku"))
+        val viewModel = freshViewModel()
+
+        viewModel.onPlaceLongPressed("Helsinki")
+        viewModel.onArchiveRequested()
+        viewModel.onArchiveConfirmed()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Repository archived the target, confirmation modal closed, list no longer shows it.
+        assertEquals(listOf("Helsinki"), weatherRepository.archivedPlaces)
+        assertEquals(null, viewModel.uiState.value.archiveConfirmationPlace)
+        val names = viewModel.uiState.value.placeDisplayData.map { it.name }
+        assertEquals(listOf("Turku"), names)
+    }
+
+    @Test
+    fun testCancelArchiveLeavesStateUntouched() {
+        weatherRepository.savedPlaceNames.addAll(listOf("Helsinki", "Turku"))
+        val viewModel = freshViewModel()
+
+        viewModel.onPlaceLongPressed("Helsinki")
+        viewModel.onArchiveRequested()
+        viewModel.onArchiveCancelled()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nothing archived, list unchanged.
+        assertTrue(weatherRepository.archivedPlaces.isEmpty())
+        assertEquals(null, viewModel.uiState.value.archiveConfirmationPlace)
+        val names = viewModel.uiState.value.placeDisplayData.map { it.name }
+        assertEquals(listOf("Helsinki", "Turku"), names)
+    }
+
+    @Test
+    fun testArchivingLastPlaceTransitionsToEmptyState() {
+        weatherRepository.savedPlaceNames.add("Helsinki")
+        val viewModel = freshViewModel()
+        assertEquals(1, viewModel.uiState.value.placeDisplayData.size)
+
+        viewModel.onPlaceLongPressed("Helsinki")
+        viewModel.onArchiveRequested()
+        viewModel.onArchiveConfirmed()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // List empty and no longer loading — the empty-state branch renders.
+        assertTrue(viewModel.uiState.value.placeDisplayData.isEmpty())
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
@@ -200,17 +278,5 @@ class HomeViewModelTest {
 
         // Dismiss error (even if no error, function should not crash)
         viewModel.onErrorDismissed()
-    }
-
-    @Test
-    fun testDeleteCancellationFlow() {
-        // Request a delete
-        viewModel.onDeleteRequest("Place To Delete")
-        assertTrue(viewModel.uiState.value.showDeleteConfirmation)
-
-        // Cancel it
-        viewModel.onDeleteCancelled()
-        assertFalse(viewModel.uiState.value.showDeleteConfirmation)
-        assertEquals(null, viewModel.uiState.value.placeToDelete)
     }
 }
