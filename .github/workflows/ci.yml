@@ -5,6 +5,7 @@ on:
     branches: [ develop, main ]
   pull_request:
     branches: [ develop, main ]
+  workflow_dispatch:  # lets android-instrumented be run on demand — see that job's if: guard
 
 jobs:
   android:
@@ -89,12 +90,19 @@ jobs:
   # Layer 1 of the UI testing strategy (KIM-293): Compose semantic UI tests that
   # drive real Views with in-memory fakes (FakeNavigator, fake repositories) on an
   # emulator. No network, no real DB, no secrets — distinct from the Maestro E2E
-  # suite (e2e-smoke.yml). Wires the androidInstrumentedTest source set into per-PR
-  # CI so it can no longer silently rot (COVERAGE-GAP-ANALYSIS.md §2.5).
+  # suite (e2e-smoke.yml).
+  #
+  # COST: emulator jobs are slow and eat CI minutes on every PR for a suite whose
+  # real value is caught just as well by a local run. So this no longer runs per-PR
+  # automatically — manual trigger only (workflow_dispatch), which saves CI minutes.
+  # Actual per-cycle coverage comes from a scheduled local routine (Monday + Friday)
+  # that runs `./gradlew :composeApp:connectedDebugAndroidTest` against a real
+  # emulator; see docs/agent/WORKFLOW.md for that mechanism.
   android-instrumented:
     name: Android Instrumented Tests (Compose semantic)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
