@@ -578,7 +578,7 @@
           <td>Layer 1 UI-test sweep (Compose instrumented)</td>
           <td>Claude Code scheduled task runs <code>/run-instrumented-tests</code> Mon/Fri at 09:07</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td>Runs locally against a booted Android emulator, not a GitHub-hosted runner — Compose instrumented tests need a real emulator, unlike the doc-sweep/code-review moves. Skips cleanly (not a failure) if no emulator is available at run time. On a failure, opens/updates a <code>needs-human</code> Linear ticket rather than attempting a fix — detection only. The <code>android-instrumented</code> job in <code>.github/workflows/ci.yml</code> is parked at <code>workflow_dispatch</code> only (no longer triggers on push/PR) — this was the real per-PR cost driver among the UI-test layers.</td>
+          <td>Runs locally against a booted Android emulator, not a GitHub-hosted runner — Compose instrumented tests need a real emulator, unlike the doc-sweep/code-review moves. Skips cleanly (not a failure) if no emulator is available at run time. On a failure, opens/updates a <code>needs-human</code> Linear ticket rather than attempting a fix — detection only. The <code>android-instrumented</code> job in <code>.github/workflows/ci.yml</code> is parked at <code>workflow_dispatch</code> only (no longer triggers on push/PR) — this was the real per-PR cost driver among the UI-test layers. Every run — pass or fail — also refreshes <code>docs/human/test-runs/latest.md</code> via <code>run-full-tests.sh</code>, a cheap always-on "what ran, how long" artifact (no coverage instrumentation, unlike the heavier opt-in <code>/coverage</code> report).</td>
         </tr>
       </tbody>
     </table>

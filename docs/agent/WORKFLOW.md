@@ -225,13 +225,22 @@ job is parked at `workflow_dispatch` only in `.github/workflows/ci.yml`, same co
 `code-review.yml`/`doc-agent.yml`.
 
 In its place, a Claude Code scheduled task (`rewinds-instrumented-ui-tests`, Mon/Fri 09:07 local) runs
-`/run-instrumented-tests` against a locally-booted Android emulator — Compose instrumented tests need a
+`./run-full-tests.sh` against a locally-booted Android emulator — Compose instrumented tests need a
 real emulator to execute, so unlike the doc-sweep/code-review moves this genuinely runs on Kimmo's
 machine, not a GitHub-hosted runner, and only fires anything useful if an emulator happens to be
 available at run time (it skips cleanly, not as a failure, if none is booted). On a test failure it
 opens/updates a `needs-human` Linear ticket rather than attempting a fix — this is a detection sweep, not
 an auto-fix loop. Runs inside Claude Code (Pro subscription, no API token cost). Restore the `pull_request`
 trigger in `ci.yml` to go back to unattended per-PR coverage if the budget ever allows.
+
+**Persisted run artifact, even when green.** Before this, the only trace of a test run was a Linear
+ticket on failure — no record existed of "this ran, it passed, here's how long it took." `run-full-tests.sh`
+(repo root; also available as `/run-full-tests`) always writes a timestamped summary (suite, pass/fail,
+test count, duration) to `docs/human/test-runs/latest.md`, overwriting it on every run — a glanceable
+artifact without waiting for a failure, deliberately cheap: no bytecode instrumentation, no HTML, no
+trend history (that heavier job stays the separate, opt-in `/coverage` command and its
+`docs/coverage/history.json` trend log). The scheduled sweep commits and pushes this one file to
+`develop` after each run.
 
 ### Doc sweep (Phill) — Claude Code cron, Tue–Sat 09:07
 Runs inside Claude Code (Pro subscription, no API token cost). Checks Linear for tickets that moved
