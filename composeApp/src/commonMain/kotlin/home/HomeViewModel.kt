@@ -65,8 +65,8 @@ data class PlaceDisplayData(
  * @property searchResults The list of search results.
  * @property isSearching Whether a search is in progress.
  * @property error A string containing an error message, if any.
- * @property showDeleteConfirmation Whether to show the delete confirmation dialog.
- * @property placeToDelete The name of the place to be deleted.
+ * @property archiveMenuPlace The place whose long-press action menu is open, or null if none.
+ * @property archiveConfirmationPlace The place whose archive confirmation modal is open, or null if none.
  * @property showDebugMenu Whether to show the debug menu.
  * @property debugMessage The current debug message.
  */
@@ -82,8 +82,10 @@ data class HomeUiState(
     val isSearching: Boolean = false,
     val error: String? = null,
     val vcKeyError: VcKeyErrorType? = null,
-    val showDeleteConfirmation: Boolean = false,
-    val placeToDelete: String? = null,
+    // The place whose long-press action menu is currently open (null = menu closed).
+    val archiveMenuPlace: String? = null,
+    // The place whose archive confirmation modal is currently open (null = modal closed).
+    val archiveConfirmationPlace: String? = null,
     val showDebugMenu: Boolean = false,
     val debugMessage: String = "",
     val importFilePath: String = "",
@@ -260,31 +262,49 @@ class HomeViewModel(
     }
 
     /**
-     * Called when a delete request is made.
+     * Called when a place row is long-pressed — opens the action menu for that place.
      *
-     * @param placeName The name of the place to delete.
+     * @param placeName The name of the long-pressed place.
      */
-    fun onDeleteRequest(placeName: String) {
-        _uiState.update { it.copy(showDeleteConfirmation = true, placeToDelete = placeName) }
+    fun onPlaceLongPressed(placeName: String) {
+        _uiState.update { it.copy(archiveMenuPlace = placeName) }
     }
 
     /**
-     * Called when the delete confirmation is cancelled.
+     * Called when the action menu is dismissed without picking an item.
      */
-    fun onDeleteCancelled() {
-        _uiState.update { it.copy(showDeleteConfirmation = false, placeToDelete = null) }
+    fun onArchiveMenuDismissed() {
+        _uiState.update { it.copy(archiveMenuPlace = null) }
     }
 
     /**
-     *
-     * Called when the delete confirmation is confirmed.
+     * Called when "Archive" is tapped in the action menu — closes the menu and opens the
+     * confirmation modal. No data changes until the modal is confirmed.
      */
-    fun onDeleteConfirmed() {
-        _uiState.value.placeToDelete?.let { placeToDelete ->
+    fun onArchiveRequested() {
+        _uiState.update {
+            it.copy(archiveMenuPlace = null, archiveConfirmationPlace = it.archiveMenuPlace)
+        }
+    }
+
+    /**
+     * Called when the archive confirmation is dismissed (cancel or tap-outside).
+     * Leaves the place list untouched.
+     */
+    fun onArchiveCancelled() {
+        _uiState.update { it.copy(archiveConfirmationPlace = null) }
+    }
+
+    /**
+     * Called when the archive confirmation is confirmed — soft-deletes the place via
+     * [WeatherRepository.archivePlace] and refreshes the list so the archived place drops out.
+     */
+    fun onArchiveConfirmed() {
+        _uiState.value.archiveConfirmationPlace?.let { placeToArchive ->
             viewModelScope.launch {
-                weatherRepository.deletePlace(placeToDelete)
+                weatherRepository.archivePlace(placeToArchive)
                 loadSavedPlaces()
-                _uiState.update { it.copy(showDeleteConfirmation = false, placeToDelete = null) }
+                _uiState.update { it.copy(archiveConfirmationPlace = null) }
             }
         }
     }
