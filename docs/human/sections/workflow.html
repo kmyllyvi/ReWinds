@@ -542,7 +542,7 @@
           <td>Diagnose CI failures</td>
           <td>Randy blocks on the PR's CI run in-session (<code>gh run watch --exit-status</code>) right after opening it</td>
           <td><span class="pill pill-auto">Automated ✓</span></td>
-          <td>In-session, not a GitHub Action: on a red build Randy pulls the logs, fixes, commits with an <code>[auto-fix]</code> marker, pushes, and re-watches — bounded to <strong>2 attempts</strong>, then <code>needs-human</code> + Kimmo. Only covers the run Randy just triggered, not overnight/third-party failures. The <code>.github/workflows/ci-failure.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>workflow_run</code> trigger for unattended coverage.</td>
+          <td>In-session, not a GitHub Action: on a red build Randy pulls the logs, <strong>reproduces locally first</strong> (<code>./gradlew buildAndroidOnly</code> / <code>./gradlew :composeApp:testDebugUnitTest</code>) so each push is already expected to pass, fixes, commits with an <code>[auto-fix]</code> marker, pushes, and re-watches — bounded to <strong>2 attempts</strong>, then <code>needs-human</code> + Kimmo. Only covers the run Randy just triggered, not overnight/third-party failures. The <code>.github/workflows/ci-failure.yml</code> Action is parked at <code>workflow_dispatch</code> only (cost decision); restore its <code>workflow_run</code> trigger for unattended coverage.</td>
         </tr>
         <tr>
           <td>Dispatch Marcy on PR open</td>

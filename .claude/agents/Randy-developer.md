@@ -183,8 +183,12 @@ docs/agent/WORKFLOW.md.
   (`gh run list --branch <branch> --workflow CI --limit 1`) and block on it:
   `gh run watch <run-id> --exit-status` (use a sane timeout, ~20 min — if it times out, report and stop;
   don't hang). If CI **passes**, continue. If CI **fails**: pull the failing logs
-  (`gh run view <run-id> --log-failed`), reproduce locally where you can, fix, commit with an `[auto-fix]`
-  marker in the message, push, and watch the new run. **Bound this to 2 fix attempts.** If CI is still red
+  (`gh run view <run-id> --log-failed`), then **reproduce locally before touching anything** —
+  `./gradlew buildAndroidOnly` for compile/lint failures, `./gradlew :composeApp:testDebugUnitTest` for
+  test failures. Do not push a guess: confirm the fix is green locally first, *then* commit with an
+  `[auto-fix]` marker in the message, push, and watch the new run. This local-repro-first discipline is
+  what keeps CI auto-fix off the Actions-minutes budget — every push should already be expected to pass,
+  not be another shot in a push/watch/push loop. **Bound this to 2 fix attempts.** If CI is still red
   after the second attempt — or the failure isn't yours to resolve (flaky infra, a secret/config issue,
   an architectural call) — stop, add `needs-human`, assign Kimmo, and report the failure. This runs in your
   session on the Pro subscription: no API tokens, but you *are* holding the session while CI runs, so don't

@@ -226,10 +226,13 @@ triggers automatically.
 
 ### CI auto-fix (Randy) — in-session, blocking watch
 After opening the PR, Randy blocks on the triggered `CI` run (`gh run watch --exit-status`). On a red
-build he pulls the failing logs, fixes, commits with an `[auto-fix]` marker, pushes, and re-watches —
-bounded to **2 attempts**, then `needs-human` + Kimmo. He does this before the Marcy handoff (no point
-reviewing a red build). Runs inside Claude Code (Pro subscription, no API token cost), but only while a
-session is active and only for the run Randy just triggered — it is not ambient coverage for overnight or
-third-party failures. The GitHub Actions auto-fix workflow (`.github/workflows/ci-failure.yml`) is parked
-at `workflow_dispatch` only (was pay-per-token on every failure); restore its `workflow_run` trigger to
-re-enable unattended CI-side auto-fix.
+build he pulls the failing logs, **reproduces locally** (`./gradlew buildAndroidOnly` for compile/lint
+failures, plus `./gradlew :composeApp:testDebugUnitTest` for test failures) so the fix is verified before
+it ever goes back to GitHub, fixes, commits with an `[auto-fix]` marker, pushes, and re-watches — bounded
+to **2 attempts**, then `needs-human` + Kimmo. Reproducing locally first is the point: it turns "push and
+hope" into "push once, already green," which is what keeps this off the Actions-minutes budget. He does
+this before the Marcy handoff (no point reviewing a red build). Runs inside Claude Code (Pro
+subscription, no API token cost), but only while a session is active and only for the run Randy just
+triggered — it is not ambient coverage for overnight or third-party failures. The GitHub Actions auto-fix
+workflow (`.github/workflows/ci-failure.yml`) is parked at `workflow_dispatch` only (was pay-per-token on
+every failure); restore its `workflow_run` trigger to re-enable unattended CI-side auto-fix.
