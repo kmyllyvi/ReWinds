@@ -20,7 +20,9 @@ class DataMapping {
             longitude = response.longitude ?: Double.NaN,
             address = response.address,
             timezone = response.timezone,
-            tzoffset = response.tzoffset
+            tzoffset = response.tzoffset,
+            // A freshly-mapped response is an active place; archiving is a separate DB update (KIM-364).
+            archivedAt = null
         )
     }
 

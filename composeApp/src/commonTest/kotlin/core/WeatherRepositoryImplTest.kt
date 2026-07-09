@@ -71,10 +71,28 @@ class WeatherRepositoryImplTest {
     private open class FakeDatabase : Database {
         val saved = mutableMapOf<String, WeatherResponse>()
         val stations = mutableMapOf<String, List<Station>>()
+        // archivedAt epoch millis per place; absent key = active (KIM-364).
+        val archivedAt = mutableMapOf<String, Long>()
         var upsertCalls = 0
         var deleteCalls = 0
 
-        override suspend fun getAllSavedPlaces(): List<String> = saved.keys.toList()
+        // Active places only — mirrors the production query's `WHERE archivedAt IS NULL`.
+        override suspend fun getAllSavedPlaces(): List<String> =
+            saved.keys.filter { it !in archivedAt }.toList()
+
+        override suspend fun archivePlace(placeName: String, archivedAt: Long) {
+            if (saved.containsKey(placeName)) this.archivedAt[placeName] = archivedAt
+        }
+
+        override suspend fun unarchivePlace(placeName: String) {
+            archivedAt.remove(placeName)
+        }
+
+        override suspend fun getArchiveState(placeName: String): PlaceArchiveState = when {
+            !saved.containsKey(placeName) -> PlaceArchiveState.ABSENT
+            placeName in archivedAt -> PlaceArchiveState.ARCHIVED
+            else -> PlaceArchiveState.ACTIVE
+        }
 
         override suspend fun getPlaceDayCounts(): Map<String, Long> =
             saved.mapValues { (_, v) -> (v.days?.size ?: 0).toLong() }
@@ -363,6 +381,78 @@ class WeatherRepositoryImplTest {
         assertEquals("Tarifa, Spain", result.resolvedAddress)
         assertEquals("Tarifa, Spain", result.address)
         assertTrue(db.saved.containsKey("Tarifa, Spain"))
+    }
+
+    // ── archivePlace / un-archive round-trip (KIM-364) ───────────────────────
+
+    @Test
+    fun archivePlace_hidesFromSavedPlaceNames_butKeepsData() = runTest {
+        val days = TestWeatherRepositoryFactory.generateTestDays("2026-01-01", "2026-01-03")
+        val db = FakeDatabase().apply {
+            saved["Tarifa"] = TestWeatherRepositoryFactory.createWeatherResponse("Tarifa", days = days)
+        }
+        val r = repo(FakeNetworking(), db)
+
+        r.archivePlace("Tarifa")
+
+        assertTrue(r.getSavedPlaceNames().isEmpty(), "archived place must not appear in the Home list")
+        // Data is kept: the row and its days are still present in the DB.
+        assertEquals(0, db.deleteCalls, "archive must not hard-delete")
+        assertEquals(3, db.saved["Tarifa"]?.days?.size, "downloaded days must be retained")
+    }
+
+    @Test
+    fun addPlaceFromSearch_archivedPlace_unarchivesWithoutNetworkFetch() = runTest {
+        val days = TestWeatherRepositoryFactory.generateTestDays("2026-01-01", "2026-01-03")
+        val db = FakeDatabase().apply {
+            saved["Tarifa, Spain"] =
+                TestWeatherRepositoryFactory.createWeatherResponse("Tarifa, Spain", days = days)
+        }
+        val net = FakeNetworking()
+        val r = repo(net, db)
+        r.archivePlace("Tarifa, Spain")
+        assertTrue(r.getSavedPlaceNames().isEmpty())
+
+        val place = GeoSearchResult(id = 1, name = "Tarifa, Spain", latitude = 36.0, longitude = -5.6)
+        val result = r.addPlaceFromSearch(place)
+
+        // Re-adding an archived place restores it without touching the network.
+        assertTrue(net.weatherUrls.isEmpty(), "un-archive must not re-fetch weather data")
+        assertEquals(listOf("Tarifa, Spain"), r.getSavedPlaceNames(), "place is visible again")
+        // All previously downloaded days come back untouched.
+        assertEquals(3, result.days?.size, "previously downloaded days must reappear")
+    }
+
+    @Test
+    fun addPlaceFromSearch_brandNewPlace_stillFetchesFromNetwork() = runTest {
+        // No existing row -> behaves as before: hits the network and persists (no regression).
+        val db = FakeDatabase()
+        val net = FakeNetworking(
+            weatherResponse = TestWeatherRepositoryFactory.createWeatherResponse("api-name")
+        )
+        val place = GeoSearchResult(id = 1, name = "Helsinki, Finland", latitude = 60.17, longitude = 24.94)
+
+        val result = repo(net, db).addPlaceFromSearch(place)
+
+        assertEquals(1, net.weatherUrls.size, "a brand-new place must still be fetched")
+        assertEquals("Helsinki, Finland", result.resolvedAddress)
+        assertTrue(db.saved.containsKey("Helsinki, Finland"))
+    }
+
+    @Test
+    fun addPlaceFromSearch_activePlace_isNotTreatedAsArchived() = runTest {
+        // An active (non-archived) place that already exists still goes through the normal path.
+        val db = FakeDatabase().apply {
+            saved["Tarifa, Spain"] = TestWeatherRepositoryFactory.createWeatherResponse("Tarifa, Spain")
+        }
+        val net = FakeNetworking(
+            weatherResponse = TestWeatherRepositoryFactory.createWeatherResponse("api-name")
+        )
+        val place = GeoSearchResult(id = 1, name = "Tarifa, Spain", latitude = 36.0, longitude = -5.6)
+
+        repo(net, db).addPlaceFromSearch(place)
+
+        assertEquals(1, net.weatherUrls.size, "an active existing place is re-fetched as before")
     }
 
     // ── fetchAndPersistStations: success / empty / error ─────────────────────

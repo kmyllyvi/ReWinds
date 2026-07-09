@@ -123,7 +123,8 @@ class DataMappingKIM149Test {
             latitude = 60.0,
             longitude = 25.0,
             timezone = "UTC",
-            tzoffset = 0.0
+            tzoffset = 0.0,
+            archivedAt = null
         )
 
         val response = dataMapping.toWeatherResponse(dbResponse, emptyList(), emptyList())
@@ -140,7 +141,8 @@ class DataMappingKIM149Test {
             latitude = 60.17,
             longitude = 24.94,
             timezone = "Europe/Helsinki",
-            tzoffset = 2.0
+            tzoffset = 2.0,
+            archivedAt = null
         )
         val station = Station(
             id = "EFHK",
@@ -173,7 +175,8 @@ class DataMappingKIM149Test {
             latitude = 0.0,
             longitude = 0.0,
             timezone = "UTC",
-            tzoffset = 0.0
+            tzoffset = 0.0,
+            archivedAt = null
         )
         val stations = listOf(
             Station(id = "S1", name = "Station 1", latitude = 60.0, longitude = 25.0,
@@ -202,7 +205,8 @@ class DataMappingKIM149Test {
             latitude = 0.0,
             longitude = 0.0,
             timezone = "UTC",
-            tzoffset = 0.0
+            tzoffset = 0.0,
+            archivedAt = null
         )
         val station = Station(
             id = "KORD",
@@ -231,7 +235,8 @@ class DataMappingKIM149Test {
             latitude = -40.6,
             longitude = -73.8,
             timezone = "America/New_York",
-            tzoffset = -5.0
+            tzoffset = -5.0,
+            archivedAt = null
         )
         val station = Station(
             id = "KJFK",
@@ -261,7 +266,8 @@ class DataMappingKIM149Test {
             latitude = 60.17,
             longitude = 24.94,
             timezone = "Europe/Helsinki",
-            tzoffset = 2.0
+            tzoffset = 2.0,
+            archivedAt = null
         )
 
         val response = dataMapping.toWeatherResponse(dbResponse, emptyList())

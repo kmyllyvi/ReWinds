@@ -364,6 +364,67 @@ class SqlDelightDatabaseTest {
         assertEquals(listOf("Tampere"), database.getAllSavedPlaces())
     }
 
+    // ── archive / un-archive (KIM-364) ──────────────────────────────────────────
+
+    @Test
+    fun archivePlace_hidesFromSavedPlacesButKeepsRowAndDays() = runTest {
+        database.saveWeatherResponse(
+            response("Helsinki", listOf(day("2025-01-01"), day("2025-02-15")))
+        )
+        database.saveWeatherResponse(response("Tampere", listOf(day("2025-01-01"))))
+
+        database.archivePlace("Helsinki", archivedAt = 1_700_000_000_000L)
+
+        // Hidden from the Home list...
+        assertEquals(listOf("Tampere"), database.getAllSavedPlaces())
+        // ...but its row and days are still in the DB (soft delete, not hard delete).
+        val loaded = database.getSavedPlaceFull("Helsinki")
+        assertNotNull(loaded, "archived place row must still exist")
+        assertEquals(2, loaded.days?.size, "archived place's days must be retained")
+    }
+
+    @Test
+    fun archivePlace_retainsDownloadedMonths() = runTest {
+        database.saveWeatherResponse(
+            response("Helsinki", listOf(day("2025-01-01"), day("2025-02-01")))
+        )
+
+        database.archivePlace("Helsinki", archivedAt = 1_700_000_000_000L)
+
+        // getDownloadedMonthsForPlace reads the Day table directly and is unaffected by archiving.
+        assertEquals(setOf("2025-01", "2025-02"), database.getDownloadedMonths("Helsinki"))
+    }
+
+    @Test
+    fun unarchivePlace_restoresToSavedPlaces() = runTest {
+        database.saveWeatherResponse(response("Helsinki", listOf(day("2025-01-01"))))
+        database.archivePlace("Helsinki", archivedAt = 1_700_000_000_000L)
+        assertTrue(database.getAllSavedPlaces().isEmpty())
+
+        database.unarchivePlace("Helsinki")
+
+        assertEquals(listOf("Helsinki"), database.getAllSavedPlaces())
+    }
+
+    @Test
+    fun getArchiveState_reportsAbsentActiveArchived() = runTest {
+        assertEquals(PlaceArchiveState.ABSENT, database.getArchiveState("Nowhere"))
+
+        database.saveWeatherResponse(response("Helsinki", listOf(day("2025-01-01"))))
+        assertEquals(PlaceArchiveState.ACTIVE, database.getArchiveState("Helsinki"))
+
+        database.archivePlace("Helsinki", archivedAt = 1_700_000_000_000L)
+        assertEquals(PlaceArchiveState.ARCHIVED, database.getArchiveState("Helsinki"))
+    }
+
+    @Test
+    fun newlySavedPlace_isActiveByDefault() = runTest {
+        // A place inserted through the normal path must not be archived (archivedAt defaults NULL).
+        database.saveWeatherResponse(response("Helsinki", listOf(day("2025-01-01"))))
+        assertEquals(listOf("Helsinki"), database.getAllSavedPlaces())
+        assertEquals(PlaceArchiveState.ACTIVE, database.getArchiveState("Helsinki"))
+    }
+
     // ── cleanupForecastDays ─────────────────────────────────────────────────────
 
     @Test

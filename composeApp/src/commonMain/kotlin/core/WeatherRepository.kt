@@ -72,6 +72,16 @@ interface WeatherRepository {
     suspend fun getDaysRange(place: String, fromDate: String, toDate: String?): WeatherResponse
     suspend fun getPreviousDays(place: String, previousDaysCount: Int): WeatherResponse
     suspend fun deletePlace(placeName: String)
+
+    /**
+     * Soft-delete a place: hide it from the Home list ([getSavedPlaceNames]) without deleting any
+     * of its downloaded `Day`, `Hour`, or `WeatherStation` rows. Re-adding the place via
+     * [addPlaceFromSearch] un-archives it and its previously downloaded data reappears (KIM-364).
+     *
+     * Default no-op so unrelated test doubles need not override it (matches the pattern used by
+     * [getDownloadedMonths] / [observeDownloadedMonths]).
+     */
+    suspend fun archivePlace(placeName: String) {}
     suspend fun downloadFullMonth(place: String, year: Int, month: Int): WeatherResponse
 
     // new search
@@ -355,6 +365,14 @@ class WeatherRepositoryImpl(
         }
     }
 
+    override suspend fun archivePlace(placeName: String) {
+        withContext(Dispatchers.IO) {
+            database.archivePlace(placeName, Clock.System.now().toEpochMilliseconds())
+            // Drop the cached full-data entry so a later un-archive + read reflects DB state.
+            savedDataCache.remove(placeName)
+        }
+    }
+
     override suspend fun downloadFullMonth(place: String, year: Int, month: Int): WeatherResponse {
         Log.d("Downloading full month data for $year-$month for place: $place")
 
@@ -390,6 +408,18 @@ class WeatherRepositoryImpl(
     }
 
     override suspend fun addPlaceFromSearch(place: GeoSearchResult): WeatherResponse {
+        // A place's identity is its resolvedAddress, which addPlaceFromSearch sets to place.name.
+        // If that place already exists but is archived, re-adding it should restore it rather than
+        // re-fetch: clear archivedAt and return the previously downloaded data untouched (KIM-364).
+        if (database.getArchiveState(place.name) == PlaceArchiveState.ARCHIVED) {
+            database.unarchivePlace(place.name)
+            savedDataCache.remove(place.name)
+            // getSavedPlaceFull rebuilds the response (incl. all stored days/hours) from the DB.
+            // Non-null by construction: getArchiveState returned ARCHIVED, so the row exists.
+            return database.getSavedPlaceFull(place.name)
+                ?: error("Un-archived place '${place.name}' unexpectedly missing from DB")
+        }
+
         // Fetch weather for the location using its lat/lon from geo-search.
         // Include stations so we can persist the actual weather station coordinates (KIM-149).
         val locationString = "${place.latitude}%2C${place.longitude}"

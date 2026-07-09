@@ -1,0 +1,9 @@
+-- Migration from schema version 6 to 7 (KIM-364)
+-- Adds soft-delete support to WeatherResponse: an "archive" hides a place from the Home
+-- list without deleting its downloaded Day/Hour/WeatherStation rows, so re-adding the
+-- place via search restores all previously downloaded months instantly (no re-fetch).
+--
+-- archivedAt is epoch millis of when the place was archived; NULL means active.
+-- Existing rows predate archiving, so they migrate as active (NULL) — no behaviour change.
+
+ALTER TABLE WeatherResponse ADD COLUMN archivedAt INTEGER;
