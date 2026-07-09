@@ -1,0 +1,14 @@
+{
+  "name": "rewinds-scripts",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Personal ops utilities (Linear housekeeping, etc.) for the ReWinds repo. NOT part of the Kotlin/Compose app build — see scripts/ for the tools this powers.",
+  "type": "module",
+  "scripts": {
+    "export-linear-done": "tsx scripts/export-linear-done.ts"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "tsx": "^4.23.0"
+  }
+}
