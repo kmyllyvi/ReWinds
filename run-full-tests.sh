@@ -52,6 +52,29 @@ format_duration() {
   printf "%dm%02ds" $((secs / 60)) $((secs % 60))
 }
 
+# Resolve adb without fully trusting PATH — some shells (including the one this
+# script has been run from during development) carry an unexpanded
+# "~/Library/Android/sdk/platform-tools" entry, which silently fails to
+# resolve `adb` via `command -v` even when it's actually installed there. Fall
+# back to the common install locations before giving up.
+resolve_adb() {
+  if command -v adb >/dev/null 2>&1; then
+    command -v adb
+    return
+  fi
+  local candidates=(
+    "${ANDROID_HOME:-}/platform-tools/adb"
+    "${ANDROID_SDK_ROOT:-}/platform-tools/adb"
+    "$HOME/Library/Android/sdk/platform-tools/adb"
+  )
+  for c in "${candidates[@]}"; do
+    if [ -n "$c" ] && [ -x "$c" ]; then
+      echo "$c"
+      return
+    fi
+  done
+}
+
 # --- suite 1: unit tests (always runs) ----------------------------------
 
 echo "Running unit tests..."
@@ -72,8 +95,10 @@ INSTRUMENTED_TESTS="—"
 INSTRUMENTED_FAILURES="—"
 INSTRUMENTED_DURATION="—"
 
-if adb devices 2>/dev/null | grep -qE '\bdevice$'; then
-  echo "Emulator detected — running instrumented tests..."
+ADB_BIN="$(resolve_adb)"
+
+if [ -n "$ADB_BIN" ] && "$ADB_BIN" devices 2>/dev/null | grep -qE '\bdevice$'; then
+  echo "Emulator detected (adb: $ADB_BIN) — running instrumented tests..."
   INSTR_START=$(date +%s)
   if ./gradlew :composeApp:connectedDebugAndroidTest -PincludeAllTargets=false --no-daemon --stacktrace; then
     INSTRUMENTED_STATUS="PASS"
@@ -84,7 +109,11 @@ if adb devices 2>/dev/null | grep -qE '\bdevice$'; then
   INSTRUMENTED_DURATION=$(format_duration $((INSTR_END - INSTR_START)))
   read -r INSTRUMENTED_TESTS INSTRUMENTED_FAILURES _ <<< "$(sum_junit_xml "composeApp/build/outputs/androidTest-results/connected")"
 else
-  echo "No booted emulator (adb devices found none) — skipping instrumented tests."
+  if [ -z "$ADB_BIN" ]; then
+    echo "adb not found (checked PATH, \$ANDROID_HOME, \$ANDROID_SDK_ROOT, ~/Library/Android/sdk) — skipping instrumented tests."
+  else
+    echo "No booted emulator (adb devices found none) — skipping instrumented tests."
+  fi
 fi
 
 # --- write the summary (always, pass or fail) ---------------------------
