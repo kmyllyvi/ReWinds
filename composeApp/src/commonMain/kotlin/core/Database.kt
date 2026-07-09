@@ -39,6 +39,21 @@ fun createDatabase(driverFactory: DatabaseDriverFactory): AppDatabase {
     )
 }
 
+/**
+ * The archive state of a place, as distinguished by the repository when deciding whether an
+ * "add place" should un-archive an existing row or fetch a brand-new one (KIM-364).
+ */
+enum class PlaceArchiveState {
+    /** No WeatherResponse row exists for this place — treat as brand new. */
+    ABSENT,
+
+    /** A row exists and is active (archivedAt IS NULL). */
+    ACTIVE,
+
+    /** A row exists and is archived (archivedAt IS NOT NULL) — a candidate for un-archiving. */
+    ARCHIVED
+}
+
 interface Database {
     // get all saved places
     suspend fun getAllSavedPlaces(): List<String>
@@ -66,6 +81,18 @@ interface Database {
 
     // delete a place
     suspend fun deletePlace(placeName: String)
+
+    // Soft-delete: hide a place from the Home list without deleting its Day/Hour/Station rows.
+    // Default no-op so unrelated test doubles need not override it (KIM-364).
+    suspend fun archivePlace(placeName: String, archivedAt: Long) {}
+
+    // Un-archive a previously archived place; its downloaded days reappear (KIM-364).
+    suspend fun unarchivePlace(placeName: String) {}
+
+    // Archive state of a place — lets the repository tell "brand-new" (no row) from "archived"
+    // (row present, archivedAt non-null). Default ABSENT so unrelated test doubles need not
+    // override it (KIM-364).
+    suspend fun getArchiveState(placeName: String): PlaceArchiveState = PlaceArchiveState.ABSENT
 
     // cleanup forecast data: remove any days after yesterday
     suspend fun cleanupForecastDays()
@@ -308,6 +335,27 @@ class SqlDelightDatabase(
     override suspend fun deletePlace(placeName: String) {
         withContext(Dispatchers.IO) {
             dbQuery.deleteWeatherResponseByResolvedAddress(placeName)
+        }
+    }
+
+    override suspend fun archivePlace(placeName: String, archivedAt: Long) {
+        withContext(Dispatchers.IO) {
+            dbQuery.archivePlace(archivedAt = archivedAt, resolvedAddress = placeName)
+        }
+    }
+
+    override suspend fun unarchivePlace(placeName: String) {
+        withContext(Dispatchers.IO) {
+            dbQuery.unarchivePlace(placeName)
+        }
+    }
+
+    override suspend fun getArchiveState(placeName: String): PlaceArchiveState {
+        return withContext(Dispatchers.IO) {
+            // executeAsOneOrNull() is null when no row exists; the row's value is a nullable Long.
+            val row = dbQuery.getArchivedAtForPlace(placeName).executeAsOneOrNull()
+                ?: return@withContext PlaceArchiveState.ABSENT
+            if (row.archivedAt == null) PlaceArchiveState.ACTIVE else PlaceArchiveState.ARCHIVED
         }
     }
 

@@ -5,7 +5,10 @@ CREATE TABLE WeatherResponse (
     longitude REAL NOT NULL,
     address TEXT,
     timezone TEXT,
-    tzoffset REAL
+    tzoffset REAL,
+    -- Epoch millis when the place was archived (soft-deleted); NULL = active. Archived places
+    -- are hidden from the Home list but keep their Day/Hour/WeatherStation rows (KIM-364).
+    archivedAt INTEGER
 );
 
 -- One row per weather station per place. Replaces the single stationLatitude/stationLongitude
@@ -112,8 +115,26 @@ DELETE FROM WeatherStation WHERE resolvedAddress = ?;
 getWeatherResponseByResolvedAddress:
 SELECT * FROM WeatherResponse WHERE resolvedAddress = ?;
 
+-- Active (non-archived) places only. Drives the Home list — archived places are hidden
+-- but their rows (and downloaded days) remain in the DB (KIM-364).
 getAllWeatherResponseResolvedAddresses:
-SELECT resolvedAddress FROM WeatherResponse;
+SELECT resolvedAddress FROM WeatherResponse WHERE archivedAt IS NULL;
+
+-- Soft-delete: hide a place from the Home list without touching its Day/Hour/Station rows.
+archivePlace:
+UPDATE WeatherResponse SET archivedAt = ? WHERE resolvedAddress = ?;
+
+-- Un-archive: bring a previously archived place back to the Home list. Its downloaded
+-- days reappear immediately since they were never deleted (KIM-364).
+unarchivePlace:
+UPDATE WeatherResponse SET archivedAt = NULL WHERE resolvedAddress = ?;
+
+-- archivedAt for a place, or no row if the place does not exist. Selecting the non-null
+-- resolvedAddress alongside forces a wrapper row type, so executeAsOneOrNull() == null means
+-- "no such place" while a present row with archivedAt IS NULL means "active". This lets the
+-- repository distinguish "brand-new place" from "archived place to restore" (KIM-364).
+getArchivedAtForPlace:
+SELECT resolvedAddress, archivedAt FROM WeatherResponse WHERE resolvedAddress = ?;
 
 selectAllWeatherResponses:
 SELECT * FROM WeatherResponse;
