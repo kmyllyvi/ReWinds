@@ -1,8 +1,15 @@
 # ReWinds — Agentic Workflow
 
-How the agent team is orchestrated. **Kimmo is the CEO and the human in the loop.** Two points
-require his approval; nothing crosses them automatically. This file is the single source of truth for
-the workflow — the individual agent files own their _craft_, this file owns the _handover_.
+How the agent team is orchestrated. **Kimmo is the CEO and the human in the loop.** As of
+2026-07-10, only genuine ambiguity requires his approval — everything else is designed to cross
+automatically. This file is the single source of truth for the workflow — the individual agent
+files own their _craft_, this file owns the _handover_.
+
+**Why so few gates:** ReWinds is a concept project, not production — a broken `develop` costs
+nothing. Anything that actually reaches an app store already passes through Kimmo's hands at that
+separate, manual step, so gating routine dev work doesn't reduce his real risk exposure. Default to
+autonomy for clear-cut tickets; escalate (`needs-human`) only when an agent hits something it
+genuinely can't decide for itself.
 
 Reusable machinery (this workflow, the gates) is mirrored in
 `Dropbox/Agentic Development/Agentic Team Setup/`. Project-specific facts live in the codebase and
@@ -46,25 +53,26 @@ manual loop is proven (see GitHub Action note at the end).
 | Stage (status + label)    | Whose turn                               | Reads                                                        | Produces                                                              | Then moves to                                       |
 | ------------------------- | ---------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
 | Backlog (no label)        | — (you triage)                           | —                                                            | you point `po` at chosen items                                        | po works it                                         |
-| Backlog → `spec-ready`    | **po** agent                             | issue title + your intent, ARCHITECTURE-RULES, relevant code | spec + acceptance criteria + DoD in the issue body; adds `spec-ready` | (stays Backlog — awaits Gate 1)                     |
-| **GATE 1 — you**          | you                                      | the spec                                                     | approval                                                              | **Planned**                                         |
+| Backlog → `spec-ready`    | **po** agent                             | issue title + your intent, ARCHITECTURE-RULES, relevant code | spec + acceptance criteria + DoD in the issue body; adds `spec-ready`; **moves status to Todo itself, no approval step** | Todo |
 | Todo                      | — (dev queue)                            | —                                                            | orchestrator picks it up                                              | In Progress                                         |
 | In Progress               | **developer** agent                      | spec + AC + DoD, repo, ARCHITECTURE-RULES                    | branch + commits + PR; handoff comment; adds `in-review`              | In Progress + `in-review`                           |
 | In Progress + `in-review` | **code-reviewer** (auto on PR open)      | the diff/PR vs AC + DoD + MV\* rules                         | pass + **merges the PR herself** (`gh pr merge`), or fail with specifics | Completed (merged) / (remove `in-review`, stays In Progress) |
-| `needs-human`             | **GATE 2 — you**                         | the blocker the agent hit                                    | a decision                                                            | back into the lane                                  |
+| `needs-human`             | **GATE — you**                           | the blocker the agent hit                                    | a decision                                                            | back into the lane                                  |
 | Completed                 | **doc-agent** (Phill — scheduled sweep)  | —                                                            | —                                                                     | —                                                   |
 
 `code-reviewer` (Marcy) runs automatically on every PR open via GitHub Actions. `qa-test-agent` and `ux-ui-reviewer` are invoked manually when relevant.
 
-## The two human gates
+## The human gate
 
-- **Gate 1 —** `spec-ready` **(in Backlog) → Todo.** You approve what gets built _before any code is
-  written_. The `po` agent never moves an issue to Planned; it only adds `spec-ready`.
-- **Gate 2 — `needs-human`.** Any agent that hits genuine ambiguity (unclear spec, architectural fork,
-  scope question) adds `needs-human`, assigns you, and stops rather than guessing. You resolve it and
-  move it back into the lane. This is the pressure-release valve that stops compounding error.
+- **`needs-human`.** Any agent that hits genuine ambiguity (unclear spec, architectural fork, scope
+  question) adds `needs-human`, assigns you, and stops rather than guessing. You resolve it and move
+  it back into the lane. This is the only remaining checkpoint — a pressure-release valve for
+  compounding error, not a routine approval step.
 
-Direction and pivot decisions are yours. Not delegated.
+Spec approval before code (formerly "Gate 1") was removed 2026-07-10: `po` now moves an issue
+straight from `spec-ready` to **Todo** itself once the spec is written — no sign-off required.
+Direction and pivot decisions on genuinely ambiguous scope are still yours; that's what
+`needs-human` is for. Everything else is designed to run without you.
 
 ## Merge policy
 
@@ -76,7 +84,7 @@ Direction and pivot decisions are yours. Not delegated.
 The review + CI are the gate, not a human's final click. This applies **even when the change has
 behaviour that wants a device/simulator run or a visual/UX eye** — that verification is decoupled from
 the merge and logged instead (see below). The only thing that still holds a PR open is a `needs-human`
-flag (Gate 2), i.e. a genuine decision the agent couldn't make — not routine verification.
+flag, i.e. a genuine decision the agent couldn't make — not routine verification.
 
 **Who actually presses merge:** there is no GitHub-native auto-merge or branch protection wired up (this
 repo is private on the free plan — branch protection needs GitHub Pro or a public repo, so it isn't the
@@ -100,7 +108,7 @@ a deeper pass, but they too are off the merge path — their findings become tic
 not merge blockers.
 
 There is no branch-protection backstop today (see above) — the discipline is Marcy only ever running
-`gh pr merge` after she's personally confirmed both gates, never before. If this repo is ever upgraded to
+`gh pr merge` after she's personally confirmed both conditions, never before. If this repo is ever upgraded to
 GitHub Pro or made public, turn on branch protection with required status checks on `develop` as a second
 backstop.
 
@@ -140,7 +148,8 @@ Linear tools: `mcp__linear-server__get_issue`, `list_issues`, `save_issue`. Team
 - [ ] Passes the CI coverage gates: the enforced global floor (`jacocoTestCoverageVerification`) and the patch-coverage gate (`diff-cover` ≥ 70% on new/changed lines)
 
 ## Notes
-Priority set by po (Kimmo reranks freely); size proposed — Kimmo decides scope at Gate 1.
+Priority and size set by po (Kimmo reranks/rescopes freely, any time — not a pre-build gate).
+If scope is genuinely ambiguous, po flags `needs-human` instead of guessing.
 Reviewers needed: code-reviewer [+ qa-test-agent if logic-heavy] [+ ux-ui-reviewer if UI]
 ```
 
@@ -170,16 +179,15 @@ ticket-specific (including exemptions to the "new tests required" rule) belongs 
 
 To advance the board, read the issues and act:
 
-- **Backlog**, no `spec-ready` → dispatch `po`.
-- **Backlog** + `spec-ready` → it's at Gate 1; **you** review and, if approved, move to **Planned**.
-- **Planned** → dispatch `developer` (it moves the issue to In Progress and works).
+- **Backlog**, no `spec-ready` → dispatch `po`. It specs the issue and moves it straight to **Todo**
+  itself — no approval step in between.
+- **Todo** → dispatch `developer` (it moves the issue to In Progress and works).
 - **In Progress** + `in-review` → dispatch `code-reviewer`.
-- **Any** + `needs-human` → it's yours (Gate 2).
+- **Any** + `needs-human` → it's yours (the one remaining gate).
 - **Completed** → Phill (doc-agent) picks it up automatically on the next morning sweep (Tue–Sat 09:07, Claude Code cron, Pro subscription).
 
 Two agents may run in parallel **only if they touch different issues and different files** (e.g. `po`
-drafting a new ticket while `developer` codes an approved one). New po tickets stay in Backlog and wait
-at Gate 1 — parallelism never bypasses a gate.
+drafting a new ticket while `developer` codes one already in Todo).
 
 ## Roster
 
@@ -229,9 +237,11 @@ In its place, a Claude Code scheduled task (`rewinds-instrumented-ui-tests`, Mon
 real emulator to execute, so unlike the doc-sweep/code-review moves this genuinely runs on Kimmo's
 machine, not a GitHub-hosted runner, and only fires anything useful if an emulator happens to be
 available at run time (it skips cleanly, not as a failure, if none is booted). On a test failure it
-opens/updates a `needs-human` Linear ticket rather than attempting a fix — this is a detection sweep, not
-an auto-fix loop. Runs inside Claude Code (Pro subscription, no API token cost). Restore the `pull_request`
-trigger in `ci.yml` to go back to unattended per-PR coverage if the budget ever allows.
+opens/updates a Linear ticket at **Todo** (no `needs-human`, no Kimmo assignment — this sweep bypasses
+the human gate by design, per the 2026-07-10 minimize-gates decision above) and immediately dispatches
+`developer` (Randy) to diagnose, fix, verify, commit, and open a PR through the normal
+Randy → Marcy → merge path. Runs inside Claude Code (Pro subscription, no API token cost). Restore the
+`pull_request` trigger in `ci.yml` to go back to unattended per-PR coverage if the budget ever allows.
 
 **Persisted run artifact, even when green.** Before this, the only trace of a test run was a Linear
 ticket on failure — no record existed of "this ran, it passed, here's how long it took." `run-full-tests.sh`
