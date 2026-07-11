@@ -40,18 +40,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import core.LocalAppStrings
 import core.degreesToCompass
+import core.utils.WindSpeedUnit
 import core.utils.formatDecimal
 import place.HourlyWindPoint
 import place.ShadingTier
 import place.hourlyWindSlots
 import place.thresholdYFraction
+import place.toDisplayUnit
 import place.WINDOW_START_HOUR
 import place.windFlowBearing
 import place.yAxisTicks
 import ui.theme.rewinds
 
-private val CHART_HEIGHT = 180.dp
-private val GRID_LINE_COUNT = 4
+private val CHART_HEIGHT = 240.dp
 private val ARROW_VISUAL = 12.dp
 private val ARROW_TOUCH = 18.dp
 private val LEGEND_SWATCH = 8.dp
@@ -88,9 +89,11 @@ private val Y_AXIS_WIDTH = 40.dp
  * normalised against a rounded ceiling (see [yAxisTicks]) at or above the highest gust, so both
  * series share a scale and the top gridline carries a round value.
  *
- * [unitLabel] is the speed unit shown once on the top y-axis label (km/h today). It is a parameter
- * rather than hardcoded so a future user unit preference can be threaded in without touching the
- * chart internals.
+ * [windSpeedUnit] is the user's active wind-speed unit. Speed data is stored in km/h; the chart
+ * converts every plotted value (both series, the y-scale, and the threshold guide lines) into this
+ * unit for display and prints its label once on the top y-axis. Conversion is presentation-only —
+ * the same category as `formatWindSpeed` — so the raw km/h inputs and the km/h threshold semantics
+ * are preserved. The threshold params stay named `*Kmh` because their inputs are still km/h.
  *
  * The x-axis is a fixed 13-slot grid spanning 09:00–21:00, regardless of how many points exist.
  * Each [HourlyWindPoint] is placed in the slot matching its local hour; slots without data stay
@@ -106,7 +109,7 @@ fun HourlyWindChart(
     date: String,
     points: List<HourlyWindPoint>,
     modifier: Modifier = Modifier,
-    unitLabel: String = "km/h",
+    windSpeedUnit: WindSpeedUnit = WindSpeedUnit.KMH,
     shadingTiers: List<ShadingTier> = emptyList(),
     minThresholdKmh: Double? = null,
     maxThresholdKmh: Double? = null
@@ -128,8 +131,13 @@ fun HourlyWindChart(
     val thresholdLineColor = speedColor.copy(alpha = THRESHOLD_LINE_ALPHA)
     val thresholdLineWidth = with(LocalDensity.current) { THRESHOLD_LINE_WIDTH.toPx() }
 
-    val speeds = points.mapNotNull { it.windspeed }
-    val gusts = points.mapNotNull { it.windgust }
+    // Speed data is stored in km/h; convert every plotted magnitude into the user's unit before any
+    // scale math so the axis label, gridline numbers, and the two series all read in the same unit.
+    // Presentation-only, in the same category as `formatWindSpeed`; the raw inputs are untouched.
+    val displayPoints = points.toDisplayUnit(windSpeedUnit)
+
+    val speeds = displayPoints.mapNotNull { it.windspeed }
+    val gusts = displayPoints.mapNotNull { it.windgust }
     val minSpeed = speeds.minOrNull() ?: 0.0
     val maxSpeed = speeds.maxOrNull() ?: 0.0
     val maxGust = gusts.maxOrNull() ?: 0.0
@@ -140,20 +148,23 @@ fun HourlyWindChart(
     val ticks = yAxisTicks(dataMax)
     val yMax = ticks.first()
 
+    // The accessibility summary's string bakes in "km/h", so it reads the raw km/h magnitudes to
+    // stay truthful — independent of the display unit used for the visual scale above.
+    val rawSpeeds = points.mapNotNull { it.windspeed }
     val chartDesc = strings.hourlyWindChartDesc(
         date,
-        formatDecimal(minSpeed),
-        formatDecimal(maxSpeed),
-        formatDecimal(maxGust)
+        formatDecimal(rawSpeeds.minOrNull() ?: 0.0),
+        formatDecimal(rawSpeeds.maxOrNull() ?: 0.0),
+        formatDecimal(points.mapNotNull { it.windgust }.maxOrNull() ?: 0.0)
     )
 
     // Fixed 13-slot frame (09:00–21:00); shared with the shading input so columns stay index-aligned.
-    val slots = hourlyWindSlots(points)
+    val slots = hourlyWindSlots(displayPoints)
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Unit shown once above the gutter so it never wraps against, or overlaps, the top tick.
         Text(
-            text = unitLabel,
+            text = windSpeedUnit.label,
             style = MaterialTheme.typography.labelSmall,
             color = axisColor,
             textAlign = TextAlign.End,
@@ -186,8 +197,15 @@ fun HourlyWindChart(
                     drawColumnShading(shadingTiers, thresholdFill, sustainedFill, sustainedEdge)
                 }
                 // Threshold guides sit above shading but below the series, so data reads on top.
-                drawThresholdLines(minThresholdKmh, maxThresholdKmh, yMax, thresholdLineColor, thresholdLineWidth)
-                drawGrid(gridColor)
+                // Convert the km/h thresholds into the display unit so they align with the y-scale.
+                drawThresholdLines(
+                    minThresholdKmh?.let(windSpeedUnit::fromKmh),
+                    maxThresholdKmh?.let(windSpeedUnit::fromKmh),
+                    yMax,
+                    thresholdLineColor,
+                    thresholdLineWidth
+                )
+                drawGrid(ticks, yMax, gridColor)
                 drawSeries(slots.map { it?.windspeed }, yMax, speedColor)
                 drawSeries(slots.map { it?.windgust }, yMax, gustColor)
             }
@@ -447,15 +465,15 @@ private fun DrawScope.drawColumnShading(
  * the canvas. Drawn after shading but before the grid and series, so data always reads on top.
  */
 private fun DrawScope.drawThresholdLines(
-    minKmh: Double?,
-    maxKmh: Double?,
+    min: Double?,
+    max: Double?,
     yMax: Double,
     color: Color,
     strokeWidth: Float
 ) {
     if (yMax <= 0.0) return
     val dash = PathEffect.dashPathEffect(floatArrayOf(THRESHOLD_DASH_ON, THRESHOLD_DASH_OFF), 0f)
-    listOfNotNull(minKmh, maxKmh).forEach { value ->
+    listOfNotNull(min, max).forEach { value ->
         val y = size.height * thresholdYFraction(value, yMax)
         drawLine(
             color = color,
@@ -467,11 +485,15 @@ private fun DrawScope.drawThresholdLines(
     }
 }
 
-/** Evenly-spaced horizontal grid lines spanning the full chart width. */
-private fun DrawScope.drawGrid(color: Color) {
-    val step = size.height / GRID_LINE_COUNT
-    for (i in 0..GRID_LINE_COUNT) {
-        val y = step * i
+/**
+ * Horizontal grid lines drawn at each y-axis tick, so the gridlines always coincide with the tick
+ * labels regardless of how many intervals [yAxisTicks] produced. Each tick is normalised by the same
+ * `1 - value / yMax` mapping the labels and series use, keeping the three perfectly aligned.
+ */
+private fun DrawScope.drawGrid(ticks: List<Double>, yMax: Double, color: Color) {
+    if (yMax <= 0.0) return
+    ticks.forEach { value ->
+        val y = size.height * (1f - (value / yMax).toFloat())
         drawLine(
             color = color,
             start = Offset(0f, y),

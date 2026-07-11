@@ -24,7 +24,9 @@ import core.utils.shortDayLabel
 import place.components.HourlyWindChart
 import ui.theme.rewinds
 
-private val CHART_AREA_HEIGHT = 180.dp
+// Kept equal to HourlyWindChart's CHART_HEIGHT so the loading/empty states occupy the same space
+// as the rendered chart and the sheet height doesn't jump between states.
+private val CHART_AREA_HEIGHT = 240.dp
 
 /**
  * Bottom-sheet showing the hourly wind detail for a single day.
@@ -79,7 +81,7 @@ fun DayDetailSheet(
                 else -> HourlyWindChart(
                     date = dateLabel,
                     points = hours,
-                    unitLabel = windSpeedUnit.label,
+                    windSpeedUnit = windSpeedUnit,
                     shadingTiers = shadingTiers,
                     minThresholdKmh = minThresholdKmh,
                     maxThresholdKmh = maxThresholdKmh

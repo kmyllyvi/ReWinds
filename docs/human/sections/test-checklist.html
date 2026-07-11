@@ -293,6 +293,15 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-09</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-370">KIM-370</a></td>
+        <td class="col-area">Monthly summary — hourly wind chart</td>
+        <td class="case">In Settings set Wind speed to <strong>knots</strong> (then repeat for mph), open a place's monthly summary and tap a day to open the detail sheet. <span class="expect">Expected: the y-axis label and the plotted line/gridline values are both in the chosen unit (a ~42 km/h gust reads ~23 in knots, not 42); the threshold dashed lines move with the same scale; ticks are the finer 0/10/20/… set; the taller chart is not clipped by the bottom sheet on a normal phone.</span></td>
+        <td class="automate">Recommended: Compose UI test asserting the axis-label text equals the unit and a known fixture gust renders at the converted magnitude. Unit conversion + tick math already covered by <code>HourlyWindDisplayUnitTest</code> / <code>YAxisTicksTest</code>.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-07-11</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>

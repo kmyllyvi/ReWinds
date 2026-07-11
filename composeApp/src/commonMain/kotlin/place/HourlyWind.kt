@@ -1,6 +1,7 @@
 package place
 
 import core.Hour
+import core.utils.WindSpeedUnit
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.log10
@@ -21,18 +22,37 @@ data class HourlyWindPoint(
 )
 
 /**
+ * Converts each point's stored km/h [HourlyWindPoint.windspeed] and [HourlyWindPoint.windgust] into
+ * the user's [unit] for display, leaving the hour, label, and direction untouched. Null magnitudes
+ * stay null (missing data, not zero). [WindSpeedUnit.KMH] is the identity.
+ *
+ * Weather is stored and thresholded in km/h; this presentation-only transform is the single place the
+ * hourly chart's plotted magnitudes cross into the display unit. Pure and top-level so the conversion
+ * is unit-testable outside the Composable (MV*): the chart only renders what this returns (KIM-370).
+ */
+fun List<HourlyWindPoint>.toDisplayUnit(unit: WindSpeedUnit): List<HourlyWindPoint> =
+    map { point ->
+        point.copy(
+            windspeed = point.windspeed?.let(unit::fromKmh),
+            windgust = point.windgust?.let(unit::fromKmh)
+        )
+    }
+
+/**
  * Computes evenly-spaced "nice" y-axis tick values from 0 up to a rounded ceiling at or above
  * [yMax], returned high-to-low so they map top-to-bottom onto the chart.
  *
- * The step is snapped to a 1/2/5 × 10ⁿ value so labels read as round numbers (e.g. yMax 34 →
- * step 10 → [40, 30, 20, 10, 0]). Pure and top-level so the y-scale is unit-testable outside the
+ * The step is snapped to a 1/2/5 × 10ⁿ value so labels read as round numbers (e.g. yMax 42 →
+ * step 10 → [50, 40, 30, 20, 10, 0]). Pure and top-level so the y-scale is unit-testable outside the
  * Composable (MV*): the chart only renders what this returns. The largest tick is also the value
  * the plot area normalises against, so the line never clips above the top gridline.
  *
  * [tickIntervals] is the number of gaps between ticks (so the list has tickIntervals + 1 entries).
+ * The default of 5 keeps typical wind ranges finely divided — e.g. a peak gust near 42 yields a
+ * step of 10 (ticks 0..50) rather than the coarser step of 20 (ticks 0..80) that 4 intervals gives.
  * A non-positive or zero [yMax] yields a flat [0.0] axis.
  */
-fun yAxisTicks(yMax: Double, tickIntervals: Int = 4): List<Double> {
+fun yAxisTicks(yMax: Double, tickIntervals: Int = 5): List<Double> {
     if (yMax <= 0.0 || tickIntervals <= 0) return listOf(0.0)
 
     val rawStep = yMax / tickIntervals
