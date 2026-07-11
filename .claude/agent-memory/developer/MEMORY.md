@@ -10,6 +10,9 @@ repo: `CLAUDE.md`, `docs/agent/ARCHITECTURE-RULES.md`. Detailed patterns: [notes
   `ProtectedPermissions` failure — verify via the test task if that bites. [notes.md]
 - gh: PR/commit bodies with apostrophes break bash heredocs — write a temp file, use `--body-file`. [notes.md]
 - CI workflow details (Android/iOS jobs, simulator selection, BuildConfig emission). [notes.md]
+- CI job "failure" in ~2-3s with annotation "job was not started because recent account payments
+  have failed / spending limit" = GitHub Actions BILLING block, not code. Hits every job. Don't spend
+  fix attempts — flag `needs-human`, assign Kimmo; local build/test is the real signal.
 - Code coverage (JaCoCo): [coverage.md]. Build-config specifics: [build-config.md].
 
 ## Architecture / MV*
@@ -50,6 +53,11 @@ repo: `CLAUDE.md`, `docs/agent/ARCHITECTURE-RULES.md`. Detailed patterns: [notes
 - Repo cache (KIM-278): route ALL writes through `persistAndInvalidate`. [notes.md]
 - Monthly summary (KIM-327/328/329/332): day-card wind = sustained not gust (accessor, not composable);
   chart highlight via `Set<Int>` from VM; per-cell download indicator. [notes.md]
+- Hourly wind chart (KIM-303/305/306/370): pure logic in `place/HourlyWind.kt` (`yAxisTicks` default 5
+  intervals, `toDisplayUnit(unit)`, `hourlyWindSlots`, `thresholdYFraction`, `criteriaShading`), render
+  in `place/components/HourlyWindChart.kt`. Data stored in km/h → convert to `WindSpeedUnit` for display
+  (chart takes `windSpeedUnit`, not a label). Grid lines drawn per-tick to stay aligned. Shading tiers
+  are km/h-based and unit-independent (don't convert). a11y desc hardcodes "km/h" → keep it raw. [notes.md]
 
 ## Design system & localization
 - `MaterialTheme.rewinds.*` tokens only, never hex literals; `IsobarBackground()` lowest layer;
