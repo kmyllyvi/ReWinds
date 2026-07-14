@@ -235,6 +235,32 @@ class AiRepository(
                 }
                 StopReason.MAX_TOKENS -> {
                     Log.d("AiRepository: max tokens reached")
+
+                    // A max_tokens cutoff can land mid tool_use: the assistant message we appended
+                    // above may carry a tool_use block that will never be executed. Anthropic rejects
+                    // any history where a tool_use has no paired tool_result on the following turn
+                    // (HTTP 400), which corrupts every subsequent send. Synthesize an error result for
+                    // each dangling call — the same history shaping the TOOL_USE branch does, minus the
+                    // execution (Claude never finished specifying the call).
+                    val danglingToolResults = assistantContent
+                        .filterIsInstance<AnthropicContent.ToolUse>()
+                        .map { toolUse ->
+                            AnthropicContent.ToolResult(
+                                toolUseId = toolUse.id,
+                                content = "Response was cut off before this tool call could complete.",
+                                isError = true
+                            )
+                        }
+                    if (danglingToolResults.isNotEmpty()) {
+                        conversationHistory.add(
+                            ConversationMessage(
+                                role = "user",
+                                content = danglingToolResults
+                            )
+                        )
+                        Log.d("AiRepository: synthesized ${danglingToolResults.size} tool results for max_tokens cutoff")
+                    }
+
                     val textContent = assistantContent
                         .filterIsInstance<AnthropicContent.Text>()
                         .joinToString("\n") { it.text }
