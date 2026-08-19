@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import core.AppSettingsStore
 import core.Day
 import core.DaysOfInterestFilter
-import core.Hour
 import core.KiteSpotterConfig
 import core.Log // Assuming you have a Log wrapper or use Napier
 import core.MonthlyStatisticsRoute
@@ -203,8 +202,17 @@ class MonthlyStatisticsViewModel(
         }
     }
 
-    private fun Day.toDayWeatherSummary(): DayWeatherSummary {
+    /**
+     * Maps a stored [Day] to its list row, deriving both sustained-wind figures from the same
+     * 09:00–21:00 local-time frame the day detail chart draws — [tzoffset] is the location's UTC
+     * offset from the loaded [WeatherResponse] (KIM-419).
+     */
+    private fun Day.toDayWeatherSummary(tzoffset: Double?): DayWeatherSummary {
         val foggyHours = this.hours?.count { (it.visibility ?: 24.0) < 1.0 } ?: 0
+        val sustained = sustainedWind(
+            slots = hourlyWindSlots(hourlyWindWindow(this.hours, tzoffset)),
+            windowSlots = filter.sustainedWindHours ?: KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
+        )
         return DayWeatherSummary(
             date = this.datetime,
             description = this.description ?: this.conditions,
@@ -213,30 +221,16 @@ class MonthlyStatisticsViewModel(
             avgTemp = this.temp,
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust, // map from windgust
-            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
+            sustainedWindSpeed = sustained.bestAverageKmh,
             solarenergy = this.solarenergy,
             isFoggy = foggyHours > 0,
             foggyHours = foggyHours,
             precipitation = this.precip,
             windDirection = this.winddir,
             sunrise = this.sunrise,
-            sunset = this.sunset
+            sunset = this.sunset,
+            sustainedWindFloor = sustained.bestFloorKmh
         )
-    }
-
-    // New helper to calculate the highest rolling average wind speed using the filter's window
-    private fun calculateMaxSustainedWindSpeed(hours: List<Hour>?): Double? {
-        val windowSize = filter.sustainedWindHours ?: KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
-        if (hours == null || hours.size < windowSize) {
-            return null
-        }
-
-        return hours
-            .mapNotNull { it.windspeed }
-            .windowed(size = windowSize, step = 1) { window ->
-                window.average()
-            }
-            .maxOrNull()
     }
 
 
@@ -270,7 +264,7 @@ class MonthlyStatisticsViewModel(
                 }
             }
             .map { day ->
-                val summary = day.toDayWeatherSummary()
+                val summary = day.toDayWeatherSummary(weatherData.tzoffset)
                 summary.copy(isMatch = filter.matches(summary))
             }
     }

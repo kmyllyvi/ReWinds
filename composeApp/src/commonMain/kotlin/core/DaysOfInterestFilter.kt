@@ -66,7 +66,11 @@ fun DaysOfInterestFilter.matches(day: DayWeatherSummary): Boolean {
         val compassPoint = degreesToCompass(day.windDirection)
         if (compassPoint !in windDirections) return false
     }
-    if (minWindSpeedKmh != null && (day.sustainedWindSpeed ?: 0.0) < minWindSpeedKmh) return false
+    // The minimum is checked against the window *floor*, not its average, so a day only counts as
+    // windy enough when every hour of some window clears the bar — the same rule the day chart
+    // shades with (KIM-419). The maximum stays on the average: a single gusty hour inside an
+    // otherwise rideable window shouldn't disqualify the day.
+    if (minWindSpeedKmh != null && (day.sustainedWindFloor ?: 0.0) < minWindSpeedKmh) return false
     if (maxWindSpeedKmh != null && (day.sustainedWindSpeed ?: 0.0) > maxWindSpeedKmh) return false
     return true
 }
