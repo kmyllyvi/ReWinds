@@ -233,13 +233,19 @@ job is parked at `workflow_dispatch` only in `.github/workflows/ci.yml`, same co
 `code-review.yml`/`doc-agent.yml`.
 
 In its place, a Claude Code scheduled task (`rewinds-instrumented-ui-tests`, Mon/Fri 09:07 local) runs
-`./run-full-tests.sh` against a locally-booted Android emulator — Compose instrumented tests need a
-real emulator to execute, so unlike the doc-sweep/code-review moves this genuinely runs on Kimmo's
-machine, not a GitHub-hosted runner, and only fires anything useful if an emulator happens to be
-available at run time (it skips cleanly, not as a failure, if none is booted). On a test failure it
-opens/updates a Linear ticket at **Todo** (no `needs-human`, no Kimmo assignment — this sweep bypasses
-the human gate by design, per the 2026-07-10 minimize-gates decision above) and immediately dispatches
-`developer` (Randy) to diagnose, fix, verify, commit, and open a PR through the normal
+`./run-full-tests.sh` against an Android emulator — Compose instrumented tests need a real emulator to
+execute, so unlike the doc-sweep/code-review moves this genuinely runs on Kimmo's machine, not a
+GitHub-hosted runner. **It manages its own emulator lifecycle** (updated 2026-07-13): earlier revisions
+only used an emulator if one "happened to be" already running and skipped the instrumented suite
+otherwise — in practice Kimmo doesn't keep one open day to day, so every prior run silently degraded to
+unit-tests-only. The sweep now boots one headlessly if none is running (`emulator -avd <name>
+-no-window`, ~150s boot budget) and shuts down only the instance it started afterward — never one that
+was already running (that could be Kimmo's own session). A failed/timed-out boot falls back to
+unit-tests-only, same as before, but the run's report says so explicitly instead of silently
+degrading. On a test failure it opens/updates a Linear ticket at **Todo** (no `needs-human`, no Kimmo
+assignment — this sweep bypasses the human gate by design, per the 2026-07-10 minimize-gates decision
+above) and immediately dispatches `developer` (Randy) to diagnose, fix, verify, commit, and open a PR
+through the normal
 Randy → Marcy → merge path. Runs inside Claude Code (Pro subscription, no API token cost). Restore the
 `pull_request` trigger in `ci.yml` to go back to unattended per-PR coverage if the budget ever allows.
 
@@ -258,6 +264,30 @@ to Done in the last 24h, finds the corresponding merge commit on `develop`, and 
 targeting `develop`. If nothing completed, exits cleanly. The GitHub Actions doc-agent workflow
 (`.github/workflows/doc-agent.yml`) is retained for manual `workflow_dispatch` runs but no longer
 triggers automatically.
+
+### Exploratory verification — `exploratory-test-orchestrator` Skill (manual for now)
+`.claude/skills/exploratory-test-orchestrator/` — `SKILL.md` (frontmatter + enforced `allowed-tools`
+restriction) plus companion `system-prompt.md` (full workflow), `manifest.json`, and
+`mcp-requirements.json` (reference-only metadata, mirroring the solidmaint layout this was adapted
+from — not parsed by Claude Code). Invoke via the Skill tool or by describing the intent (e.g. "run
+exploratory testing"); see `KIM-331` for the full design decision. Surveys the last 2 days of
+commits on `develop`, derives a testable claim from each
+("fixes X", "adds Y"), and checks it against an Android emulator — reusing an existing
+Maestro/instrumented test where one covers the claim, or a small throwaway Maestro flow otherwise.
+**Deliberately unlike** the Mon/Fri instrumented-UI sweep below (which skips cleanly if no emulator
+happens to be booted, since CI's `android-instrumented` job is a separate backstop for that suite),
+this Skill has no other verification path, so it manages the emulator's own lifecycle: reuses one
+already running, or boots one headlessly (`emulator -avd <name> -no-window`, ~150s boot budget) if
+none is, then shuts down only the instance it started — never one that was already running before
+it — before finishing. A failed/timed-out boot judges everything `can't-tell` rather than retrying.
+Judges each claim works/broken/can't-tell, biased
+toward can't-tell (a false positive costs more trust than a missed bug). Confirmed `broken` claims
+are deduped against Linear (both open and completed issues, keyed on commit SHA) and, if new, filed
+at **Todo** (no `needs-human`, same gate-bypass precedent as the instrumented-UI sweep below) with
+Randy dispatched on it directly. Cap 5 filed/run. Every run — clean or not — overwrites
+`docs/human/test-runs/exploratory-latest.md` so a silent run is never mistaken for "all clear."
+Android emulator only in v1; no iOS/simulator verification. Not yet on a schedule — invoked manually
+via `/exploratory-test-orchestrator` (or `dry-run` to skip filing) until a cadence is decided.
 
 ### CI auto-fix (Randy) — in-session, blocking watch
 After opening the PR, Randy blocks on the triggered `CI` run (`gh run watch --exit-status`). On a red
