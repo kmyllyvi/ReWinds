@@ -49,5 +49,7 @@ Full lane + handover protocol: `docs/agent/WORKFLOW.md`.
 
 ## Known issues
 - Gradle iOS build tasks are unreliable — use Xcode.
-- Device ARM64 builds OOM (need 8GB+ or architectural changes).
+- ~~Device ARM64 builds OOM~~ — fixed (KIM-420). The Kotlin/Native compiler runs in its own
+  process, so `org.gradle.jvmargs` never applied to it; `kotlin.native.jvmArgs=-Xmx6g` gives it
+  the heap the device release build needs. Lower that value and Archive builds OOM again.
 - XCFramework builds have KLIB resolver conflicts.

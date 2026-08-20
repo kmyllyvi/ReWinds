@@ -1,6 +1,7 @@
 import org.gradle.kotlin.dsl.support.serviceOf
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.Framework
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
@@ -61,13 +62,22 @@ kotlin {
             iosTarget.binaries.framework {
                 baseName = "ComposeApp"
                 isStatic = true
+            }
+
+            // Applies to *every* framework binary of this target, not just the two created
+            // above. The CocoaPods plugin adds its own podDebugFramework/podReleaseFramework
+            // binaries, and those are the ones Xcode actually builds (the "Compile Kotlin
+            // Framework" phase runs embedAndSignAppleFrameworkForXcode, which resolves to the
+            // pod framework). Configuring only binaries.framework {} left the shipped framework
+            // without a bundle ID — KIM-420.
+            //
+            // The former "-Xno-devirtualization", "-Xno-objc-generics" and "-Xallocator=std"
+            // args are gone: Kotlin 2.3.10 rejects the first outright ("Flag is not supported by
+            // this version of the compiler"), and the other two alter the Obj-C surface and the
+            // runtime allocator rather than the compiler's own memory use. The K/N compiler heap
+            // (kotlin.native.jvmArgs in gradle.properties) is the lever that actually matters.
+            iosTarget.binaries.withType<Framework>().configureEach {
                 binaryOption("bundleId", "com.km.rewinds.ReWinds")
-                // Disable all memory-heavy optimizations
-                freeCompilerArgs += listOf(
-                    "-Xno-devirtualization",
-                    "-Xno-objc-generics",
-                    "-Xallocator=std"
-                )
             }
         }
     }
