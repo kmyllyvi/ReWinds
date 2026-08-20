@@ -302,6 +302,24 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-07-11</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-419">KIM-419</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/76">PR #76</a></td>
+        <td class="col-area">Monthly summary — day row vs day chart</td>
+        <td class="case">Open <strong>Konstanz → July 2026</strong> and find <strong>Mon 27</strong> (the reported case), then tap it to open the day detail sheet. Repeat for any other highlighted day in the month. <span class="expect">Expected: Mon 27 is no longer highlighted and its "best 2h avg" reads ~10 knots, not 12. For every day that <em>is</em> highlighted in the list, the day chart shades at least one "Meets threshold" window — and no unhighlighted day shades one.</span></td>
+        <td class="automate">Recommended: Compose UI test over a fixture month asserting highlighted-row count == count of days whose chart shading contains a SUSTAINED block. The aggregation rule itself is covered by <code>SustainedWindTest</code>; what needs a human is the real Konstanz data behind the screenshot.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-08-19</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket"><a href="https://linear.app/kimmo-m/issue/KIM-419">KIM-419</a><br><a href="https://github.com/kmyllyvi/ReWinds/pull/76">PR #76</a></td>
+        <td class="col-area">Monthly summary — stat cards</td>
+        <td class="case">Across a few months and places, compare the "days of interest" count and the highlighted bars in the daily wind chart against the previous build. <span class="expect">Expected: the count may legitimately <strong>drop</strong> — days whose only qualifying wind falls outside 09:00–21:00 no longer count — but it must never exceed the number of tinted day rows, and the highlighted bars must match those rows exactly.</span></td>
+        <td class="automate none">No — this is a judgement call on whether the new (lower) counts look right against real data, not a fixed expected value.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-08-19</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>

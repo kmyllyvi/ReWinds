@@ -14,13 +14,10 @@ import kotlin.test.assertTrue
  */
 class HourlyWindWindowTest {
 
-    // A UTC midnight-aligned base would be ideal, but any hour-aligned epoch works since
-    // the filter only cares about (epoch + offset) / 3600 % 24. 1700000000 = 07:00 UTC.
-    private fun hourAt(utcHour: Int, speed: Double? = 10.0, gust: Double? = 15.0, dir: Double? = 200.0): Hour {
-        // Build an epoch whose UTC local hour is utcHour: take a day base at 00:00 UTC.
-        val dayBase = 1700000000L - (1700000000L % 86400L) // 00:00 UTC of that day
-        return buildHour(epoch = dayBase + utcHour * 3600L, speed = speed, gust = gust, dir = dir)
-    }
+    // The filter only cares about (epoch + offset) / 3600 % 24, so the shared fixture's
+    // midnight-UTC base keeps the arithmetic readable.
+    private fun hourAt(utcHour: Int, speed: Double? = 10.0, gust: Double? = 15.0, dir: Double? = 200.0): Hour =
+        testHourAtUtc(utcHour = utcHour, speed = speed, gust = gust, dir = dir)
 
     @Test
     fun filtersToNineToTwentyOneInclusive_atUtc() {
@@ -112,7 +109,7 @@ class HourlyWindWindowTest {
     fun dropsRowsWithoutEpoch_noFabrication() {
         val hours = listOf(
             hourAt(10),
-            buildHour(epoch = null, speed = 5.0, gust = 9.0, dir = 100.0)
+            testHour(epoch = null, speed = 5.0, gust = 9.0, dir = 100.0)
         )
 
         val result = hourlyWindWindow(hours, tzoffset = 0.0)
@@ -167,30 +164,4 @@ class HourlyWindWindowTest {
         assertEquals(99.0, slots[0]?.windspeed)
     }
 
-    private fun buildHour(epoch: Long?, speed: Double?, gust: Double?, dir: Double?): Hour = Hour(
-        datetime = "",
-        datetimeEpoch = epoch,
-        temp = null,
-        feelslike = null,
-        humidity = null,
-        dew = null,
-        precip = null,
-        precipprob = null,
-        snow = null,
-        snowdepth = null,
-        preciptype = null,
-        windgust = gust,
-        windspeed = speed,
-        winddir = dir,
-        pressure = null,
-        visibility = null,
-        cloudcover = null,
-        solarradiation = null,
-        solarenergy = null,
-        uvindex = null,
-        conditions = null,
-        icon = null,
-        source = null,
-        stations = null
-    )
 }

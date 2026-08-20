@@ -14,11 +14,16 @@ import kotlin.test.assertTrue
  */
 class DaysOfInterestFilterTest {
 
+    /**
+     * [sustainedWindFloor] defaults to the day's best average because the two coincide on a steady
+     * day; the tests that care about the difference set it explicitly (KIM-419).
+     */
     private fun day(
         avgTemp: Double? = 15.0,
         precipitation: Double? = 0.0,
         windDirection: Double? = null,
-        sustainedWindSpeed: Double? = 25.0
+        sustainedWindSpeed: Double? = 25.0,
+        sustainedWindFloor: Double? = sustainedWindSpeed
     ) = DayWeatherSummary(
         date = "2026-06-01",
         description = null,
@@ -32,7 +37,8 @@ class DaysOfInterestFilterTest {
         isFoggy = false,
         foggyHours = 0,
         precipitation = precipitation,
-        windDirection = windDirection
+        windDirection = windDirection,
+        sustainedWindFloor = sustainedWindFloor
     )
 
     // ---------- degreesToCompass ----------
@@ -146,6 +152,15 @@ class DaysOfInterestFilterTest {
         val filter = DaysOfInterestFilter(naturalLanguageCriteria = "", minWindSpeedKmh = 20.0)
         // null sustained wind -> 0.0 -> below min -> reject
         assertFalse(filter.matches(day(sustainedWindSpeed = null)))
+    }
+
+    @Test
+    fun matches_minWindUsesWindowFloorNotAverage() {
+        // KIM-419: a window averaging above the minimum but containing an hour below it does not
+        // meet the threshold — the day chart shades no sustained block for such a day either.
+        val filter = DaysOfInterestFilter(naturalLanguageCriteria = "", minWindSpeedKmh = 20.0)
+        assertFalse(filter.matches(day(sustainedWindSpeed = 20.5, sustainedWindFloor = 16.0)))
+        assertTrue(filter.matches(day(sustainedWindSpeed = 20.5, sustainedWindFloor = 20.0)))
     }
 
     @Test

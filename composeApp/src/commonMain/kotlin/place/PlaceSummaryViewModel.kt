@@ -3,7 +3,6 @@ package place
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import core.Day
-import core.Hour // Import Hour
 import core.KiteSpotterConfig
 import core.Log
 import core.PlaceSummaryRoute
@@ -185,7 +184,8 @@ class PlaceSummaryViewModel(
                     weatherData = loadedData
                     Log.d("Loaded ${weatherData?.days?.count()} days for $placeName")
 
-                    val newStoredDays = loadedData.days?.toDayWeatherSummaryList() ?: emptyList()
+                    val newStoredDays =
+                        loadedData.days?.toDayWeatherSummaryList(loadedData.tzoffset) ?: emptyList()
 
                     // Emit the core weather data immediately with whatever stations are already
                     // persisted (no network wait). The auto-backfill network call runs separately
@@ -304,28 +304,23 @@ class PlaceSummaryViewModel(
             )
         }
 
-    // New helper to calculate the highest 3-hour rolling average wind speed
-    private fun calculateMaxSustainedWindSpeed(hours: List<Hour>?): Double? {
-        if (hours == null || hours.size < KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS) {
-            return null
-        }
-
-        return hours
-            .mapNotNull { it.windspeed }
-            .windowed(size = KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS, step = 1) { window ->
-                window.average()
-            }
-            .maxOrNull()
-    }
-
-    private fun List<Day>.toDayWeatherSummaryList(): List<DayWeatherSummary> {
+    private fun List<Day>.toDayWeatherSummaryList(tzoffset: Double?): List<DayWeatherSummary> {
         return this.map { day ->
-            day.toDayWeatherSummary()
+            day.toDayWeatherSummary(tzoffset)
         }
     }
 
-    private fun Day.toDayWeatherSummary(): DayWeatherSummary {
+    /**
+     * Maps a stored [Day] to its summary row. Sustained wind is derived from the same
+     * 09:00–21:00 local-time frame the day detail chart draws, using the location's [tzoffset],
+     * so this screen's figure agrees with the month list and the chart (KIM-419).
+     */
+    private fun Day.toDayWeatherSummary(tzoffset: Double?): DayWeatherSummary {
         val foggyHours = this.hours?.count { (it.visibility ?: 24.0) < 1.0 } ?: 0
+        val sustained = sustainedWind(
+            slots = hourlyWindSlots(hourlyWindWindow(this.hours, tzoffset)),
+            windowSlots = KiteSpotterConfig.SUSTAINED_WIND_WINDOW_HOURS
+        )
         return DayWeatherSummary(
             date = this.datetime,
             description = this.description ?: this.conditions,
@@ -334,10 +329,11 @@ class PlaceSummaryViewModel(
             avgTemp = this.temp,
             avgWindSpeed = this.windspeed,
             maxWindSpeed = this.windgust,
-            sustainedWindSpeed = calculateMaxSustainedWindSpeed(this.hours),
+            sustainedWindSpeed = sustained.bestAverageKmh,
             solarenergy = this.solarenergy,
             isFoggy = foggyHours > 0,
-            foggyHours = foggyHours
+            foggyHours = foggyHours,
+            sustainedWindFloor = sustained.bestFloorKmh
         )
     }
 
