@@ -30,18 +30,25 @@ sometimes with `OutOfMemoryError: Java heap space` in `DevirtualizationAnalysis.
 ## Compiler flags that silently do nothing
 - `-Xno-devirtualization` — **rejected by Kotlin 2.3.10**: `w: Flag is not supported by this version
   of the compiler`. It is a warning, not an error, so it sat in the build file for months doing
-  nothing. Always grep a link log for "Flag is not supported" after adding `freeCompilerArgs`.
-- `kotlin.native.disableDevirtualization` in gradle.properties was never a real Gradle property.
-  `kotlin.native.disable.lto` (still present) looks like the same species — unverified.
+  nothing while the docs claimed devirtualization was off. Always grep a link log for "Flag is not
+  supported" after adding anything to `freeCompilerArgs`.
+- `kotlin.native.disableDevirtualization` was never a real Gradle property (removed in KIM-420).
+  `kotlin.native.disable.lto`, still present, looks like the same species — unverified.
 - `-Xno-objc-generics` and `-Xallocator=std` change the Obj-C API surface / runtime allocator, not
-  compiler memory. Adding them to the *pod* framework is a product-visible decision → needs human
-  sign-off, don't do it silently to fix a build.
+  compiler memory. Extending them to the *pod* framework is a product-visible decision → needs human
+  sign-off, don't reach for them to fix a build.
 
 ## Reproducing an Archive failure without Xcode
 `./gradlew -PincludeAllTargets=true :composeApp:linkPodReleaseFrameworkIosArm64` runs exactly the
-compile that Archive's Kotlin phase drives — no signing needed. Good enough to prove a build-tooling
-fix; a real `Product → Archive` still owns final sign-off.
+compile that Archive's Kotlin phase drives — no signing needed, ~11 min when it succeeds. Good
+enough to prove a build-tooling fix; a real `Product → Archive` still owns final sign-off, and
+Kimmo runs that himself (Marcy can't verify a device archive from a diff).
 
 ## Target gating
 iOS targets are only declared when `-PincludeAllTargets=true` **or** the `PLATFORM_NAME` env var is
-set (Xcode sets it). Plain Gradle commands are Android-only, and `iosArm64Main` etc. do not resolve.
+set (Xcode sets it). Plain Gradle commands are Android-only and `iosArm64Main` etc. do not resolve.
+
+## Session hygiene
+Long Gradle runs exceed the 600 s Bash cap and get backgrounded; a session/context reset kills them
+and can roll back unsaved working-tree edits. Write memory updates as small targeted edits and
+re-check they survived.

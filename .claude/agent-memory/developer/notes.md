@@ -339,7 +339,34 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
   keeps `MONTH_STAT_CARD_GRID`. Reusing it lets a Maestro flow's "loaded" wait be satisfied
   by the skeleton and mask the loaded-state assertion (Marcy caught this on KIM-327).
 - Marcy sub-agents run git ops that can leave the PARENT session on `develop` — always
-  re-checkout your feature branch before applying review fixes.
+  re-checkout your feature branch before applying review fixes. Concurrent sessions can also
+  switch the shared working tree out from under you mid-task (seen on KIM-419: tree jumped to
+  another ticket's branch after the commit). COMMIT + PUSH early — once it's on origin the PR and
+  CI are unaffected. Re-check `git branch --show-current` before trusting `git status`, and tell
+  Marcy to review `origin/<branch>` via `gh pr diff` rather than the working tree.
+
+## Sustained wind — one definition for list + chart (KIM-419)
+- The month list and the day chart MUST read the same frame. The chart only ever draws
+  **09:00–21:00 local time** (`hourlyWindWindow` + `hourlyWindSlots`, `WINDOW_START_HOUR`/
+  `WINDOW_END_HOUR` in `place/HourlyWind.kt`). Any day-level wind aggregate computed over all 24
+  stored hours will disagree with it — a windy night flags a day whose chart shows nothing.
+- Both VMs used to keep a PRIVATE `calculateMaxSustainedWindSpeed`. That duplication is how they
+  drifted. Now one shared pure `sustainedWind(slots, windowSlots)` in `place/SustainedWind.kt`.
+- Threshold rule: compare the window **floor** (lowest hour in the window), never the average.
+  A floor ≥ min ⟺ every hour ≥ min ⟺ `criteriaShading` marks the slots `SUSTAINED`. Averaging lets
+  25/16 km/h clear a 20 km/h bar with neither hour shaded. `DayWeatherSummary.sustainedWindFloor`
+  carries it; `DaysOfInterestFilter.matches` uses floor for min, average for max.
+- Missing data breaks a window (never treat null as 0) — matches `criteriaShading` + the KIM-303
+  no-fabricated-data rule. `mapNotNull` on speeds is a BUG: it makes non-adjacent hours contiguous.
+- `Day.hours` needs `datetimeEpoch` to be placeable in the window; rows without one are dropped.
+- Both VMs must pass the location's `WeatherResponse.tzoffset` into the mapper.
+- `DayWeatherSummary` new fields go LAST with a default — `PlaceSummaryViewModelTest` constructs it
+  POSITIONALLY (~20 call sites) and inserting mid-list breaks them all.
+- Regression-test trick that reviews well: compute the OLD (buggy) value inline in the test and
+  assert both it and the new one, so the fixture documents the bug it guards
+  (`SustainedWindTest.konstanzJul27_bestAverage_coversOnlyTheHoursTheChartDraws`).
+- Shared `Hour` test builders now live in `commonTest/place/HourFixtures.kt` (`testHour`,
+  `testHourAtUtc`, `testHourAtLocal`) — don't re-declare the 25-field constructor per test file.
 
 ## Per-cell "which item is busy" state (KIM-332)
 - To show a loading indicator on ONE cell/row of a list (not a screen-wide flag), model the
