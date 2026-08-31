@@ -1,0 +1,23 @@
+{
+  "tools": [
+    "Read",
+    "Grep",
+    "Glob",
+    "Write",
+    "Agent",
+    "Bash(git log*)",
+    "Bash(git show*)",
+    "Bash(adb *)",
+    "Bash(emulator *)",
+    "Bash(maestro test*)",
+    "Bash(./gradlew :composeApp:connectedDebugAndroidTest*)",
+    "Bash(git add*)",
+    "Bash(git commit*)",
+    "Bash(git push*)",
+    "mcp__linear-server__list_issues",
+    "mcp__linear-server__get_issue",
+    "mcp__linear-server__save_issue",
+    "mcp__linear-server__list_issue_labels"
+  ],
+  "note": "Human-readable mirror of SKILL.md's `allowed-tools` frontmatter, which is the copy Claude Code actually enforces. If this list ever changes, edit SKILL.md first and mirror the change here — not the other way around."
+}

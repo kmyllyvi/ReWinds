@@ -1,0 +1,6 @@
+{
+  "required": ["linear-server"],
+  "optional": [],
+  "notes": "Uses mcp__linear-server__{list_issues,get_issue,save_issue,list_issue_labels} for claim enrichment, dedup, and filing to team Kimmo_m / project 'ReWinds app'. No GitHub MCP, no Slack — the run's human-facing output is the filed Linear issue(s) plus docs/human/test-runs/exploratory-latest.md. Informational only — Claude Code does not gate skill invocation on this file; if linear-server is unavailable the skill will simply fail at its first Linear tool call.",
+  "env": []
+}
