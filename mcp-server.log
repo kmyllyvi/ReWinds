@@ -1,0 +1,11 @@
+2026-08-24T14:22:43.983Z - [INFO] Starting Open Food Facts MCP server...
+2026-08-24T14:22:43.991Z - [INFO] Mode: Standard (core tools only)
+2026-08-24T14:22:43.993Z - [INFO] Enabled capabilities:
+2026-08-24T14:22:43.995Z - [INFO] - Resources: Food product data access
+2026-08-24T14:22:43.995Z - [INFO] - Tools: Food product search and information
+2026-08-24T14:22:43.995Z - [INFO] - Prompts: Food product analysis templates
+2026-08-24T14:22:43.995Z - [INFO] - Sampling: AI-powered food product analysis
+2026-08-24T14:22:43.995Z - [INFO] - Roots: Resource boundary management
+2026-08-24T14:22:44.002Z - [INFO] Roots capability initialized
+2026-08-24T14:22:44.004Z - [INFO] Open Food Facts MCP tools registered successfully
+2026-08-24T14:22:44.005Z - [INFO] Open Food Facts MCP Server started with stdio transport

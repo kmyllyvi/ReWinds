@@ -1,0 +1,11 @@
+{
+  "name": "exploratory-test-orchestrator",
+  "version": 1,
+  "owner": "kimmo_m",
+  "trigger": "manual (Skill/command invocation) — no cron scheduled yet, see KIM-331",
+  "tier": 0,
+  "runtime": "inherits the invoking Claude Code session — no dedicated runner, unlike solidmaint's separate goose/vLLM self-hosted runner",
+  "model": "inherits session model (no per-skill model override configured)",
+  "reference": "adapted from Dropbox 'Agentic Development/Agentic Setup/solidmaint/skills/exploratory-test-orchestrator/manifest.json'",
+  "note": "Informational only — Claude Code's Skill loader does not read this file. The functional identity Claude Code uses is the `name`/`description` frontmatter in SKILL.md, and the functional tool restriction is SKILL.md's `allowed-tools` frontmatter."
+}
