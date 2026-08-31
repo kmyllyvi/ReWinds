@@ -65,10 +65,10 @@ can screenshot and click it directly.
 
 ```bash
 # Build + install via Xcode (Cmd+R once on iosApp.xcworkspace), or headless:
-xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp \
+xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme ReWinds \
   -configuration Debug -sdk iphonesimulator -derivedDataPath build
 xcrun simctl install booted \
-  build/Build/Products/Debug-iphonesimulator/iosApp.app
+  build/Build/Products/Debug-iphonesimulator/ReWinds.app
 xcrun simctl launch booted "$(xcrun simctl listapps booted \
   | grep -i rewinds | head -1 | sed -E 's/.*"([^"]*rewinds[^"]*)".*/\1/')"
 ```

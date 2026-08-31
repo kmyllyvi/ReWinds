@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7555FF7A242A565900829871"
                BuildableName = "ReWinds.app"
-               BlueprintName = "iosApp"
+               BlueprintName = "ReWinds"
                ReferencedContainer = "container:iosApp.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,7 +45,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7555FF7A242A565900829871"
             BuildableName = "ReWinds.app"
-            BlueprintName = "iosApp"
+            BlueprintName = "ReWinds"
             ReferencedContainer = "container:iosApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

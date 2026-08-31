@@ -97,10 +97,10 @@ jobs:
       - name: Build & install on booted simulator
         run: |
           xcrun simctl boot "iPhone 15" || true
-          xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp \
+          xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme ReWinds \
             -configuration Debug -sdk iphonesimulator -derivedDataPath build
           xcrun simctl install booted \
-            build/Build/Products/Debug-iphonesimulator/iosApp.app
+            build/Build/Products/Debug-iphonesimulator/ReWinds.app
 
       - name: Run Maestro suite on simulator
         run: |

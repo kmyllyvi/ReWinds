@@ -21,7 +21,7 @@ Detail behind the MEMORY.md index. Grouped by topic; search here for the full pa
   - composeApp.podspec validates the framework directory at pod install time
 - `xcpretty` is NOT pre-installed on macos-latest arm64 — install via `gem install xcpretty --no-document`
 - The Xcode scheme must be in `xcshareddata/xcschemes/` (not `xcuserdata/`) to be found on CI
-  - Created: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme`
+  - Created: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/ReWinds.xcscheme`
   - `.gitignore` already has `!*.xcodeproj/xcshareddata/` so it gets committed
 - The iOS Xcode project has NO XCTest targets — all Kotlin unit tests run via Android/JVM Gradle job
   - Use xcodebuild `build` action (not `test`) to verify iOS app compilation
@@ -36,7 +36,7 @@ Detail behind the MEMORY.md index. Grouped by topic; search here for the full pa
 
 ## Key File Locations
 - CI workflow: `.github/workflows/ci.yml`
-- Shared Xcode scheme: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/iosApp.xcscheme`
+- Shared Xcode scheme: `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/ReWinds.xcscheme`
 - Xcode config: `iosApp/Configuration/Config.xcconfig` (use `#include?` for optional includes)
 - BuildConfig API key: `composeApp/build.gradle.kts` buildTypes section
 
@@ -187,7 +187,7 @@ or the commonTest source set won't compile. Known fakes as of KIM-278:
 - Not unit-testable (no IME in JVM unit tests) — layout-only change, allowed testing exception.
 
 ## Reproducing iOS runtime crashes locally (no Gradle iOS build)
-- Build: `xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp -configuration Debug
+- Build: `xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme ReWinds -configuration Debug
   -sdk iphonesimulator -destination "id=<UDID>" -derivedDataPath build`.
 - Boot/install/run: `xcrun simctl boot <UDID>`; `xcrun simctl install <UDID> <.app>`;
   `xcrun simctl launch --console-pty <UDID> com.km.rewinds` — the console shows the full Kotlin

@@ -225,7 +225,7 @@ export ANTHROPIC_API_KEY=sk-ant-<your-key>
 **iOS**:
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-<your-key>
-xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp -configuration Debug
+xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme ReWinds -configuration Debug
 ```
 
 Or update `Platform.apple.kt` to load from Info.plist or BuildConfig for production.
