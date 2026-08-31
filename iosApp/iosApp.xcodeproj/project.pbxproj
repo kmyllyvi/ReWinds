@@ -11,22 +11,22 @@
 		058557D9273AAEEB004C7B11 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 058557D8273AAEEB004C7B11 /* Preview Assets.xcassets */; };
 		2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2152FB032600AC8F00CF470E /* iOSApp.swift */; };
 		7555FF83242A565900829871 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7555FF82242A565900829871 /* ContentView.swift */; };
+		7BD9B3BB2D256F60B8F15F25 /* Pods_ReWinds.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AA3861E5E51FD4F30FB58D1 /* Pods_ReWinds.framework */; };
 		8B73413F2F5854EA00E51171 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B73413E2F5854EA00E51171 /* KeychainHelper.swift */; };
-		F404ECC7224BCD2FAD9F1275 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CF66D63CE10D4FA6652BFBB4 /* Pods_iosApp.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		058557BA273AAA24004C7B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		058557D8273AAEEB004C7B11 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1028874B873B6445FDE8C5F3 /* Pods-ReWinds.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReWinds.debug.xcconfig"; path = "Target Support Files/Pods-ReWinds/Pods-ReWinds.debug.xcconfig"; sourceTree = "<group>"; };
 		2152FB032600AC8F00CF470E /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
-		248F88F6A35FD0DD1EC93190 /* Pods-iosApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.release.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.release.xcconfig"; sourceTree = "<group>"; };
+		6AA3861E5E51FD4F30FB58D1 /* Pods_ReWinds.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ReWinds.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7555FF82242A565900829871 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7555FF8C242A565B00829871 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8B73413E2F5854EA00E51171 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		8BDEF8452F43153A003C2169 /* ReWinds.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReWinds.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		97C669B663D30492D6361C15 /* Pods-iosApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosApp.debug.xcconfig"; path = "Target Support Files/Pods-iosApp/Pods-iosApp.debug.xcconfig"; sourceTree = "<group>"; };
+		AB086E1FD0E2C01D45E5AC0D /* Pods-ReWinds.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReWinds.release.xcconfig"; path = "Target Support Files/Pods-ReWinds/Pods-ReWinds.release.xcconfig"; sourceTree = "<group>"; };
 		AB3632DC29227652001CCB65 /* Config.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
-		CF66D63CE10D4FA6652BFBB4 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,7 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F404ECC7224BCD2FAD9F1275 /* Pods_iosApp.framework in Frameworks */,
+				7BD9B3BB2D256F60B8F15F25 /* Pods_ReWinds.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -52,8 +52,8 @@
 		26DDD9DE19F79AE28F67EDA6 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				97C669B663D30492D6361C15 /* Pods-iosApp.debug.xcconfig */,
-				248F88F6A35FD0DD1EC93190 /* Pods-iosApp.release.xcconfig */,
+				1028874B873B6445FDE8C5F3 /* Pods-ReWinds.debug.xcconfig */,
+				AB086E1FD0E2C01D45E5AC0D /* Pods-ReWinds.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 		42799AB246E5F90AF97AA0EF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				CF66D63CE10D4FA6652BFBB4 /* Pods_iosApp.framework */,
+				6AA3861E5E51FD4F30FB58D1 /* Pods_ReWinds.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -109,9 +109,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		7555FF7A242A565900829871 /* iosApp */ = {
+		7555FF7A242A565900829871 /* ReWinds */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7555FFA5242A565B00829871 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildConfigurationList = 7555FFA5242A565B00829871 /* Build configuration list for PBXNativeTarget "ReWinds" */;
 			buildPhases = (
 				125D177C1B747EA6CB5AD80B /* [CP] Check Pods Manifest.lock */,
 				F36B1CEB2AD83DDC00CB74D5 /* Compile Kotlin Framework */,
@@ -125,8 +125,8 @@
 			);
 			dependencies = (
 			);
-			name = iosApp;
-			productName = iosApp;
+			name = ReWinds;
+			productName = ReWinds;
 			productReference = 8BDEF8452F43153A003C2169 /* ReWinds.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -159,7 +159,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				7555FF7A242A565900829871 /* iosApp */,
+				7555FF7A242A565900829871 /* ReWinds */,
 			);
 		};
 /* End PBXProject section */
@@ -192,7 +192,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-iosApp-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-ReWinds-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -205,15 +205,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		D34B4AED94413F8DBE6D96B8 /* [CP] Embed Pods Frameworks */ = {
@@ -222,15 +222,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ReWinds/Pods-ReWinds-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		F36B1CEB2AD83DDC00CB74D5 /* Compile Kotlin Framework */ = {
@@ -389,7 +389,7 @@
 		};
 		7555FFA6242A565B00829871 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 97C669B663D30492D6361C15 /* Pods-iosApp.debug.xcconfig */;
+			baseConfigurationReference = 1028874B873B6445FDE8C5F3 /* Pods-ReWinds.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -418,7 +418,7 @@
 		};
 		7555FFA7242A565B00829871 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 248F88F6A35FD0DD1EC93190 /* Pods-iosApp.release.xcconfig */;
+			baseConfigurationReference = AB086E1FD0E2C01D45E5AC0D /* Pods-ReWinds.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -457,7 +457,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7555FFA5242A565B00829871 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+		7555FFA5242A565B00829871 /* Build configuration list for PBXNativeTarget "ReWinds" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7555FFA6242A565B00829871 /* Debug */,

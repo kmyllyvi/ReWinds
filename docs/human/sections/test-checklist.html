@@ -320,6 +320,24 @@ table.checklist input[type="checkbox"] { transform: scale(1.25); accent-color: v
         <td class="col-added">2026-08-19</td>
       </tr>
 
+      <tr>
+        <td class="col-ticket">no Linear issue<br>(Linear MCP unavailable)</td>
+        <td class="col-area">iOS — App Store icon</td>
+        <td class="case">In Xcode, <strong>Product → Archive</strong>, then in Organizer run <strong>Validate App</strong> against App Store Connect. <span class="expect">Expected: validation no longer fails with "Invalid large app icon … can't be transparent or contain an alpha channel". Also eyeball the icon on the Home screen and in Settings: it must look <em>unchanged</em> — dark navy squircle with the isobar rings, corners still cleanly rounded by iOS (no white or black square fringe).</span></td>
+        <td class="automate">Recommended: a CI guard asserting every <code>.appiconset</code> 1024×1024 PNG has PNG colour type 2 (no alpha) — cheap to script, catches this class of regression permanently. The visual "looks unchanged" half stays manual.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-08-31</td>
+      </tr>
+
+      <tr>
+        <td class="col-ticket">no Linear issue<br>(Linear MCP unavailable)</td>
+        <td class="col-area">iOS — target/scheme rename</td>
+        <td class="case">Open <code>iosApp/iosApp.xcworkspace</code> and confirm the scheme picker offers <strong>ReWinds</strong>; build and run (Cmd+R) on a simulator, then <strong>Product → Archive</strong>. <span class="expect">Expected: the app builds, launches and behaves exactly as before; Organizer lists the archive as <strong>ReWinds</strong> rather than "iosApp". No red/missing files under the Pods group.</span> Note: a stale local <code>iosApp</code> scheme may still exist in your gitignored <code>xcuserdata</code> — delete it in Manage Schemes so only ReWinds remains.</td>
+        <td class="automate none">No — Xcode project-structure change; the CLI half is already covered by <code>xcodebuild -list</code> resolving the ReWinds scheme, and archiving needs signing that CI does not have.</td>
+        <td class="done-cell"><input type="checkbox"></td>
+        <td class="col-added">2026-08-31</td>
+      </tr>
+
       <!-- ▲▲▲ append new rows directly above this line ▲▲▲ -->
     </tbody>
   </table>

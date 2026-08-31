@@ -68,10 +68,10 @@ maestro test .maestro/flows/j2_add_place_via_search.yaml   # single flow
 
 ```bash
 # 1. Build + install on a booted simulator via Xcode (Cmd+R once), or:
-xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme iosApp \
+xcodebuild -workspace iosApp/iosApp.xcworkspace -scheme ReWinds \
   -configuration Debug -sdk iphonesimulator -derivedDataPath build
 xcrun simctl install booted \
-  build/Build/Products/Debug-iphonesimulator/iosApp.app
+  build/Build/Products/Debug-iphonesimulator/ReWinds.app
 
 # 2. Resolve the team-suffixed bundle id and run
 export APP_ID="$(xcrun simctl listapps booted | grep -i rewinds | head -1 | sed -E 's/.*"([^"]*rewinds[^"]*)".*/\1/')"

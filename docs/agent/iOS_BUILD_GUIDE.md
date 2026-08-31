@@ -50,7 +50,7 @@ CocoaPods Integration
     ├─ Injects sqlite3 and other dependencies
     └─ Configures build settings
         ↓
-Xcode Builds iosApp Target
+Xcode Builds ReWinds Target
     ├─ Links framework with dependencies
     ├─ Applies Xcode build settings
     ├─ Adds provisioning profiles
@@ -68,7 +68,7 @@ Simulator Binary Ready to Run
 open iosApp/iosApp.xcworkspace
 
 # Then in Xcode:
-# 1. Select "iosApp" scheme (top-left)
+# 1. Select "ReWinds" scheme (top-left)
 # 2. Select simulator target (iPhone 15, etc.)
 # 3. Press Cmd+R to build and run
 # 4. App launches on simulator
@@ -86,13 +86,13 @@ open iosApp/iosApp.xcworkspace
 ```bash
 # Build for simulator
 xcodebuild -workspace iosApp/iosApp.xcworkspace \
-  -scheme iosApp \
+  -scheme ReWinds \
   -configuration Debug \
   -sdk iphonesimulator \
   -derivedDataPath build
 
 # Install and run on simulator
-xcrun simctl install booted build/Debug-iphonesimulator/iosApp.app
+xcrun simctl install booted build/Debug-iphonesimulator/ReWinds.app
 xcrun simctl launch booted com.km.rewinds
 ```
 
@@ -251,7 +251,7 @@ xcrun simctl list devices
 
 # Build for specific simulator
 xcodebuild -workspace iosApp/iosApp.xcworkspace \
-  -scheme iosApp \
+  -scheme ReWinds \
   -configuration Debug \
   -sdk iphonesimulator \
   -arch arm64
@@ -294,7 +294,7 @@ cd ..
 open iosApp/iosApp.xcworkspace
 
 # 4. Select simulator
-# Xcode top-left: iosApp > iPhone 15 (or your simulator)
+# Xcode top-left: ReWinds > iPhone 15 (or your simulator)
 
 # 5. Build
 # Cmd+B to build, Cmd+R to run

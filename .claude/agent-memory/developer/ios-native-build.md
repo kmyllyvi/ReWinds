@@ -48,6 +48,51 @@ Kimmo runs that himself (Marcy can't verify a device archive from a diff).
 iOS targets are only declared when `-PincludeAllTargets=true` **or** the `PLATFORM_NAME` env var is
 set (Xcode sets it). Plain Gradle commands are Android-only and `iosArm64Main` etc. do not resolve.
 
+## Renaming the Xcode target (done 2026-08-31: `iosApp` → `ReWinds`)
+The Xcode **target** name is separate from `PRODUCT_NAME`. `PRODUCT_NAME=${APP_NAME}` (→ `ReWinds`
+via `Configuration/Config.xcconfig`) already gave us `ReWinds.app` and the right Home-screen name,
+but Organizer/archives are named after the **scheme**, which is named after the target — that is why
+archives read "iosApp" long after the display name was correct.
+
+CocoaPods derives its whole integration from the target name, so a rename is *not* two lines:
+1. `project.pbxproj` — `name`/`productName` on the PBXNativeTarget, plus the `/* … */` comments on
+   the target, its `buildConfigurationList`, and the `targets = ( )` entry.
+2. `Podfile` — `target 'iosApp' do` → `target 'ReWinds' do`. Skipping this makes `pod install` fail
+   with "unable to find a target named …".
+3. `git mv` the shared scheme to `<NewName>.xcscheme` and set `BlueprintName` (both occurrences —
+   BuildAction and LaunchAction). Leave `ReferencedContainer = "container:iosApp.xcodeproj"` and
+   `BuildableName` alone; those track the *project* and the *product*, not the target.
+4. Re-run `pod install`. It rewrites the `Pods-<Target>` xcconfig refs, framework ref and the three
+   `[CP]` script phases — do **not** hand-edit those.
+5. **`pod install` leaves the old `Pods-<OldName>.{debug,release}.xcconfig` PBXFileReference entries
+   and their Pods-group children behind as dangling refs** (the files are gone from disk). Delete
+   those 4 lines by hand or Xcode shows red missing files. Verify: `grep -n "Pods-<OldName>"`.
+
+Do **not** rename the `iosApp/` folder or `iosApp.xcworkspace` — CocoaPods keys off the folder path
+and `PBXProject "iosApp"` legitimately stays.
+
+Verify with `plutil -lint iosApp/iosApp.xcodeproj/project.pbxproj` and
+`xcodebuild -workspace iosApp/iosApp.xcworkspace -list` (the workspace CLI is fine — CLAUDE.md only
+bans *Gradle* iOS tasks and using `.xcodeproj`). Expect leftover `iosApp`/`Unnamed` schemes in the
+listing: those come from gitignored `xcuserdata` and are local-only noise.
+
+Grep the repo for `-scheme iosApp` afterwards — the old scheme name is hardcoded in
+`.github/workflows/e2e-smoke.yml`, `.maestro/README.md`, and several `docs/` files.
+
+## Editing the Xcode project while Xcode is open
+Xcode (often running for days) holds the project in memory and live-syncs edits — it rewrote
+`xcuserdata` schemes seconds after the shared scheme was renamed. Checksum `project.pbxproj` before
+and after any `pod install` / external edit and re-grep, rather than assuming the write stuck.
+
+## Stripping alpha from the App Store icon (no ImageMagick/PIL on this machine)
+App Store validation rejects a 1024×1024 `appstore.png` with an alpha channel (PNG colour type 6).
+Neither `magick` nor PIL is installed here, and `sips` will not reliably drop alpha — but plain
+`zlib` + `struct` in Python decodes/re-encodes a non-interlaced 8-bit PNG in ~60 lines.
+The icon is a **squircle with genuinely transparent corners** (~4.3% of pixels, alpha 0), so
+"flatten onto white" would have punched a white frame into it. Correct fix: extend the icon's own
+edge colour per row into the corners, then composite. Verify by asserting every originally-opaque
+pixel is bit-for-bit unchanged, then `sips -g hasAlpha` → `no`.
+
 ## Session hygiene
 Long Gradle runs exceed the 600 s Bash cap and get backgrounded; a session/context reset kills them
 and can roll back unsaved working-tree edits. Write memory updates as small targeted edits and
